@@ -1,0 +1,5 @@
+bin
+runs
+petsc-tutorials
+.vscode
+**/__pycache__/*
