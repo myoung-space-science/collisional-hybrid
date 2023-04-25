@@ -114,6 +114,7 @@ int main(int argc, char **args)
 {
   UserContext user;
   DM          mesh, swarm;
+  KSP         ksp;
 
   PetscFunctionBeginUser;
 
@@ -129,6 +130,10 @@ int main(int argc, char **args)
 
   // Set up particle swarm.
   PetscCall(CreateSwarmDM(&swarm, &mesh));
+
+  // Set up the linear-solver context.
+  PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
+  PetscCall(KSPSetDM(ksp, mesh));
 
   // Set initial particle positions and velocities.
 
