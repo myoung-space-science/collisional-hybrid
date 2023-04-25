@@ -79,9 +79,9 @@ static PetscErrorCode ProcessOptions(UserContext *options)
 
 static PetscErrorCode CreateMeshDM(DM *mesh, UserContext *user)
 {
-  PetscInt       nx=11;
-  PetscInt       ny=11;
-  PetscInt       nz=11;
+  PetscInt       nx=user->grid.nx;
+  PetscInt       ny=user->grid.ny;
+  PetscInt       nz=user->grid.nz;
   DMBoundaryType xBC=DM_BOUNDARY_GHOSTED;
   DMBoundaryType yBC=DM_BOUNDARY_GHOSTED;
   DMBoundaryType zBC=DM_BOUNDARY_GHOSTED;
