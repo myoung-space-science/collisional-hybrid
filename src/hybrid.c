@@ -156,7 +156,7 @@ CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
 
 
 static PetscErrorCode
-InitializeParticles(DM *mesh, DM *swarm, UserContext *user)
+InitializeParticles(DM *mesh, DM *swarm, UserContext *user, PetscInt n0pc)
 {
   PetscInt np;
   PetscScalar *coords;
@@ -165,6 +165,10 @@ InitializeParticles(DM *mesh, DM *swarm, UserContext *user)
   int      size;
 
   PetscFunctionBeginUser;
+
+  PetscCall(DMSwarmInsertPointsUsingCellDM(
+            *swarm, DMSWARMPIC_LAYOUT_REGULAR, n0pc));
+  PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
 
   PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &size));
   np = (PetscInt)PetscCbrtReal((PetscReal)(user->particles.n / size));
@@ -226,7 +230,7 @@ int main(int argc, char **args)
   PetscCall(KSPSetDM(ksp, mesh));
 
   // Set initial particle positions and velocities.
-  PetscCall(InitializeParticles(&mesh, &swarm, &user));
+  PetscCall(InitializeParticles(&mesh, &swarm, &user, 3));
 
   // Compute initial density and electric field.
 
