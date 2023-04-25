@@ -158,7 +158,41 @@ CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
 static PetscErrorCode
 InitializeParticles(DM *mesh, DM *swarm, UserContext *user)
 {
+  PetscInt np;
+  PetscScalar *coords;
+  PetscReal dx, dy, dz, x, y, z;
+  PetscInt i, j, k;
+  int      size;
+
   PetscFunctionBeginUser;
+
+  PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &size));
+  np = (PetscInt)PetscCbrtReal((PetscReal)(user->particles.n / size));
+  dx = user->grid.Lx / PetscMax(1, np-1);
+  dy = user->grid.Ly / PetscMax(1, np-1);
+  dz = user->grid.Lz / PetscMax(1, np-1);
+  PetscCall(DMSwarmGetField(
+            *swarm,
+            DMSwarmPICField_coor, NULL, NULL,
+            (void **)&coords));
+  x = 0.0;
+  for (i=0; i<np; ++i, x += dx) {
+    y = 0.0;
+    for (j=0; j<np; ++j, y += dy) {
+      z = 0.0;
+      for (k=0; k<np; ++k, z += dz) {
+        const PetscInt p = (k*np + j)*np + i;
+        coords[p*NDIM + 0] = x;
+        coords[p*NDIM + 1] = y;
+        coords[p*NDIM + 2] = z;
+      }
+    }
+  }
+  PetscCall(DMSwarmRestoreField(
+            *swarm,
+            DMSwarmPICField_coor, NULL, NULL,
+            (void **)&coords));
+  PetscCall(DMSwarmMigrate(*swarm, PETSC_TRUE));
 
   PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
 
