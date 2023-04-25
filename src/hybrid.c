@@ -24,7 +24,8 @@ typedef struct {
 } UserContext;
 
 
-static PetscErrorCode ProcessOptions(UserContext *options)
+static PetscErrorCode
+ProcessOptions(UserContext *options)
 {
   /* This could read all options from the command line, but we may want to use
   libconfig to read most of the options from a user-provided file, and only
@@ -81,7 +82,8 @@ static PetscErrorCode ProcessOptions(UserContext *options)
 }
 
 
-static PetscErrorCode CreateMeshDM(DM *mesh, UserContext *user)
+static PetscErrorCode
+CreateMeshDM(DM *mesh, UserContext *user)
 {
   PetscInt       nx=user->grid.nx;
   PetscInt       ny=user->grid.ny;
@@ -94,16 +96,23 @@ static PetscErrorCode CreateMeshDM(DM *mesh, UserContext *user)
 
   PetscFunctionBeginUser;
 
-  PetscCall(DMDACreate3d(PETSC_COMM_WORLD, xBC, yBC, zBC, DMDA_STENCIL_BOX,
-                         nx, ny, nz, PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE,
-                         dof, width, NULL, NULL, NULL, mesh));
+  PetscCall(DMDACreate3d(
+            PETSC_COMM_WORLD,
+            xBC, yBC, zBC,
+            DMDA_STENCIL_BOX,
+            nx, ny, nz,
+            PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE,
+            dof, width,
+            NULL, NULL, NULL,
+            mesh));
   PetscCall(DMDASetElementType(*mesh, DMDA_ELEMENT_Q1));
   PetscCall(DMSetFromOptions(*mesh));
   PetscCall(DMSetUp(*mesh));
-  PetscCall(DMDASetUniformCoordinates(*mesh,
-                                      0.0, user->grid.Lx,
-                                      0.0, user->grid.Ly,
-                                      0.0, user->grid.Lz));
+  PetscCall(DMDASetUniformCoordinates(
+            *mesh,
+            0.0, user->grid.Lx,
+            0.0, user->grid.Ly,
+            0.0, user->grid.Lz));
   PetscCall(DMSetApplicationContext(*mesh, user));
   PetscCall(DMView(*mesh, PETSC_VIEWER_STDOUT_WORLD));
 
@@ -111,7 +120,8 @@ static PetscErrorCode CreateMeshDM(DM *mesh, UserContext *user)
 }
 
 
-static PetscErrorCode CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
+static PetscErrorCode
+CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
 {
   PetscInt dim;
   PetscInt bufsize=0;
@@ -129,10 +139,10 @@ static PetscErrorCode CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
   PetscCall(DMSetDimension(*swarm, dim));
   PetscCall(DMSwarmSetType(*swarm, DMSWARM_PIC));
   PetscCall(DMSwarmSetCellDM(*swarm, *mesh));
-  PetscCall(DMSwarmRegisterPetscDatatypeField(*swarm,
-                                              "potential", 1, PETSC_REAL));
-  PetscCall(DMSwarmRegisterPetscDatatypeField(*swarm,
-                                              "density", 1, PETSC_REAL));
+  PetscCall(DMSwarmRegisterPetscDatatypeField(
+            *swarm, "potential", 1, PETSC_REAL));
+  PetscCall(DMSwarmRegisterPetscDatatypeField(
+            *swarm, "density", 1, PETSC_REAL));
   PetscCall(DMSwarmFinalizeFieldRegister(*swarm));
   // Set the per-processor swarm size and buffer length for efficient resizing.
   PetscCall(PetscObjectGetComm((PetscObject)*mesh, &comm));
@@ -145,8 +155,8 @@ static PetscErrorCode CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
 }
 
 
-static PetscErrorCode InitializeParticles(DM *mesh, DM *swarm,
-                                          UserContext *user)
+static PetscErrorCode
+InitializeParticles(DM *mesh, DM *swarm, UserContext *user)
 {
   PetscFunctionBeginUser;
 
