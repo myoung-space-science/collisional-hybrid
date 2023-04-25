@@ -9,6 +9,7 @@ static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 
 typedef struct {
   PetscInt nx, ny, nz;
+  PetscReal Lx, Ly, Lz;
 } Grid;
 typedef struct {
   Grid grid;
@@ -32,18 +33,33 @@ static PetscErrorCode ProcessOptions(UserContext *options)
   options->grid.nx = 7;
   options->grid.ny = 7;
   options->grid.nz = 7;
+  options->grid.Lx = 1.0;
+  options->grid.Ly = 1.0;
+  options->grid.Lz = 1.0;
 
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "--nx", &intArg, &found));
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-nx", &intArg, &found));
   if (found) {
-    options->grid.nx = &intArg;
+    options->grid.nx = intArg;
   }
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "--ny", &intArg, &found));
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-ny", &intArg, &found));
   if (found) {
-    options->grid.ny = &intArg;
+    options->grid.ny = intArg;
   }
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "--nz", &intArg, &found));
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-nz", &intArg, &found));
   if (found) {
-    options->grid.nz = &intArg;
+    options->grid.nz = intArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Lx", &realArg, &found));
+  if (found) {
+    options->grid.Lx = realArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Ly", &realArg, &found));
+  if (found) {
+    options->grid.Ly = realArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Lz", &realArg, &found));
+  if (found) {
+    options->grid.Lz = realArg;
   }
 
   PetscFunctionReturn(PETSC_SUCCESS);
