@@ -7,6 +7,8 @@ static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 #include <petscdmswarm.h>
 
 
+#define NDIM 3
+
 typedef struct {
   PetscInt nx, ny, nz;
   PetscReal Lx, Ly, Lz;
