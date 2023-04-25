@@ -145,6 +145,17 @@ static PetscErrorCode CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
 }
 
 
+static PetscErrorCode InitializeParticles(DM *mesh, DM *swarm,
+                                          UserContext *user)
+{
+  PetscFunctionBeginUser;
+
+  PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 int main(int argc, char **args)
 {
   UserContext user;
@@ -171,6 +182,7 @@ int main(int argc, char **args)
   PetscCall(KSPSetDM(ksp, mesh));
 
   // Set initial particle positions and velocities.
+  PetscCall(InitializeParticles(&mesh, &swarm, &user));
 
   // Compute initial density and electric field.
 
