@@ -107,7 +107,7 @@ static PetscErrorCode CreateMeshDM(DM *mesh, UserContext *user)
 }
 
 
-static PetscErrorCode CreateSwarmDM(DM *swarm, DM *mesh)
+static PetscErrorCode CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
 {
   PetscInt dim;
 
@@ -125,6 +125,7 @@ static PetscErrorCode CreateSwarmDM(DM *swarm, DM *mesh)
   PetscCall(DMSwarmRegisterPetscDatatypeField(*swarm,
                                               "density", 1, PETSC_REAL));
   PetscCall(DMSwarmFinalizeFieldRegister(*swarm));
+  PetscCall(DMSwarmSetLocalSizes(*swarm, user->particles.n, 0));
   PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -150,7 +151,7 @@ int main(int argc, char **args)
   PetscCall(CreateMeshDM(&mesh, &user));
 
   // Set up particle swarm.
-  PetscCall(CreateSwarmDM(&swarm, &mesh));
+  PetscCall(CreateSwarmDM(&swarm, &mesh, &user));
 
   // Set up the linear-solver context.
   PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
