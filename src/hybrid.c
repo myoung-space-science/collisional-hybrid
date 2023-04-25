@@ -82,8 +82,13 @@ static PetscErrorCode CreateMeshDM(DM *mesh, UserContext *user)
   PetscCall(DMDACreate3d(PETSC_COMM_WORLD, xBC, yBC, zBC, DMDA_STENCIL_BOX,
                          nx, ny, nz, PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE,
                          dof, width, NULL, NULL, NULL, mesh));
+  PetscCall(DMDASetElementType(*mesh, DMDA_ELEMENT_Q1));
   PetscCall(DMSetFromOptions(*mesh));
   PetscCall(DMSetUp(*mesh));
+  PetscCall(DMDASetUniformCoordinates(*mesh,
+                                      0.0, user->grid.Lx,
+                                      0.0, user->grid.Ly,
+                                      0.0, user->grid.Lz));
   PetscCall(DMSetApplicationContext(*mesh, user));
   PetscCall(DMView(*mesh, PETSC_VIEWER_STDOUT_WORLD));
 
