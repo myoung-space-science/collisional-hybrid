@@ -11,8 +11,14 @@ typedef struct {
   PetscInt nx, ny, nz;
   PetscReal Lx, Ly, Lz;
 } Grid;
+
+typedef struct {
+  PetscInt n;
+} Particles;
+
 typedef struct {
   Grid grid;
+  Particles particles;
 } UserContext;
 
 
@@ -33,6 +39,7 @@ static PetscErrorCode ProcessOptions(UserContext *options)
   options->grid.nx = 7;
   options->grid.ny = 7;
   options->grid.nz = 7;
+  options->particles.n = 7;
   options->grid.Lx = 1.0;
   options->grid.Ly = 1.0;
   options->grid.Lz = 1.0;
@@ -60,6 +67,10 @@ static PetscErrorCode ProcessOptions(UserContext *options)
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-Lz", &realArg, &found));
   if (found) {
     options->grid.Lz = realArg;
+  }
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-np", &intArg, &found));
+  if (found) {
+    options->particles.n = intArg;
   }
 
   PetscFunctionReturn(PETSC_SUCCESS);
