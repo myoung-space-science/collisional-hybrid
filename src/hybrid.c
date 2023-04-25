@@ -139,9 +139,6 @@ static PetscErrorCode CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
   MPI_Comm_size(comm, &size);
   np = user->particles.n / size;
   PetscCall(DMSwarmSetLocalSizes(*swarm, np, bufsize));
-  // Assign 1 particle per cell.
-  PetscCall(DMSwarmInsertPointsUsingCellDM(*swarm, DMSWARMPIC_LAYOUT_REGULAR,
-                                           1));
   PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
 
   PetscFunctionReturn(PETSC_SUCCESS);
