@@ -141,25 +141,27 @@ int main(int argc, char **args)
 
   // Output initial conditions.
 
-  // Main time-step loop.
+  // Main time-step loop. See KSP ex70.c::SolveTimeDepStokes (~ line 1170) for
+  // possible structure of time-step loop.
 
     // Compute density and flux from particle positions.
 
-    //  Compute potential from density
+    // Compute potential from density
 
-    //  Compute electric field from potential
+    // Compute electric field from potential
 
-    //  Update velocities: $\frac{d\vec{v}}{dt} = \frac{e\vec{E}}{m_i}$
+    // Update velocities: $\frac{d\vec{v}}{dt} = \frac{e\vec{E}}{m_i}$. See SNES
+    // ex63.c::main (~ line 469) for possible structure.
 
-      //  Apply Boris mover
+      // Apply Boris mover
 
-      //  Apply collisions
+      // Apply collisions
 
-    //  Update positions: $\frac{d\vec{r}}{dt} = \vec{v}$
+    // Update positions: $\frac{d\vec{r}}{dt} = \vec{v}$
 
-    //  Apply boundary conditions
+    // Apply boundary conditions
 
-    //  Output current time step
+    // Output current time step
 
   // Finalize PETSc and MPI.
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n*********** END ***********\n"));
