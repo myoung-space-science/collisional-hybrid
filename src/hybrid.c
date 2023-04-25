@@ -122,6 +122,7 @@ static PetscErrorCode CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
   PetscCall(DMCreate(PETSC_COMM_WORLD, swarm));
   PetscCall(PetscObjectSetOptionsPrefix((PetscObject)(*swarm), "pic_"));
   PetscCall(DMSetType(*swarm, DMSWARM));
+  PetscCall(PetscObjectSetName((PetscObject)*swarm, "Ions"));
   PetscCall(DMGetDimension(*mesh, &dim));
   PetscCall(DMSetDimension(*swarm, dim));
   PetscCall(DMSwarmSetType(*swarm, DMSWARM_PIC));
