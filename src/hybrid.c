@@ -220,6 +220,10 @@ int main(int argc, char **args)
 
     // Output current time step
 
+  // Free memory.
+  PetscCall(DMDestroy(&mesh));
+  PetscCall(DMDestroy(&swarm));
+
   // Finalize PETSc and MPI.
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n*********** END ***********\n"));
   PetscCall(PetscFinalize());
