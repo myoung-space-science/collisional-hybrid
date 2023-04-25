@@ -35,11 +35,13 @@ static PetscErrorCode ProcessOptions(UserContext *options)
   PetscInt intArg;
   PetscReal realArg;
   PetscBool found;
+  PetscInt  np;
 
   options->grid.nx = 7;
   options->grid.ny = 7;
   options->grid.nz = 7;
-  options->particles.n = 7;
+  np = options->grid.nx * options->grid.ny * options->grid.nz;
+  options->particles.n = np;
   options->grid.Lx = 1.0;
   options->grid.Ly = 1.0;
   options->grid.Lz = 1.0;
@@ -110,6 +112,10 @@ static PetscErrorCode CreateMeshDM(DM *mesh, UserContext *user)
 static PetscErrorCode CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
 {
   PetscInt dim;
+  PetscInt bufsize=0;
+  PetscInt np;
+  MPI_Comm comm;
+  int      size;
 
   PetscFunctionBeginUser;
 
@@ -125,7 +131,14 @@ static PetscErrorCode CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
   PetscCall(DMSwarmRegisterPetscDatatypeField(*swarm,
                                               "density", 1, PETSC_REAL));
   PetscCall(DMSwarmFinalizeFieldRegister(*swarm));
-  PetscCall(DMSwarmSetLocalSizes(*swarm, user->particles.n, 0));
+  // Set the per-processor swarm size and buffer length for efficient resizing.
+  PetscCall(PetscObjectGetComm((PetscObject)*mesh, &comm));
+  MPI_Comm_size(comm, &size);
+  np = user->particles.n / size;
+  PetscCall(DMSwarmSetLocalSizes(*swarm, np, bufsize));
+  // Assign 1 particle per cell.
+  PetscCall(DMSwarmInsertPointsUsingCellDM(*swarm, DMSWARMPIC_LAYOUT_REGULAR,
+                                           1));
   PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
 
   PetscFunctionReturn(PETSC_SUCCESS);
