@@ -66,9 +66,54 @@ static PetscErrorCode ProcessOptions(UserContext *options)
 }
 
 
+static PetscErrorCode CreateMeshDM(DM *mesh, UserContext *user)
+{
+  PetscInt       nx=11;
+  PetscInt       ny=11;
+  PetscInt       nz=11;
+  DMBoundaryType xBC=DM_BOUNDARY_GHOSTED;
+  DMBoundaryType yBC=DM_BOUNDARY_GHOSTED;
+  DMBoundaryType zBC=DM_BOUNDARY_GHOSTED;
+  PetscInt       dof=2;
+  PetscInt       width=1;
+
+  PetscFunctionBeginUser;
+
+  PetscCall(DMDACreate3d(PETSC_COMM_WORLD, xBC, yBC, zBC, DMDA_STENCIL_BOX,
+                         nx, ny, nz, PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE,
+                         dof, width, NULL, NULL, NULL, mesh));
+  PetscCall(DMSetFromOptions(*mesh));
+  PetscCall(DMSetUp(*mesh));
+  PetscCall(DMSetApplicationContext(*mesh, user));
+  PetscCall(DMView(*mesh, PETSC_VIEWER_STDOUT_WORLD));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+static PetscErrorCode CreateSwarmDM(DM *swarm, DM *mesh)
+{
+  PetscInt dim;
+
+  PetscFunctionBeginUser;
+
+  PetscCall(DMCreate(PETSC_COMM_WORLD, swarm));
+  PetscCall(PetscObjectSetOptionsPrefix((PetscObject)(*swarm), "pic_"));
+  PetscCall(DMSetType(*swarm, DMSWARM));
+  PetscCall(DMGetDimension(*mesh, &dim));
+  PetscCall(DMSetDimension(*swarm, dim));
+  PetscCall(DMSwarmSetType(*swarm, DMSWARM_PIC));
+  PetscCall(DMSwarmSetCellDM(*swarm, *mesh));
+  PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 int main(int argc, char **args)
 {
   UserContext user;
+  DM          mesh, swarm;
 
   PetscFunctionBeginUser;
 
@@ -78,6 +123,12 @@ int main(int argc, char **args)
 
   // Assign parameter values from user arguments or defaults.
   PetscCall(ProcessOptions(&user));
+
+  // Set up discrete mesh.
+  PetscCall(CreateMeshDM(&mesh, &user));
+
+  // Set up particle swarm.
+  PetscCall(CreateSwarmDM(&swarm, &mesh));
 
   // Set initial particle positions and velocities.
 
