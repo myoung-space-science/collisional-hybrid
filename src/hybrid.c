@@ -120,6 +120,11 @@ static PetscErrorCode CreateSwarmDM(DM *swarm, DM *mesh)
   PetscCall(DMSetDimension(*swarm, dim));
   PetscCall(DMSwarmSetType(*swarm, DMSWARM_PIC));
   PetscCall(DMSwarmSetCellDM(*swarm, *mesh));
+  PetscCall(DMSwarmRegisterPetscDatatypeField(*swarm,
+                                              "potential", 1, PETSC_REAL));
+  PetscCall(DMSwarmRegisterPetscDatatypeField(*swarm,
+                                              "density", 1, PETSC_REAL));
+  PetscCall(DMSwarmFinalizeFieldRegister(*swarm));
   PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
 
   PetscFunctionReturn(PETSC_SUCCESS);
