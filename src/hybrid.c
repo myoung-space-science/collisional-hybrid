@@ -74,6 +74,7 @@ int main(int argc, char **args)
 
   // Initialize PETSc and MPI.
   PetscCall(PetscInitialize(&argc, &args, (char *)0, help));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n********** START **********\n\n"));
 
   // Assign parameter values from user arguments or defaults.
   PetscCall(ProcessOptions(&user));
@@ -105,6 +106,7 @@ int main(int argc, char **args)
     //  Output current time step
 
   // Finalize PETSc and MPI.
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n*********** END ***********\n"));
   PetscCall(PetscFinalize());
 
   return 0;
