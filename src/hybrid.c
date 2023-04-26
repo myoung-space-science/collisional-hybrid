@@ -88,9 +88,9 @@ CreateMeshDM(DM *mesh, UserContext *user)
   PetscInt       nx=user->grid.nx;
   PetscInt       ny=user->grid.ny;
   PetscInt       nz=user->grid.nz;
-  DMBoundaryType xBC=DM_BOUNDARY_GHOSTED;
-  DMBoundaryType yBC=DM_BOUNDARY_GHOSTED;
-  DMBoundaryType zBC=DM_BOUNDARY_GHOSTED;
+  DMBoundaryType xBC=DM_BOUNDARY_PERIODIC;
+  DMBoundaryType yBC=DM_BOUNDARY_PERIODIC;
+  DMBoundaryType zBC=DM_BOUNDARY_PERIODIC;
   PetscInt       dof=2;
   PetscInt       width=1;
 
