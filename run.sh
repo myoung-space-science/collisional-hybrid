@@ -120,6 +120,11 @@ fi
 dstdir=${rundir}/${outdir}
 mkdir -p ${dstdir}
 
+# Create a symlink to this run in the directory of runs.
+cd ${rundir}
+rm -f latest
+ln -s ${outdir} latest
+
 if [ ${verbose} == 1 ]; then
     vflag="-v"
 fi
@@ -144,9 +149,4 @@ else
         --outname ${outname} \
         ${extra} &> run.log
 fi
-
-# Create a symlink to this run in the directory of runs.
-cd ${rundir}
-rm -f latest
-ln -s ${outdir} latest
 
