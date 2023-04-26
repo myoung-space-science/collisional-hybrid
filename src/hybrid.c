@@ -218,6 +218,9 @@ InitializeParticles(DM *mesh, DM *swarm, UserContext *user, PetscInt n0pc)
   PetscScalar *coords;
   Species     *params;
   PetscInt    ip;
+  PetscMPIInt rank;
+  PetscRandom random;
+  PetscReal   dx, x, dy, y, dz, z;
 
   PetscFunctionBeginUser;
 
@@ -230,6 +233,13 @@ InitializeParticles(DM *mesh, DM *swarm, UserContext *user, PetscInt n0pc)
 
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(*swarm, &np));
+
+  // Create a random-number generator to nudge particle positions.
+  PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
+  PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &random));
+  PetscCall(PetscRandomSetInterval(random, -0.05, +0.05));
+  PetscCall(PetscRandomSetSeed(random, (unsigned long)rank));
+  PetscCall(PetscRandomSeed(random));
 
   // Get a representation of the particle coordinates.
   PetscCall(DMSwarmGetField(
@@ -248,9 +258,18 @@ InitializeParticles(DM *mesh, DM *swarm, UserContext *user, PetscInt n0pc)
     params[ip].q  = Q * user->pic.q;
     params[ip].m  = MP * user->pic.m;
     params[ip].nu = user->pic.nu;
-    params[ip].x  = coords[ip*NDIM + 0];
-    params[ip].y  = coords[ip*NDIM + 1];
-    params[ip].z  = coords[ip*NDIM + 2];
+    PetscCall(PetscRandomGetValueReal(random, &dx));
+    PetscCall(PetscRandomGetValueReal(random, &dy));
+    PetscCall(PetscRandomGetValueReal(random, &dz));
+    x  = coords[ip*NDIM + 0] + dx;
+    y  = coords[ip*NDIM + 1] + dy;
+    z  = coords[ip*NDIM + 2] + dz;
+    coords[ip*NDIM + 0] = x;
+    coords[ip*NDIM + 1] = y;
+    coords[ip*NDIM + 2] = z;
+    params[ip].x  = x;
+    params[ip].y  = y;
+    params[ip].z  = z;
     params[ip].vx = user->pic.vx;
     params[ip].vy = user->pic.vy;
     params[ip].vz = user->pic.vz;
@@ -267,6 +286,12 @@ InitializeParticles(DM *mesh, DM *swarm, UserContext *user, PetscInt n0pc)
             *swarm,
             DMSwarmPICField_coor, NULL, NULL,
             (void **)&coords));
+
+  // Destroy the random-number generator.
+  PetscCall(PetscRandomDestroy(&random));
+
+  // Update the swarm.
+  PetscCall(DMSwarmMigrate(*swarm, PETSC_TRUE));
 
   // Display information about the particle DM.
   PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
