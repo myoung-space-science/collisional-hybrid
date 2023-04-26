@@ -91,7 +91,7 @@ CreateMeshDM(DM *mesh, UserContext *user)
   DMBoundaryType xBC=DM_BOUNDARY_PERIODIC;
   DMBoundaryType yBC=DM_BOUNDARY_PERIODIC;
   DMBoundaryType zBC=DM_BOUNDARY_PERIODIC;
-  PetscInt       dof=2;
+  PetscInt       dof=5;
   PetscInt       width=1;
 
   PetscFunctionBeginUser;
@@ -114,7 +114,10 @@ CreateMeshDM(DM *mesh, UserContext *user)
             0.0, user->grid.Ly,
             0.0, user->grid.Lz));
   PetscCall(DMDASetFieldName(*mesh, 0, "density"));
-  PetscCall(DMDASetFieldName(*mesh, 1, "potential"));
+  PetscCall(DMDASetFieldName(*mesh, 1, "x flux"));
+  PetscCall(DMDASetFieldName(*mesh, 1, "y flux"));
+  PetscCall(DMDASetFieldName(*mesh, 1, "z flux"));
+  PetscCall(DMDASetFieldName(*mesh, 4, "potential"));
   PetscCall(DMSetApplicationContext(*mesh, user));
   PetscCall(DMView(*mesh, PETSC_VIEWER_STDOUT_WORLD));
 
