@@ -22,7 +22,7 @@ typedef struct {
   PetscInt np;   // number of particles
   PetscReal q;   // the charge of each particle / fundamental charge
   PetscReal m;   // the mass of each particle / proton mass
-  PetscReal nue; // the electron-collision frequency of each particle
+  PetscReal nu;  // the neutral-collision frequency of each particle
 } UserPIC;
 
 typedef struct {
@@ -33,7 +33,7 @@ typedef struct {
 typedef struct {
   PetscReal q;   // charge
   PetscReal m;   // mass
-  PetscReal nue; // frequency of collisions with electrons
+  PetscReal nu;  // frequency of collisions with neutral particles
   PetscReal x;   // x position
   PetscReal y;   // y position
   PetscReal z;   // z position
@@ -69,7 +69,7 @@ ProcessOptions(UserContext *options)
   options->grid.Lz = 1.0;
   options->pic.q = 1.0;
   options->pic.m = 1.0;
-  options->pic.nue = 1.0;
+  options->pic.nu = 1.0;
 
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-nx", &intArg, &found));
   if (found) {
@@ -107,9 +107,9 @@ ProcessOptions(UserContext *options)
   if (found) {
     options->pic.m = realArg;
   }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-nue", &realArg, &found));
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-nu", &realArg, &found));
   if (found) {
-    options->pic.nue = realArg;
+    options->pic.nu = realArg;
   }
 
   PetscFunctionReturn(PETSC_SUCCESS);
