@@ -213,7 +213,48 @@ InitializeParticles(DM *mesh, DM *swarm, UserContext *user, PetscInt n0pc)
 static PetscErrorCode
 CollectParticles(DM *mesh, DM *swarm, UserContext *user)
 {
+  PetscScalar *coords;
+  PetscInt    i, i0, ni, j, j0, nj, k, k0, nk;
+  PetscInt    np;
+
   PetscFunctionBeginUser;
+
+  // Get density Vec from mesh.
+
+  // Get array representation of density Vec.
+
+  // Same for flux components.
+
+  // Get the particle coordinates.
+  PetscCall(DMSwarmGetField(
+            *swarm,
+            DMSwarmPICField_coor, NULL, NULL,
+            (void **)&coords));
+
+  // Get the number of particles on this rank.
+  PetscCall(DMSwarmGetLocalSize(*swarm, &np));
+
+  // Loop over particle positions.
+
+    // Assign n[k][j][i] = 3D linear weight.
+
+    // Assign Gx[k][j][i] = 3D linear weight * vx.
+
+    // Assign Gy[k][j][i] = 3D linear weight * vy.
+
+    // Assign Gz[k][j][i] = 3D linear weight * vz.
+
+  // Restore the particle coordinates.
+  PetscCall(DMSwarmRestoreField(
+            *swarm,
+            DMSwarmPICField_coor, NULL, NULL,
+            (void **)&coords));
+
+  // Restore Vec array representations.
+
+  // Restore mesh Vec objects.
+
+  // Assemble Vec objects?
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
