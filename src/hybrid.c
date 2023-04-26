@@ -176,11 +176,11 @@ CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
 static PetscErrorCode
 InitializeParticles(DM *mesh, DM *swarm, UserContext *user, PetscInt n0pc)
 {
-  PetscInt np;
+  PetscInt    np;
   PetscScalar *coords;
-  PetscReal dx, dy, dz, x, y, z;
-  PetscInt i, j, k;
-  int      size;
+  PetscReal   dx, dy, dz, x, y, z;
+  PetscInt    i, j, k;
+  int         size;
 
   PetscFunctionBeginUser;
 
