@@ -25,6 +25,9 @@ typedef struct {
   PetscReal q;   // the charge of each particle / fundamental charge
   PetscReal m;   // the mass of each particle / proton mass
   PetscReal nu;  // the neutral-collision frequency of each particle
+  PetscReal vx;  // initial x velocity
+  PetscReal vy;  // initial y velocity
+  PetscReal vz;  // initial z velocity
 } UserPIC;
 
 typedef struct {
@@ -72,6 +75,9 @@ ProcessOptions(UserContext *options)
   options->pic.q = 1.0;
   options->pic.m = 1.0;
   options->pic.nu = 1.0;
+  options->pic.vx = 0.0;
+  options->pic.vy = 0.0;
+  options->pic.vz = 0.0;
 
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-nx", &intArg, &found));
   if (found) {
@@ -112,6 +118,18 @@ ProcessOptions(UserContext *options)
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-nu", &realArg, &found));
   if (found) {
     options->pic.nu = realArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vx", &realArg, &found));
+  if (found) {
+    options->pic.vx = realArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vy", &realArg, &found));
+  if (found) {
+    options->pic.vy = realArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vz", &realArg, &found));
+  if (found) {
+    options->pic.vz = realArg;
   }
 
   PetscFunctionReturn(PETSC_SUCCESS);
