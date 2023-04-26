@@ -113,6 +113,8 @@ CreateMeshDM(DM *mesh, UserContext *user)
             0.0, user->grid.Lx,
             0.0, user->grid.Ly,
             0.0, user->grid.Lz));
+  PetscCall(DMDASetFieldName(*mesh, 0, "density"));
+  PetscCall(DMDASetFieldName(*mesh, 1, "potential"));
   PetscCall(DMSetApplicationContext(*mesh, user));
   PetscCall(DMView(*mesh, PETSC_VIEWER_STDOUT_WORLD));
 
@@ -140,9 +142,11 @@ CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
   PetscCall(DMSwarmSetCellDM(*swarm, *mesh));
   PetscCall(DMSwarmInitializeFieldRegister(*swarm));
   PetscCall(DMSwarmRegisterPetscDatatypeField(
-            *swarm, "potential", 1, PETSC_REAL));
+            *swarm, "mass", 1, PETSC_REAL));
   PetscCall(DMSwarmRegisterPetscDatatypeField(
-            *swarm, "density", 1, PETSC_REAL));
+            *swarm, "charge", 1, PETSC_REAL));
+  PetscCall(DMSwarmRegisterPetscDatatypeField(
+            *swarm, "collision frequency", 1, PETSC_REAL));
   PetscCall(DMSwarmFinalizeFieldRegister(*swarm));
   // Set the per-processor swarm size and buffer length for efficient resizing.
   MPI_Comm_size(PETSC_COMM_WORLD, &size);
