@@ -10,17 +10,21 @@ static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 #define NDIM 3
 
 typedef struct {
-  PetscInt nx, ny, nz;
-  PetscReal Lx, Ly, Lz;
+  PetscInt nx;  // number of cells in x dimension
+  PetscInt ny;  // number of cells in y dimension
+  PetscInt nz;  // number of cells in z dimension
+  PetscReal Lx; // length of x dimension
+  PetscReal Ly; // length of y dimension
+  PetscReal Lz; // length of z dimension
 } UserMesh;
 
 typedef struct {
-  PetscInt np;
+  PetscInt np; // number of particles
 } UserPIC;
 
 typedef struct {
-  UserMesh grid;
-  UserPIC pic;
+  UserMesh grid; // grid information
+  UserPIC pic;   // particle information
 } UserContext;
 
 typedef struct {
