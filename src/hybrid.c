@@ -23,6 +23,18 @@ typedef struct {
   UserPIC pic;
 } UserContext;
 
+typedef struct {
+  PetscReal q;   // charge
+  PetscReal m;   // mass
+  PetscReal nue; // frequency of collisions with electrons
+  PetscReal x;   // x position
+  PetscReal y;   // y position
+  PetscReal z;   // z position
+  PetscReal vx;  // x velocity
+  PetscReal vy;  // y velocity
+  PetscReal vz;  // z velocity
+} Particle;
+
 
 static PetscErrorCode
 ProcessOptions(UserContext *options)
