@@ -139,6 +139,7 @@ CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
   PetscCall(DMSetDimension(*swarm, dim));
   PetscCall(DMSwarmSetType(*swarm, DMSWARM_PIC));
   PetscCall(DMSwarmSetCellDM(*swarm, *mesh));
+  PetscCall(DMSwarmInitializeFieldRegister(*swarm));
   PetscCall(DMSwarmRegisterPetscDatatypeField(
             *swarm, "potential", 1, PETSC_REAL));
   PetscCall(DMSwarmRegisterPetscDatatypeField(
