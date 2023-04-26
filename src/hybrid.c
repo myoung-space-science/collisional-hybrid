@@ -8,6 +8,8 @@ static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 
 
 #define NDIM 3
+#define Q 1.6022e-19  // fundamental charge in C
+#define MP 1.6726e-27 // proton mass in kg
 
 typedef struct {
   PetscInt nx;  // number of cells in x dimension
