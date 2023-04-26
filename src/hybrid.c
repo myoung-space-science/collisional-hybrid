@@ -203,6 +203,15 @@ InitializeParticles(DM *mesh, DM *swarm, UserContext *user, PetscInt n0pc)
 }
 
 
+static PetscErrorCode
+CollectParticles(DM *mesh, DM *swarm, UserContext *user)
+{
+  PetscFunctionBeginUser;
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 int main(int argc, char **args)
 {
   UserContext user;
@@ -232,6 +241,7 @@ int main(int argc, char **args)
   PetscCall(InitializeParticles(&mesh, &swarm, &user, 3));
 
   // Compute initial density and electric field.
+  PetscCall(CollectParticles(&mesh, &swarm, &user));
 
   // Output initial conditions.
 
