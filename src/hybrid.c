@@ -37,7 +37,7 @@ typedef struct {
   PetscReal vx;  // x velocity
   PetscReal vy;  // y velocity
   PetscReal vz;  // z velocity
-} Particle;
+} Species;
 
 
 static PetscErrorCode
