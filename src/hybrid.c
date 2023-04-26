@@ -15,7 +15,7 @@ typedef struct {
 } UserMesh;
 
 typedef struct {
-  PetscInt n;
+  PetscInt np;
 } UserPIC;
 
 typedef struct {
@@ -44,7 +44,7 @@ ProcessOptions(UserContext *options)
   options->grid.ny = 7;
   options->grid.nz = 7;
   np = options->grid.nx * options->grid.ny * options->grid.nz;
-  options->pic.n = np;
+  options->pic.np = np;
   options->grid.Lx = 1.0;
   options->grid.Ly = 1.0;
   options->grid.Lz = 1.0;
@@ -75,7 +75,7 @@ ProcessOptions(UserContext *options)
   }
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-np", &intArg, &found));
   if (found) {
-    options->pic.n = intArg;
+    options->pic.np = intArg;
   }
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -153,7 +153,7 @@ CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
   PetscCall(DMSwarmFinalizeFieldRegister(*swarm));
   // Set the per-processor swarm size and buffer length for efficient resizing.
   MPI_Comm_size(PETSC_COMM_WORLD, &size);
-  np = user->pic.n / size;
+  np = user->pic.np / size;
   PetscCall(DMSwarmSetLocalSizes(*swarm, np, bufsize));
   PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
 
@@ -177,7 +177,7 @@ InitializeParticles(DM *mesh, DM *swarm, UserContext *user, PetscInt n0pc)
   PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
 
   PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &size));
-  np = (PetscInt)PetscCbrtReal((PetscReal)(user->pic.n / size));
+  np = (PetscInt)PetscCbrtReal((PetscReal)(user->pic.np / size));
   dx = user->grid.Lx / PetscMax(1, np-1);
   dy = user->grid.Ly / PetscMax(1, np-1);
   dz = user->grid.Lz / PetscMax(1, np-1);
