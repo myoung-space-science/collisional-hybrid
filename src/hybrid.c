@@ -160,12 +160,8 @@ CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
   PetscCall(DMSwarmSetType(*swarm, DMSWARM_PIC));
   PetscCall(DMSwarmSetCellDM(*swarm, *mesh));
   PetscCall(DMSwarmInitializeFieldRegister(*swarm));
-  PetscCall(DMSwarmRegisterPetscDatatypeField(
-            *swarm, "mass", 1, PETSC_REAL));
-  PetscCall(DMSwarmRegisterPetscDatatypeField(
-            *swarm, "charge", 1, PETSC_REAL));
-  PetscCall(DMSwarmRegisterPetscDatatypeField(
-            *swarm, "collision frequency", 1, PETSC_REAL));
+  PetscCall(DMSwarmRegisterUserStructField(
+            *swarm, "Species", sizeof(Species)));
   PetscCall(DMSwarmFinalizeFieldRegister(*swarm));
   // Set the per-processor swarm size and buffer length for efficient resizing.
   MPI_Comm_size(PETSC_COMM_WORLD, &size);
