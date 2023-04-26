@@ -7,6 +7,12 @@ set -e
 # Declare the name of the target program.
 prog=hybrid
 
+# Declare project-related directories.
+rootdir=/home/matthew/sandbox/dmswarm-hybrid
+rundir=${rootdir}/runs
+srcdir=${rootdir}/src
+bindir=${rootdir}/bin
+
 # Set option defaults.
 verbose=0
 np=2
@@ -49,7 +55,7 @@ ${textbf}DESCRIPTION${textnm}
         ${textbf}-n${textnm}, ${textbf}--nproc${textnm} ${startul}N${endul}
                 Number of processors to use (default: ${np}).
         ${textbf}-o${textnm}, ${textbf}--outdir${textnm} ${startul}DIR${endul}
-                Name of the output directory.
+                Name of the output directory within ${rundir}.
                 The default name is generated from the current date and time.
         ${textbf}--outname${textnm} ${startul}F${endul}
                 Name of the file, without extension, that will contain vectors 
@@ -68,6 +74,7 @@ report_bad_arg()
     printf "\nUnrecognized command: ${1}\n\n"
 }
 
+# Read command-line arguments.
 while [ "${1}" != "" ]; do
     case "${1}" in
         -n | --nproc )
@@ -99,31 +106,32 @@ while [ "${1}" != "" ]; do
     shift
 done
 
-# --- End CLI template ---
-
+# Set the output file name.
 outfile="${outname}.${outtype}"
 
-rootdir=/home/matthew/sandbox/dmswarm-hybrid
-srcdir=${rootdir}/src
-bindir=${rootdir}/bin
+# Set the local name of the output directory.
 if [ -z "${outdir}" ]; then
-    rundir=${rootdir}/runs/$(date +'%Y-%m-%d-%H%M%S')
-    outpath=${outfile}
+    outdir=$(date +'%Y-%m-%d-%H%M%S')
 else
-    rundir=$(readlink -f "${outdir}")
-    outpath=${outdir}/${outfile}
+    outdir=$(readlink -f "${outdir}")
 fi
 
-mkdir -p ${rundir}
+# Create the full output directory.
+dstdir=${rundir}/${outdir}
+mkdir -p ${dstdir}
 
 if [ ${verbose} == 1 ]; then
     vflag="-v"
 fi
 
+# Build the executable in the source directory.
 cd ${srcdir}
 make ${prog}
-cd ${rundir}
 
+# Move to the output directory.
+cd ${dstdir}
+
+# Run the program.
 if [ ${debug} == 1 ]; then
     mpiexec -n ${np} ${bindir}/${prog} \
         -debug_terminal "gnome-terminal --" \
@@ -136,4 +144,9 @@ else
         --outname ${outname} \
         ${extra} &> run.log
 fi
+
+# Create a symlink to this run in the directory of runs.
+cd ${rundir}
+rm -f latest
+ln -s ${outdir} latest
 
