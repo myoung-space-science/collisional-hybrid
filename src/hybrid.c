@@ -126,7 +126,6 @@ CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
   PetscInt dim;
   PetscInt bufsize=0;
   PetscInt np;
-  MPI_Comm comm;
   int      size;
 
   PetscFunctionBeginUser;
@@ -146,8 +145,7 @@ CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
             *swarm, "density", 1, PETSC_REAL));
   PetscCall(DMSwarmFinalizeFieldRegister(*swarm));
   // Set the per-processor swarm size and buffer length for efficient resizing.
-  PetscCall(PetscObjectGetComm((PetscObject)*mesh, &comm));
-  MPI_Comm_size(comm, &size);
+  MPI_Comm_size(PETSC_COMM_WORLD, &size);
   np = user->particles.n / size;
   PetscCall(DMSwarmSetLocalSizes(*swarm, np, bufsize));
   PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
