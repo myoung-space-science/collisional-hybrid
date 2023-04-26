@@ -19,7 +19,10 @@ typedef struct {
 } UserMesh;
 
 typedef struct {
-  PetscInt np; // number of particles
+  PetscInt np;   // number of particles
+  PetscReal q;   // the charge of each particle / fundamental charge
+  PetscReal m;   // the mass of each particle / proton mass
+  PetscReal nue; // the electron-collision frequency of each particle
 } UserPIC;
 
 typedef struct {
@@ -64,6 +67,9 @@ ProcessOptions(UserContext *options)
   options->grid.Lx = 1.0;
   options->grid.Ly = 1.0;
   options->grid.Lz = 1.0;
+  options->pic.q = 1.0;
+  options->pic.m = 1.0;
+  options->pic.nue = 1.0;
 
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-nx", &intArg, &found));
   if (found) {
@@ -92,6 +98,18 @@ ProcessOptions(UserContext *options)
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-np", &intArg, &found));
   if (found) {
     options->pic.np = intArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-q", &realArg, &found));
+  if (found) {
+    options->pic.q = realArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-m", &realArg, &found));
+  if (found) {
+    options->pic.m = realArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-nue", &realArg, &found));
+  if (found) {
+    options->pic.nue = realArg;
   }
 
   PetscFunctionReturn(PETSC_SUCCESS);
