@@ -126,7 +126,7 @@ fi
 
 # Build the executable in the source directory.
 cd ${srcdir}
-make ${prog}
+make ${prog} &> ${dstdir}/build.log
 
 # Move to the output directory.
 cd ${dstdir}
