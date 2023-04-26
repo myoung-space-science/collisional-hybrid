@@ -212,6 +212,70 @@ CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
 
 
 static PetscErrorCode
+InitializeSwarmCoordinates(DM *swarm, UserContext *user)
+{
+  PetscInt    np;
+  PetscScalar *coords;
+  PetscInt    ip;
+  PetscMPIInt rank;
+  PetscRandom rx, ry, rz;
+  PetscReal   dx, x, dy, y, dz, z;
+
+  PetscFunctionBeginUser;
+
+  // Create a random-number generator for each coordinate.
+  PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
+  PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &rx));
+  PetscCall(PetscRandomSetInterval(rx, 0.0, user->grid.Lx));
+  PetscCall(PetscRandomSetSeed(rx, NDIM*(unsigned long)rank + 0));
+  PetscCall(PetscRandomSeed(rx));
+  PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &ry));
+  PetscCall(PetscRandomSetInterval(ry, 0.0, user->grid.Ly));
+  PetscCall(PetscRandomSetSeed(ry, NDIM*(unsigned long)rank + 1));
+  PetscCall(PetscRandomSeed(ry));
+  PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &rz));
+  PetscCall(PetscRandomSetInterval(rz, 0.0, user->grid.Lz));
+  PetscCall(PetscRandomSetSeed(rz, NDIM*(unsigned long)rank + 2));
+  PetscCall(PetscRandomSeed(rz));
+
+  // Get a representation of the particle coordinates.
+  PetscCall(DMSwarmGetField(
+            *swarm,
+            DMSwarmPICField_coor, NULL, NULL,
+            (void **)&coords));
+
+  // Get the number of particles on this rank.
+  PetscCall(DMSwarmGetLocalSize(*swarm, &np));
+
+  // Loop over particles and assign positions.
+  for (ip=0; ip<np; ip++) {
+    PetscCall(PetscRandomGetValueReal(rx, &x));
+    PetscCall(PetscRandomGetValueReal(ry, &y));
+    PetscCall(PetscRandomGetValueReal(rz, &z));
+    coords[ip*NDIM + 0] = x;
+    coords[ip*NDIM + 1] = y;
+    coords[ip*NDIM + 2] = z;
+  }
+
+  // Restore the coordinates array.
+  PetscCall(DMSwarmRestoreField(
+            *swarm,
+            DMSwarmPICField_coor, NULL, NULL,
+            (void **)&coords));
+
+  // Destroy the random-number generators.
+  PetscCall(PetscRandomDestroy(&rx));
+  PetscCall(PetscRandomDestroy(&ry));
+  PetscCall(PetscRandomDestroy(&rz));
+
+  // Update the swarm.
+  PetscCall(DMSwarmMigrate(*swarm, PETSC_TRUE));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+static PetscErrorCode
 InitializeParticles(DM *mesh, DM *swarm, UserContext *user, PetscInt n0pc)
 {
   PetscInt    np;
@@ -224,22 +288,11 @@ InitializeParticles(DM *mesh, DM *swarm, UserContext *user, PetscInt n0pc)
 
   PetscFunctionBeginUser;
 
-  // Place an equal number of particles in each cell.
-  PetscCall(DMSwarmInsertPointsUsingCellDM(
-            *swarm, DMSWARMPIC_LAYOUT_REGULAR, n0pc));
-
-  // Update the swarm.
-  PetscCall(DMSwarmMigrate(*swarm, PETSC_TRUE));
+  // Initialize coordinates in the particle DM.
+  PetscCall(InitializeSwarmCoordinates(&swarm, &user));
 
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(*swarm, &np));
-
-  // Create a random-number generator to nudge particle positions.
-  PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
-  PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &random));
-  PetscCall(PetscRandomSetInterval(random, -0.05, +0.05));
-  PetscCall(PetscRandomSetSeed(random, (unsigned long)rank));
-  PetscCall(PetscRandomSeed(random));
 
   // Get a representation of the particle coordinates.
   PetscCall(DMSwarmGetField(
@@ -258,18 +311,9 @@ InitializeParticles(DM *mesh, DM *swarm, UserContext *user, PetscInt n0pc)
     params[ip].q  = Q * user->pic.q;
     params[ip].m  = MP * user->pic.m;
     params[ip].nu = user->pic.nu;
-    PetscCall(PetscRandomGetValueReal(random, &dx));
-    PetscCall(PetscRandomGetValueReal(random, &dy));
-    PetscCall(PetscRandomGetValueReal(random, &dz));
-    x  = coords[ip*NDIM + 0] + dx;
-    y  = coords[ip*NDIM + 1] + dy;
-    z  = coords[ip*NDIM + 2] + dz;
-    coords[ip*NDIM + 0] = x;
-    coords[ip*NDIM + 1] = y;
-    coords[ip*NDIM + 2] = z;
-    params[ip].x  = x;
-    params[ip].y  = y;
-    params[ip].z  = z;
+    params[ip].x  = coords[ip*NDIM + 0];
+    params[ip].y  = coords[ip*NDIM + 1];
+    params[ip].z  = coords[ip*NDIM + 2];
     params[ip].vx = user->pic.vx;
     params[ip].vy = user->pic.vy;
     params[ip].vz = user->pic.vz;
@@ -286,12 +330,6 @@ InitializeParticles(DM *mesh, DM *swarm, UserContext *user, PetscInt n0pc)
             *swarm,
             DMSwarmPICField_coor, NULL, NULL,
             (void **)&coords));
-
-  // Destroy the random-number generator.
-  PetscCall(PetscRandomDestroy(&random));
-
-  // Update the swarm.
-  PetscCall(DMSwarmMigrate(*swarm, PETSC_TRUE));
 
   // Display information about the particle DM.
   PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
