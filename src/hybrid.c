@@ -216,44 +216,59 @@ InitializeParticles(DM *mesh, DM *swarm, UserContext *user, PetscInt n0pc)
 {
   PetscInt    np;
   PetscScalar *coords;
-  PetscReal   dx, dy, dz, x, y, z;
-  PetscInt    i, j, k;
-  int         size;
+  Species     *params;
+  PetscInt    ip;
 
   PetscFunctionBeginUser;
 
+  // Place an equal number of particles in each cell.
   PetscCall(DMSwarmInsertPointsUsingCellDM(
             *swarm, DMSWARMPIC_LAYOUT_REGULAR, n0pc));
-  PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
 
-  PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &size));
-  np = (PetscInt)PetscCbrtReal((PetscReal)(user->pic.np / size));
-  dx = user->grid.Lx / PetscMax(1, np-1);
-  dy = user->grid.Ly / PetscMax(1, np-1);
-  dz = user->grid.Lz / PetscMax(1, np-1);
+  // Update the swarm.
+  PetscCall(DMSwarmMigrate(*swarm, PETSC_TRUE));
+
+  // Get the number of particles on this rank.
+  PetscCall(DMSwarmGetLocalSize(*swarm, &np));
+
+  // Get a representation of the particle coordinates.
   PetscCall(DMSwarmGetField(
             *swarm,
             DMSwarmPICField_coor, NULL, NULL,
             (void **)&coords));
-  x = 0.0;
-  for (i=0; i<np; ++i, x += dx) {
-    y = 0.0;
-    for (j=0; j<np; ++j, y += dy) {
-      z = 0.0;
-      for (k=0; k<np; ++k, z += dz) {
-        const PetscInt p = (k*np + j)*np + i;
-        coords[p*NDIM + 0] = x;
-        coords[p*NDIM + 1] = y;
-        coords[p*NDIM + 2] = z;
-      }
-    }
+
+  // Get a representation of the particle parameters.
+  PetscCall(DMSwarmGetField(
+            *swarm,
+            "Species", NULL, NULL,
+            (void **)&params));
+
+  // Loop over particles and assign parameter values.
+  for (ip=0; ip<np; ip++) {
+    params[ip].q  = Q * user->pic.q;
+    params[ip].m  = MP * user->pic.m;
+    params[ip].nu = user->pic.nu;
+    params[ip].x  = coords[ip*NDIM + 0];
+    params[ip].y  = coords[ip*NDIM + 1];
+    params[ip].z  = coords[ip*NDIM + 2];
+    params[ip].vx = user->pic.vx;
+    params[ip].vy = user->pic.vy;
+    params[ip].vz = user->pic.vz;
   }
+
+  // Restore the parameters array.
+  PetscCall(DMSwarmRestoreField(
+            *swarm,
+            "Species", NULL, NULL,
+            (void **)&params));
+
+  // Restore the coordinates array.
   PetscCall(DMSwarmRestoreField(
             *swarm,
             DMSwarmPICField_coor, NULL, NULL,
             (void **)&coords));
-  PetscCall(DMSwarmMigrate(*swarm, PETSC_TRUE));
 
+  // Display information about the particle DM.
   PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
 
   PetscFunctionReturn(PETSC_SUCCESS);
