@@ -402,7 +402,7 @@ CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
   PetscInt    dim;
   PetscInt    i0, j0, k0;
   PetscReal   x, y, z, dx, dy, dz;
-  Species     *params, current;
+  Species     *particles, particle;
   PetscInt    ip, np;
   PetscInt    ixl, ixh, iyl, iyh, izl, izh;
   PetscReal   wxl, wxh, wyl, wyh, wzl, wzh;
@@ -424,7 +424,7 @@ CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
   PetscCall(DMSwarmGetField(
             *swarm,
             "Species", NULL, NULL,
-            (void **)&params));
+            (void **)&particles));
 
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(*swarm, &np));
@@ -441,10 +441,10 @@ CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
   // Loop over particles.
   for (ip=0; ip<np; ip++) {
     // Get the current particle's parameters.
-    current = params[ip];
-    x = current.x / dx;
-    y = current.y / dy;
-    z = current.z / dz;
+    particle = particles[ip];
+    x = particle.x / dx;
+    y = particle.y / dy;
+    z = particle.z / dz;
     // Compute the x-dimension neighbors and corresponding weights.
     ixl = (PetscInt)x;
     ixh = ixl+1;
@@ -479,9 +479,9 @@ CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
     array[izh][iyl][ixl].n += hll;
     array[izl][iyl][ixl].n += lll;
     // Assign flux values (first moments wrt velocity).
-    v[0] = current.vx;
-    v[1] = current.vy;
-    v[2] = current.vz;
+    v[0] = particle.vx;
+    v[1] = particle.vy;
+    v[2] = particle.vz;
     for (dim=0; dim<NDIM; dim++) {
       array[izh][iyh][ixh].flux[dim] += v[dim]*hhh;
       array[izl][iyh][ixh].flux[dim] += v[dim]*lhh;
@@ -501,7 +501,7 @@ CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
   PetscCall(DMSwarmRestoreField(
             *swarm,
             "Species", NULL, NULL,
-            (void **)&params));
+            (void **)&particles));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
