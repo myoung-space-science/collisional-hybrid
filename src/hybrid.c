@@ -172,7 +172,7 @@ ProcessOptions(UserContext *options)
 
 
 static PetscErrorCode
-CreateMeshDM(DM *mesh, Context *ctx)
+CreateGridDM(DM *grid, Context *ctx)
 {
   PetscInt       nx=(ctx->user.grid.nx > 0 ? ctx->user.grid.nx : 7);
   PetscInt       ny=(ctx->user.grid.ny > 0 ? ctx->user.grid.ny : 7);
@@ -193,14 +193,14 @@ CreateMeshDM(DM *mesh, Context *ctx)
             PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE,
             dof, width,
             NULL, NULL, NULL,
-            mesh));
-  PetscCall(DMDASetElementType(*mesh, DMDA_ELEMENT_Q1));
-  PetscCall(DMSetFromOptions(*mesh));
-  PetscCall(DMSetUp(*mesh));
+            grid));
+  PetscCall(DMDASetElementType(*grid, DMDA_ELEMENT_Q1));
+  PetscCall(DMSetFromOptions(*grid));
+  PetscCall(DMSetUp(*grid));
   // Coordinate values of nx, ny, and nz passed via -n{x,y,z} or
   // -da_grid_{x,y,z}. Note that this gives precedence to the latter.
   PetscCall(DMDAGetInfo(
-            *mesh, NULL,
+            *grid, NULL,
             &nx, &ny, &nz,
             NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
   if (ctx->user.grid.nx == -1) {
@@ -213,24 +213,24 @@ CreateMeshDM(DM *mesh, Context *ctx)
     ctx->user.grid.nz = nz;
   }
   PetscCall(DMDASetUniformCoordinates(
-            *mesh,
+            *grid,
             0.0, ctx->user.grid.Lx,
             0.0, ctx->user.grid.Ly,
             0.0, ctx->user.grid.Lz));
-  PetscCall(DMDASetFieldName(*mesh, 0, "density"));
-  PetscCall(DMDASetFieldName(*mesh, 1, "x flux"));
-  PetscCall(DMDASetFieldName(*mesh, 2, "y flux"));
-  PetscCall(DMDASetFieldName(*mesh, 3, "z flux"));
-  PetscCall(DMDASetFieldName(*mesh, 4, "potential"));
-  PetscCall(DMSetApplicationContext(*mesh, &ctx->user));
-  PetscCall(DMView(*mesh, PETSC_VIEWER_STDOUT_WORLD));
+  PetscCall(DMDASetFieldName(*grid, 0, "density"));
+  PetscCall(DMDASetFieldName(*grid, 1, "x flux"));
+  PetscCall(DMDASetFieldName(*grid, 2, "y flux"));
+  PetscCall(DMDASetFieldName(*grid, 3, "z flux"));
+  PetscCall(DMDASetFieldName(*grid, 4, "potential"));
+  PetscCall(DMSetApplicationContext(*grid, &ctx->user));
+  PetscCall(DMView(*grid, PETSC_VIEWER_STDOUT_WORLD));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 
 static PetscErrorCode
-CreateSwarmDM(DM *swarm, DM *mesh, Context *ctx)
+CreateSwarmDM(DM *swarm, DM *grid, Context *ctx)
 {
   PetscInt dim;
   PetscInt bufsize=0;
@@ -242,10 +242,10 @@ CreateSwarmDM(DM *swarm, DM *mesh, Context *ctx)
   PetscCall(PetscObjectSetOptionsPrefix((PetscObject)(*swarm), "pic_"));
   PetscCall(DMSetType(*swarm, DMSWARM));
   PetscCall(PetscObjectSetName((PetscObject)*swarm, "Ions"));
-  PetscCall(DMGetDimension(*mesh, &dim));
+  PetscCall(DMGetDimension(*grid, &dim));
   PetscCall(DMSetDimension(*swarm, dim));
   PetscCall(DMSwarmSetType(*swarm, DMSWARM_PIC));
-  PetscCall(DMSwarmSetCellDM(*swarm, *mesh));
+  PetscCall(DMSwarmSetCellDM(*swarm, *grid));
   PetscCall(DMSwarmInitializeFieldRegister(*swarm));
   PetscCall(DMSwarmRegisterUserStructField(
             *swarm, "Species", sizeof(Species)));
@@ -390,9 +390,9 @@ InitializeParticles(DM *swarm, Context *ctx)
 
 
 static PetscErrorCode
-CollectParticles(DM *swarm, Context *ctx, Vec meshvec)
+CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
 {
-  DM          mesh;
+  DM          grid;
   PetscReal   ****array;
   PetscInt    dim;
   PetscInt    i0, j0, k0;
@@ -406,14 +406,14 @@ CollectParticles(DM *swarm, Context *ctx, Vec meshvec)
 
   PetscFunctionBeginUser;
 
-  // Get the mesh DM from the swarm DM.
-  PetscCall(DMSwarmGetCellDM(*swarm, &mesh));
+  // Get the grid DM from the swarm DM.
+  PetscCall(DMSwarmGetCellDM(*swarm, &grid));
 
   // Make sure the local grid vector has zeroes everywhere.
-  PetscCall(VecZeroEntries(meshvec));
+  PetscCall(VecZeroEntries(gridvec));
 
   // Get a 4-D array corresponding to the local grid quantities.
-  PetscCall(DMDAVecGetArrayDOF(mesh, meshvec, &array));
+  PetscCall(DMDAVecGetArrayDOF(grid, gridvec, &array));
 
   // Get a representation of the particle parameters.
   PetscCall(DMSwarmGetField(
@@ -424,9 +424,9 @@ CollectParticles(DM *swarm, Context *ctx, Vec meshvec)
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(*swarm, &np));
 
-  // Compute mesh grid spacing.
+  // Compute grid grid spacing.
   PetscCall(DMDAGetInfo(
-            mesh, NULL,
+            grid, NULL,
             &i0, &j0, &k0,
             NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
   dx = ctx->user.grid.Lx / (PetscReal)i0;
@@ -490,7 +490,7 @@ CollectParticles(DM *swarm, Context *ctx, Vec meshvec)
   }
 
   // Restore the local grid array.
-  PetscCall(DMDAVecRestoreArrayDOF(mesh, meshvec, &array));
+  PetscCall(DMDAVecRestoreArrayDOF(grid, gridvec, &array));
 
   // Restore the parameters array.
   PetscCall(DMSwarmRestoreField(
@@ -507,7 +507,7 @@ int main(int argc, char **args)
   UserContext user;
   MPIContext  mpi;
   Context     ctx;
-  DM          mesh, swarm;
+  DM          grid, swarm;
   KSP         ksp;
   PetscMPIInt rank, size;
   Vec         gvec, lvec;
@@ -528,33 +528,33 @@ int main(int argc, char **args)
   PetscCall(ProcessOptions(&user));
   ctx.user = user;
 
-  // Set up discrete mesh.
-  PetscCall(CreateMeshDM(&mesh, &ctx));
+  // Set up discrete grid.
+  PetscCall(CreateGridDM(&grid, &ctx));
 
   // Set up particle swarm.
-  PetscCall(CreateSwarmDM(&swarm, &mesh, &ctx));
+  PetscCall(CreateSwarmDM(&swarm, &grid, &ctx));
 
   // Set up the linear-solver context.
   PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
-  PetscCall(KSPSetDM(ksp, mesh));
+  PetscCall(KSPSetDM(ksp, grid));
 
   // Set initial particle positions and velocities.
   PetscCall(InitializeParticles(&swarm, &ctx));
 
   // Compute initial density and flux.
-  PetscCall(DMCreateGlobalVector(mesh, &gvec));
+  PetscCall(DMCreateGlobalVector(grid, &gvec));
   PetscCall(VecZeroEntries(gvec));
-  PetscCall(DMGetLocalVector(mesh, &lvec));
-  PetscCall(DMGlobalToLocalBegin(mesh, gvec, INSERT_VALUES, lvec));
-  PetscCall(DMGlobalToLocalEnd(mesh, gvec, INSERT_VALUES, lvec));
+  PetscCall(DMGetLocalVector(grid, &lvec));
+  PetscCall(DMGlobalToLocalBegin(grid, gvec, INSERT_VALUES, lvec));
+  PetscCall(DMGlobalToLocalEnd(grid, gvec, INSERT_VALUES, lvec));
   PetscCall(CollectParticles(&swarm, &ctx, lvec));
-  PetscCall(DMLocalToGlobalBegin(mesh, lvec, ADD_VALUES, gvec));
-  PetscCall(DMLocalToGlobalEnd(mesh, lvec, ADD_VALUES, gvec));
-  PetscCall(DMRestoreLocalVector(mesh, &lvec));
+  PetscCall(DMLocalToGlobalBegin(grid, lvec, ADD_VALUES, gvec));
+  PetscCall(DMLocalToGlobalEnd(grid, lvec, ADD_VALUES, gvec));
+  PetscCall(DMRestoreLocalVector(grid, &lvec));
 
   // [DEV] View the global grid vector.
   PetscCall(PetscViewerHDF5Open(
-            PETSC_COMM_WORLD, "mesh.hdf", FILE_MODE_WRITE, &viewer));
+            PETSC_COMM_WORLD, "grid.hdf", FILE_MODE_WRITE, &viewer));
   PetscCall(VecView(gvec, viewer));
 
   // Compute initial electric field.
@@ -584,7 +584,7 @@ int main(int argc, char **args)
     // Output current time step
 
   // Free memory.
-  PetscCall(DMDestroy(&mesh));
+  PetscCall(DMDestroy(&grid));
   PetscCall(DMDestroy(&swarm));
   PetscCall(VecDestroy(&gvec));
   PetscCall(PetscViewerDestroy(&viewer));
