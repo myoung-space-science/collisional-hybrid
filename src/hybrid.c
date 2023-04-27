@@ -50,6 +50,16 @@ typedef struct {
   PetscReal vz;  // z velocity
 } Species;
 
+typedef struct {
+  PetscMPIInt rank;
+  PetscMPIInt size;
+} MPIContext;
+
+typedef struct {
+  UserContext user;
+  MPIContext  mpi;
+} Context;
+
 
 static PetscErrorCode
 ProcessOptions(UserContext *options)
@@ -162,11 +172,11 @@ ProcessOptions(UserContext *options)
 
 
 static PetscErrorCode
-CreateMeshDM(DM *mesh, UserContext *user)
+CreateMeshDM(DM *mesh, Context *ctx)
 {
-  PetscInt       nx=(user->grid.nx > 0 ? user->grid.nx : 7);
-  PetscInt       ny=(user->grid.ny > 0 ? user->grid.ny : 7);
-  PetscInt       nz=(user->grid.nz > 0 ? user->grid.nz : 7);
+  PetscInt       nx=(ctx->user.grid.nx > 0 ? ctx->user.grid.nx : 7);
+  PetscInt       ny=(ctx->user.grid.ny > 0 ? ctx->user.grid.ny : 7);
+  PetscInt       nz=(ctx->user.grid.nz > 0 ? ctx->user.grid.nz : 7);
   DMBoundaryType xBC=DM_BOUNDARY_PERIODIC;
   DMBoundaryType yBC=DM_BOUNDARY_PERIODIC;
   DMBoundaryType zBC=DM_BOUNDARY_PERIODIC;
@@ -193,26 +203,26 @@ CreateMeshDM(DM *mesh, UserContext *user)
             *mesh, NULL,
             &nx, &ny, &nz,
             NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
-  if (user->grid.nx == -1) {
-    user->grid.nx = nx;
+  if (ctx->user.grid.nx == -1) {
+    ctx->user.grid.nx = nx;
   }
-  if (user->grid.ny == -1) {
-    user->grid.ny = ny;
+  if (ctx->user.grid.ny == -1) {
+    ctx->user.grid.ny = ny;
   }
-  if (user->grid.nz == -1) {
-    user->grid.nz = nz;
+  if (ctx->user.grid.nz == -1) {
+    ctx->user.grid.nz = nz;
   }
   PetscCall(DMDASetUniformCoordinates(
             *mesh,
-            0.0, user->grid.Lx,
-            0.0, user->grid.Ly,
-            0.0, user->grid.Lz));
+            0.0, ctx->user.grid.Lx,
+            0.0, ctx->user.grid.Ly,
+            0.0, ctx->user.grid.Lz));
   PetscCall(DMDASetFieldName(*mesh, 0, "density"));
   PetscCall(DMDASetFieldName(*mesh, 1, "x flux"));
   PetscCall(DMDASetFieldName(*mesh, 1, "y flux"));
   PetscCall(DMDASetFieldName(*mesh, 1, "z flux"));
   PetscCall(DMDASetFieldName(*mesh, 4, "potential"));
-  PetscCall(DMSetApplicationContext(*mesh, user));
+  PetscCall(DMSetApplicationContext(*mesh, &ctx->user));
   PetscCall(DMView(*mesh, PETSC_VIEWER_STDOUT_WORLD));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -220,12 +230,11 @@ CreateMeshDM(DM *mesh, UserContext *user)
 
 
 static PetscErrorCode
-CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
+CreateSwarmDM(DM *swarm, DM *mesh, Context *ctx)
 {
   PetscInt dim;
   PetscInt bufsize=0;
   PetscInt np;
-  int      size;
 
   PetscFunctionBeginUser;
 
@@ -242,8 +251,7 @@ CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
             *swarm, "Species", sizeof(Species)));
   PetscCall(DMSwarmFinalizeFieldRegister(*swarm));
   // Set the per-processor swarm size and buffer length for efficient resizing.
-  MPI_Comm_size(PETSC_COMM_WORLD, &size);
-  np = user->pic.np / size;
+  np = ctx->user.pic.np / ctx->mpi.size;
   PetscCall(DMSwarmSetLocalSizes(*swarm, np, bufsize));
   PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
 
@@ -252,7 +260,7 @@ CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
 
 
 static PetscErrorCode
-InitializeSwarmCoordinates(DM *swarm, UserContext *user)
+InitializeSwarmCoordinates(DM *swarm, Context *ctx)
 {
   PetscInt    np;
   PetscScalar *coords;
@@ -322,7 +330,7 @@ InitializeSwarmCoordinates(DM *swarm, UserContext *user)
 
 
 static PetscErrorCode
-InitializeParticles(DM *swarm, UserContext *user)
+InitializeParticles(DM *swarm, Context *ctx)
 {
   PetscInt    np;
   PetscScalar *coords;
@@ -332,7 +340,7 @@ InitializeParticles(DM *swarm, UserContext *user)
   PetscFunctionBeginUser;
 
   // Initialize coordinates in the particle DM.
-  PetscCall(InitializeSwarmCoordinates(swarm, user));
+  PetscCall(InitializeSwarmCoordinates(swarm, &ctx->user));
 
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(*swarm, &np));
@@ -351,15 +359,15 @@ InitializeParticles(DM *swarm, UserContext *user)
 
   // Loop over particles and assign parameter values.
   for (ip=0; ip<np; ip++) {
-    params[ip].q  = Q * user->pic.q;
-    params[ip].m  = MP * user->pic.m;
-    params[ip].nu = user->pic.nu;
+    params[ip].q  = Q * ctx->user.pic.q;
+    params[ip].m  = MP * ctx->user.pic.m;
+    params[ip].nu = ctx->user.pic.nu;
     params[ip].x  = coords[ip*NDIM + 0];
     params[ip].y  = coords[ip*NDIM + 1];
     params[ip].z  = coords[ip*NDIM + 2];
-    params[ip].vx = user->pic.vx;
-    params[ip].vy = user->pic.vy;
-    params[ip].vz = user->pic.vz;
+    params[ip].vx = ctx->user.pic.vx;
+    params[ip].vy = ctx->user.pic.vy;
+    params[ip].vz = ctx->user.pic.vz;
   }
 
   // Restore the parameters array.
@@ -382,7 +390,7 @@ InitializeParticles(DM *swarm, UserContext *user)
 
 
 static PetscErrorCode
-CollectParticles(DM *mesh, DM *swarm, UserContext *user)
+CollectParticles(DM *swarm, Context *ctx)
 {
   PetscScalar *coords;
   PetscInt    i, i0, ni, j, j0, nj, k, k0, nk;
@@ -434,8 +442,10 @@ CollectParticles(DM *mesh, DM *swarm, UserContext *user)
 int main(int argc, char **args)
 {
   UserContext user;
+  Context     ctx;
   DM          mesh, swarm;
   KSP         ksp;
+  PetscMPIInt rank, size;
 
   PetscFunctionBeginUser;
 
@@ -443,24 +453,29 @@ int main(int argc, char **args)
   PetscCall(PetscInitialize(&argc, &args, (char *)0, help));
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n********** START **********\n\n"));
 
+  // Store MPI information in the application context.
+  PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &ctx.mpi.rank));
+  PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &ctx.mpi.size));
+
   // Assign parameter values from user arguments or defaults.
   PetscCall(ProcessOptions(&user));
+  ctx.user = user;
 
   // Set up discrete mesh.
-  PetscCall(CreateMeshDM(&mesh, &user));
+  PetscCall(CreateMeshDM(&mesh, &ctx));
 
   // Set up particle swarm.
-  PetscCall(CreateSwarmDM(&swarm, &mesh, &user));
+  PetscCall(CreateSwarmDM(&swarm, &mesh, &ctx));
 
   // Set up the linear-solver context.
   PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
   PetscCall(KSPSetDM(ksp, mesh));
 
   // Set initial particle positions and velocities.
-  PetscCall(InitializeParticles(&swarm, &user));
+  PetscCall(InitializeParticles(&swarm, &ctx));
 
   // Compute initial density and electric field.
-  PetscCall(CollectParticles(&mesh, &swarm, &user));
+  PetscCall(CollectParticles(&swarm, &ctx));
 
   // Output initial conditions.
 
