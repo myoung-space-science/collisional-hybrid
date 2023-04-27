@@ -546,6 +546,25 @@ ComputeInitialPhi(KSP ksp, Vec phi, Context *ctx)
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
+
+static PetscErrorCode
+ComputeRHS(KSP ksp, Vec phi, Context *ctx)
+{
+  PetscFunctionBeginUser;
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+static PetscErrorCode
+ComputeLHS(KSP ksp, Vec phi, Context *ctx)
+{
+  PetscFunctionBeginUser;
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 int main(int argc, char **args)
 {
   UserContext user;
@@ -603,6 +622,8 @@ int main(int argc, char **args)
 
   // Compute initial electric field.
   PetscCall(KSPSetComputeInitialGuess(ksp, ComputeInitialPhi, &ctx));
+  PetscCall(KSPSetComputeRHS(ksp, ComputeRHS, &ctx));
+  PetscCall(KSPSetComputeOperators(ksp, ComputeLHS, &ctx));
 
   // Output initial conditions.
 
