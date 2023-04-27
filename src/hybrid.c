@@ -212,31 +212,30 @@ CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
 
 
 static PetscErrorCode
-InitializeSwarmCoordinates(DM *swarm, UserContext *user)
+InitializeSwarmCoordinates(DM *swarm, UserContext *user, PetscInt n0pc)
 {
   PetscInt    np;
   PetscScalar *coords;
   PetscInt    ip;
   PetscMPIInt rank;
-  PetscRandom rx, ry, rz;
+  PetscRandom random;
   PetscReal   dx, x, dy, y, dz, z;
 
   PetscFunctionBeginUser;
 
-  // Create a random-number generator for each coordinate.
+  // Place an equal number of particles in each cell.
+  PetscCall(DMSwarmInsertPointsUsingCellDM(
+            *swarm, DMSWARMPIC_LAYOUT_REGULAR, n0pc));
+
+  // Update the particle DM.
+  PetscCall(DMSwarmMigrate(*swarm, PETSC_TRUE));
+
+  // Create a random-number generator to nudge particle positions.
   PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
-  PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &rx));
-  PetscCall(PetscRandomSetInterval(rx, 0.0, user->grid.Lx));
-  PetscCall(PetscRandomSetSeed(rx, NDIM*(unsigned long)rank + 0));
-  PetscCall(PetscRandomSeed(rx));
-  PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &ry));
-  PetscCall(PetscRandomSetInterval(ry, 0.0, user->grid.Ly));
-  PetscCall(PetscRandomSetSeed(ry, NDIM*(unsigned long)rank + 1));
-  PetscCall(PetscRandomSeed(ry));
-  PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &rz));
-  PetscCall(PetscRandomSetInterval(rz, 0.0, user->grid.Lz));
-  PetscCall(PetscRandomSetSeed(rz, NDIM*(unsigned long)rank + 2));
-  PetscCall(PetscRandomSeed(rz));
+  PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &random));
+  PetscCall(PetscRandomSetInterval(random, -0.1, +0.1));
+  PetscCall(PetscRandomSetSeed(random, (unsigned long)rank));
+  PetscCall(PetscRandomSeed(random));
 
   // Get a representation of the particle coordinates.
   PetscCall(DMSwarmGetField(
@@ -249,9 +248,18 @@ InitializeSwarmCoordinates(DM *swarm, UserContext *user)
 
   // Loop over particles and assign positions.
   for (ip=0; ip<np; ip++) {
-    PetscCall(PetscRandomGetValueReal(rx, &x));
-    PetscCall(PetscRandomGetValueReal(ry, &y));
-    PetscCall(PetscRandomGetValueReal(rz, &z));
+    PetscCall(PetscRandomGetValueReal(random, &dx));
+    PetscCall(PetscRandomGetValueReal(random, &dy));
+    PetscCall(PetscRandomGetValueReal(random, &dz));
+    x = coords[ip*NDIM + 0] + dx;
+    if (x < 0.0) x = 0.0 + 1.0e-12;
+    if (x > 1.0) x = 1.0 - 1.0e-12;
+    y = coords[ip*NDIM + 1] + dy;
+    if (y < 0.0) y = 0.0 + 1.0e-12;
+    if (y > 1.0) y = 1.0 - 1.0e-12;
+    z = coords[ip*NDIM + 2] + dz;
+    if (z < 0.0) z = 0.0 + 1.0e-12;
+    if (z > 1.0) z = 1.0 - 1.0e-12;
     coords[ip*NDIM + 0] = x;
     coords[ip*NDIM + 1] = y;
     coords[ip*NDIM + 2] = z;
@@ -263,10 +271,8 @@ InitializeSwarmCoordinates(DM *swarm, UserContext *user)
             DMSwarmPICField_coor, NULL, NULL,
             (void **)&coords));
 
-  // Destroy the random-number generators.
-  PetscCall(PetscRandomDestroy(&rx));
-  PetscCall(PetscRandomDestroy(&ry));
-  PetscCall(PetscRandomDestroy(&rz));
+  // Destroy the random-number generator.
+  PetscCall(PetscRandomDestroy(&random));
 
   // Update the swarm.
   PetscCall(DMSwarmMigrate(*swarm, PETSC_TRUE));
@@ -276,7 +282,7 @@ InitializeSwarmCoordinates(DM *swarm, UserContext *user)
 
 
 static PetscErrorCode
-InitializeParticles(DM *mesh, DM *swarm, UserContext *user, PetscInt n0pc)
+InitializeParticles(DM *mesh, DM *swarm, UserContext *user)
 {
   PetscInt    np;
   PetscScalar *coords;
@@ -289,7 +295,7 @@ InitializeParticles(DM *mesh, DM *swarm, UserContext *user, PetscInt n0pc)
   PetscFunctionBeginUser;
 
   // Initialize coordinates in the particle DM.
-  PetscCall(InitializeSwarmCoordinates(&swarm, &user));
+  PetscCall(InitializeSwarmCoordinates(swarm, user, 1));
 
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(*swarm, &np));
@@ -414,7 +420,7 @@ int main(int argc, char **args)
   PetscCall(KSPSetDM(ksp, mesh));
 
   // Set initial particle positions and velocities.
-  PetscCall(InitializeParticles(&mesh, &swarm, &user, 3));
+  PetscCall(InitializeParticles(&mesh, &swarm, &user));
 
   // Compute initial density and electric field.
   PetscCall(CollectParticles(&mesh, &swarm, &user));
