@@ -65,7 +65,6 @@ ProcessOptions(UserContext *options)
   PetscInt intArg;
   PetscReal realArg;
   PetscBool found;
-  PetscInt  np;
 
   // Declare default parameter values. The default value of nx, ny, and nz is
   // set such that it will signal to the grid-setup routine whether the user
