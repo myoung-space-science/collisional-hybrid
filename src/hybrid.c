@@ -511,6 +511,7 @@ int main(int argc, char **args)
   KSP         ksp;
   PetscMPIInt rank, size;
   Vec         gvec, lvec;
+  PetscViewer      viewer;
 
   PetscFunctionBeginUser;
 
@@ -552,7 +553,9 @@ int main(int argc, char **args)
   PetscCall(DMRestoreLocalVector(mesh, &lvec));
 
   // [DEV] View the global grid vector.
-  PetscCall(VecView(gvec, PETSC_VIEWER_STDOUT_WORLD));
+  PetscCall(PetscViewerHDF5Open(
+            PETSC_COMM_WORLD, "mesh.hdf", FILE_MODE_WRITE, &viewer));
+  PetscCall(VecView(gvec, viewer));
 
   // Compute initial electric field.
 
@@ -584,6 +587,7 @@ int main(int argc, char **args)
   PetscCall(DMDestroy(&mesh));
   PetscCall(DMDestroy(&swarm));
   PetscCall(VecDestroy(&gvec));
+  PetscCall(PetscViewerDestroy(&viewer));
 
   // Finalize PETSc and MPI.
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n*********** END ***********\n"));
