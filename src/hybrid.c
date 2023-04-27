@@ -324,19 +324,12 @@ InitializeSwarmCoordinates(DM *swarm, UserContext *user)
 static PetscErrorCode
 InitializeParticles(DM *swarm, UserContext *user)
 {
-  DM          mesh;
   PetscInt    np;
   PetscScalar *coords;
   Species     *params;
   PetscInt    ip;
-  PetscMPIInt rank;
-  PetscRandom random;
-  PetscReal   dx, x, dy, y, dz, z;
 
   PetscFunctionBeginUser;
-
-  // Get the mesh DM from the swarm DM.
-  PetscCall(DMSwarmGetCellDM(*swarm, &mesh));
 
   // Initialize coordinates in the particle DM.
   PetscCall(InitializeSwarmCoordinates(swarm, user));
