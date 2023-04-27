@@ -21,7 +21,7 @@ typedef struct {
   PetscReal Lx; // length of x dimension
   PetscReal Ly; // length of y dimension
   PetscReal Lz; // length of z dimension
-} UserMesh;
+} UserGrid;
 
 typedef struct {
   PetscInt np;   // number of particles
@@ -34,7 +34,7 @@ typedef struct {
 } UserPIC;
 
 typedef struct {
-  UserMesh grid; // grid information
+  UserGrid grid; // grid information
   UserPIC pic;   // particle information
 } UserContext;
 
