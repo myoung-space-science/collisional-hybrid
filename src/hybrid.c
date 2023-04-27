@@ -565,10 +565,6 @@ int main(int argc, char **args)
   // Set up particle swarm.
   PetscCall(CreateSwarmDM(&swarm, &grid, &ctx));
 
-  // Set up the linear-solver context.
-  PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
-  PetscCall(KSPSetDM(ksp, grid));
-
   // Set initial particle positions and velocities.
   PetscCall(InitializeParticles(&swarm, &ctx));
 
@@ -587,6 +583,10 @@ int main(int argc, char **args)
   PetscCall(PetscViewerHDF5Open(
             PETSC_COMM_WORLD, "grid.hdf", FILE_MODE_WRITE, &viewer));
   PetscCall(WriteHDF5(grid, gvec, viewer));
+
+  // Set up the linear-solver context.
+  PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
+  PetscCall(KSPSetDM(ksp, grid));
 
   // Compute initial electric field.
 
@@ -615,10 +615,11 @@ int main(int argc, char **args)
     // Output current time step
 
   // Free memory.
+  PetscCall(PetscViewerDestroy(&viewer));
+  PetscCall(KSPDestroy(&ksp));
+  PetscCall(VecDestroy(&gvec));
   PetscCall(DMDestroy(&grid));
   PetscCall(DMDestroy(&swarm));
-  PetscCall(VecDestroy(&gvec));
-  PetscCall(PetscViewerDestroy(&viewer));
 
   // Finalize PETSc and MPI.
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n*********** END ***********\n"));
