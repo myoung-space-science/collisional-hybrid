@@ -11,6 +11,9 @@ static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 #define Q 1.6022e-19  // fundamental charge in C
 #define MP 1.6726e-27 // proton mass in kg
 
+// Temporary declaration of number of particles per cell, per dimension.
+#define NPPCELL 3
+
 typedef struct {
   PetscInt nx;  // number of cells in x dimension
   PetscInt ny;  // number of cells in y dimension
@@ -250,7 +253,7 @@ CreateSwarmDM(DM *swarm, DM *mesh, UserContext *user)
 
 
 static PetscErrorCode
-InitializeSwarmCoordinates(DM *swarm, UserContext *user, PetscInt n0pc)
+InitializeSwarmCoordinates(DM *swarm, UserContext *user)
 {
   PetscInt    np;
   PetscScalar *coords;
@@ -263,7 +266,7 @@ InitializeSwarmCoordinates(DM *swarm, UserContext *user, PetscInt n0pc)
 
   // Place an equal number of particles in each cell.
   PetscCall(DMSwarmInsertPointsUsingCellDM(
-            *swarm, DMSWARMPIC_LAYOUT_REGULAR, n0pc));
+            *swarm, DMSWARMPIC_LAYOUT_REGULAR, NPPCELL));
 
   // Update the particle DM.
   PetscCall(DMSwarmMigrate(*swarm, PETSC_TRUE));
@@ -333,7 +336,7 @@ InitializeParticles(DM *mesh, DM *swarm, UserContext *user)
   PetscFunctionBeginUser;
 
   // Initialize coordinates in the particle DM.
-  PetscCall(InitializeSwarmCoordinates(swarm, user, 1));
+  PetscCall(InitializeSwarmCoordinates(swarm, user));
 
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(*swarm, &np));
