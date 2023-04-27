@@ -60,6 +60,10 @@ typedef struct {
   MPIContext  mpi;
 } Context;
 
+typedef struct {
+  PetscScalar n;          // scalar density
+  PetscScalar flux[NDIM]; // vector flux
+} GridNode;
 
 static PetscErrorCode
 ProcessOptions(UserContext *options)
@@ -393,7 +397,7 @@ static PetscErrorCode
 CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
 {
   DM          grid;
-  PetscReal   ****array;
+  GridNode   ***array;
   PetscInt    dim;
   PetscInt    i0, j0, k0;
   PetscReal   x, y, z, dx, dy, dz;
@@ -465,27 +469,27 @@ CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
     hll = wzh*wyl*wxl;
     lll = wzl*wyl*wxl;
     // Assign density values (zeroth moment).
-    array[izh][iyh][ixh][0] += hhh;
-    array[izl][iyh][ixh][0] += lhh;
-    array[izh][iyl][ixh][0] += hlh;
-    array[izl][iyl][ixh][0] += llh;
-    array[izh][iyh][ixl][0] += hhl;
-    array[izl][iyh][ixl][0] += lhl;
-    array[izh][iyl][ixl][0] += hll;
-    array[izl][iyl][ixl][0] += lll;
+    array[izh][iyh][ixh].n += hhh;
+    array[izl][iyh][ixh].n += lhh;
+    array[izh][iyl][ixh].n += hlh;
+    array[izl][iyl][ixh].n += llh;
+    array[izh][iyh][ixl].n += hhl;
+    array[izl][iyh][ixl].n += lhl;
+    array[izh][iyl][ixl].n += hll;
+    array[izl][iyl][ixl].n += lll;
     // Assign flux values (first moments wrt velocity).
     v[0] = current.vx;
     v[1] = current.vy;
     v[2] = current.vz;
     for (dim=0; dim<NDIM; dim++) {
-      array[izh][iyh][ixh][dim+1] += v[dim]*hhh;
-      array[izl][iyh][ixh][dim+1] += v[dim]*lhh;
-      array[izh][iyl][ixh][dim+1] += v[dim]*hlh;
-      array[izl][iyl][ixh][dim+1] += v[dim]*llh;
-      array[izh][iyh][ixl][dim+1] += v[dim]*hhl;
-      array[izl][iyh][ixl][dim+1] += v[dim]*lhl;
-      array[izh][iyl][ixl][dim+1] += v[dim]*hll;
-      array[izl][iyl][ixl][dim+1] += v[dim]*lll;
+      array[izh][iyh][ixh].flux[dim] += v[dim]*hhh;
+      array[izl][iyh][ixh].flux[dim] += v[dim]*lhh;
+      array[izh][iyl][ixh].flux[dim] += v[dim]*hlh;
+      array[izl][iyl][ixh].flux[dim] += v[dim]*llh;
+      array[izh][iyh][ixl].flux[dim] += v[dim]*hhl;
+      array[izl][iyh][ixl].flux[dim] += v[dim]*lhl;
+      array[izh][iyl][ixl].flux[dim] += v[dim]*hll;
+      array[izl][iyl][ixl].flux[dim] += v[dim]*lll;
     }
   }
 
