@@ -67,8 +67,6 @@ ProcessOptions(UserContext *options)
   options->grid.nx = 7;
   options->grid.ny = 7;
   options->grid.nz = 7;
-  np = options->grid.nx * options->grid.ny * options->grid.nz;
-  options->pic.np = np;
   options->grid.Lx = 1.0;
   options->grid.Ly = 1.0;
   options->grid.Lz = 1.0;
@@ -106,6 +104,8 @@ ProcessOptions(UserContext *options)
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-np", &intArg, &found));
   if (found) {
     options->pic.np = intArg;
+  } else {
+    options->pic.np = options->grid.nx * options->grid.ny * options->grid.nz;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-q", &realArg, &found));
   if (found) {
