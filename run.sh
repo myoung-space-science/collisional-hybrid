@@ -106,6 +106,24 @@ while [ "${1}" != "" ]; do
     shift
 done
 
+stage=
+
+cleanup() {
+    if [ "${stage}" != "Complete" ]; then
+        exitmsg="Exiting."
+        if [ -n "${stage}" ]; then
+            exitmsg="${stage} stage failed. ${exitmsg}"
+        fi
+        echo $exitmsg
+        exit 1
+    fi
+}
+
+trap cleanup EXIT
+
+# Mark this stage.
+stage="Setup"
+
 # Set the output file name.
 outfile="${outname}.${outtype}"
 
@@ -120,6 +138,9 @@ fi
 dstdir=${rundir}/${outdir}
 mkdir -p ${dstdir}
 
+# Mark this stage.
+stage="Symlink"
+
 # Create a symlink to this run in the directory of runs.
 cd ${rundir}
 rm -f latest
@@ -129,12 +150,18 @@ if [ ${verbose} == 1 ]; then
     vflag="-v"
 fi
 
+# Mark this stage.
+stage="Build"
+
 # Build the executable in the source directory.
 cd ${srcdir}
 make ${prog} &> ${dstdir}/build.log
 
 # Move to the output directory.
 cd ${dstdir}
+
+# Mark this stage.
+stage="Run"
 
 # Run the program.
 if [ ${debug} == 1 ]; then
@@ -149,4 +176,7 @@ else
         --outname ${outname} \
         ${extra} &> run.log
 fi
+
+# Signal success to the clean-up function.
+stage="Complete"
 
