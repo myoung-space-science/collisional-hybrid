@@ -12,7 +12,7 @@ static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 #define MP 1.6726e-27 // proton mass in kg
 
 // Temporary declaration of number of particles per cell, per dimension.
-#define NPPCELL 3
+#define NPPCELL 1
 
 typedef struct {
   PetscInt nx;  // number of cells in x dimension
@@ -390,50 +390,113 @@ InitializeParticles(DM *swarm, Context *ctx)
 
 
 static PetscErrorCode
-CollectParticles(DM *swarm, Context *ctx)
+CollectParticles(DM *swarm, Context *ctx, Vec meshvec)
 {
-  PetscScalar *coords;
-  PetscInt    i, i0, ni, j, j0, nj, k, k0, nk;
-  PetscInt    np;
+  DM          mesh;
+  PetscReal   ****array;
+  PetscInt    dim;
+  PetscInt    i0, j0, k0;
+  PetscReal   x, y, z, dx, dy, dz;
+  Species     *params, current;
+  PetscInt    ip, np;
+  PetscInt    ixl, ixh, iyl, iyh, izl, izh;
+  PetscReal   wxl, wxh, wyl, wyh, wzl, wzh;
+  PetscReal   hhh, lhh, hlh, llh, hhl, lhl, hll, lll;
+  PetscReal   v[NDIM];
 
   PetscFunctionBeginUser;
 
-  // Get density Vec from mesh.
+  // Get the mesh DM from the swarm DM.
+  PetscCall(DMSwarmGetCellDM(*swarm, &mesh));
 
-  // Get array representation of density Vec.
+  // Make sure the local grid vector has zeroes everywhere.
+  PetscCall(VecZeroEntries(meshvec));
 
-  // Same for flux components.
+  // Get a 4-D array corresponding to the local grid quantities.
+  PetscCall(DMDAVecGetArrayDOF(mesh, meshvec, &array));
 
-  // Get the particle coordinates.
+  // Get a representation of the particle parameters.
   PetscCall(DMSwarmGetField(
             *swarm,
-            DMSwarmPICField_coor, NULL, NULL,
-            (void **)&coords));
+            "Species", NULL, NULL,
+            (void **)&params));
 
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(*swarm, &np));
 
-  // Loop over particle positions.
+  // Compute mesh grid spacing.
+  PetscCall(DMDAGetInfo(
+            mesh, NULL,
+            &i0, &j0, &k0,
+            NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
+  dx = ctx->user.grid.Lx / (PetscReal)i0;
+  dy = ctx->user.grid.Ly / (PetscReal)j0;
+  dz = ctx->user.grid.Lz / (PetscReal)k0;
 
-    // Assign n[k][j][i] = 3D linear weight.
+  // Loop over particles.
+  for (ip=0; ip<np; ip++) {
+    // Get the current particle's parameters.
+    current = params[ip];
+    x = current.x / dx;
+    y = current.y / dy;
+    z = current.z / dz;
+    // Compute the x-dimension neighbors and corresponding weights.
+    ixl = (PetscInt)x;
+    ixh = ixl+1;
+    wxh = x - ixl;
+    wxl = 1.0 - wxh;
+    // Compute the y-dimension neighbors and corresponding weights.
+    iyl = (PetscInt)y;
+    iyh = iyl+1;
+    wyh = y - iyl;
+    wyl = 1.0 - wyh;
+    // Compute the z-dimension neighbors and corresponding weights.
+    izl = (PetscInt)z;
+    izh = izl+1;
+    wzh = z - izl;
+    wzl = 1.0 - wzh;
+    // Compute the weight of each nearby grid point.
+    hhh = wzh*wyh*wxh;
+    lhh = wzl*wyh*wxh;
+    hlh = wzh*wyl*wxh;
+    llh = wzl*wyl*wxh;
+    hhl = wzh*wyh*wxl;
+    lhl = wzl*wyh*wxl;
+    hll = wzh*wyl*wxl;
+    lll = wzl*wyl*wxl;
+    // Assign density values (zeroth moment).
+    array[izh][iyh][ixh][0] += hhh;
+    array[izl][iyh][ixh][0] += lhh;
+    array[izh][iyl][ixh][0] += hlh;
+    array[izl][iyl][ixh][0] += llh;
+    array[izh][iyh][ixl][0] += hhl;
+    array[izl][iyh][ixl][0] += lhl;
+    array[izh][iyl][ixl][0] += hll;
+    array[izl][iyl][ixl][0] += lll;
+    // Assign flux values (first moments wrt velocity).
+    v[0] = current.vx;
+    v[1] = current.vy;
+    v[2] = current.vz;
+    for (dim=0; dim<NDIM; dim++) {
+      array[izh][iyh][ixh][dim+1] += v[dim]*hhh;
+      array[izl][iyh][ixh][dim+1] += v[dim]*lhh;
+      array[izh][iyl][ixh][dim+1] += v[dim]*hlh;
+      array[izl][iyl][ixh][dim+1] += v[dim]*llh;
+      array[izh][iyh][ixl][dim+1] += v[dim]*hhl;
+      array[izl][iyh][ixl][dim+1] += v[dim]*lhl;
+      array[izh][iyl][ixl][dim+1] += v[dim]*hll;
+      array[izl][iyl][ixl][dim+1] += v[dim]*lll;
+    }
+  }
 
-    // Assign Gx[k][j][i] = 3D linear weight * vx.
+  // Restore the local grid array.
+  PetscCall(DMDAVecRestoreArrayDOF(mesh, meshvec, &array));
 
-    // Assign Gy[k][j][i] = 3D linear weight * vy.
-
-    // Assign Gz[k][j][i] = 3D linear weight * vz.
-
-  // Restore the particle coordinates.
+  // Restore the parameters array.
   PetscCall(DMSwarmRestoreField(
             *swarm,
-            DMSwarmPICField_coor, NULL, NULL,
-            (void **)&coords));
-
-  // Restore Vec array representations.
-
-  // Restore mesh Vec objects.
-
-  // Assemble Vec objects?
+            "Species", NULL, NULL,
+            (void **)&params));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -442,10 +505,12 @@ CollectParticles(DM *swarm, Context *ctx)
 int main(int argc, char **args)
 {
   UserContext user;
+  MPIContext  mpi;
   Context     ctx;
   DM          mesh, swarm;
   KSP         ksp;
   PetscMPIInt rank, size;
+  Vec         gvec, lvec;
 
   PetscFunctionBeginUser;
 
@@ -454,8 +519,9 @@ int main(int argc, char **args)
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n********** START **********\n\n"));
 
   // Store MPI information in the application context.
-  PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &ctx.mpi.rank));
-  PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &ctx.mpi.size));
+  PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &mpi.rank));
+  PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &mpi.size));
+  ctx.mpi = mpi;
 
   // Assign parameter values from user arguments or defaults.
   PetscCall(ProcessOptions(&user));
@@ -474,8 +540,21 @@ int main(int argc, char **args)
   // Set initial particle positions and velocities.
   PetscCall(InitializeParticles(&swarm, &ctx));
 
-  // Compute initial density and electric field.
-  PetscCall(CollectParticles(&swarm, &ctx));
+  // Compute initial density and flux.
+  PetscCall(DMCreateGlobalVector(mesh, &gvec));
+  PetscCall(VecZeroEntries(gvec));
+  PetscCall(DMGetLocalVector(mesh, &lvec));
+  PetscCall(DMGlobalToLocalBegin(mesh, gvec, INSERT_VALUES, lvec));
+  PetscCall(DMGlobalToLocalEnd(mesh, gvec, INSERT_VALUES, lvec));
+  PetscCall(CollectParticles(&swarm, &ctx, lvec));
+  PetscCall(DMLocalToGlobalBegin(mesh, lvec, ADD_VALUES, gvec));
+  PetscCall(DMLocalToGlobalEnd(mesh, lvec, ADD_VALUES, gvec));
+  PetscCall(DMRestoreLocalVector(mesh, &lvec));
+
+  // [DEV] View the global grid vector.
+  PetscCall(VecView(gvec, PETSC_VIEWER_STDOUT_WORLD));
+
+  // Compute initial electric field.
 
   // Output initial conditions.
 
@@ -504,6 +583,7 @@ int main(int argc, char **args)
   // Free memory.
   PetscCall(DMDestroy(&mesh));
   PetscCall(DMDestroy(&swarm));
+  PetscCall(VecDestroy(&gvec));
 
   // Finalize PETSc and MPI.
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n*********** END ***********\n"));
