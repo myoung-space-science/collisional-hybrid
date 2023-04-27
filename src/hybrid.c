@@ -418,7 +418,7 @@ CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
   PetscCall(VecZeroEntries(gridvec));
 
   // Get a 4-D array corresponding to the local grid quantities.
-  PetscCall(DMDAVecGetArrayDOF(grid, gridvec, &array));
+  PetscCall(DMDAVecGetArray(grid, gridvec, &array));
 
   // Get a representation of the particle parameters.
   PetscCall(DMSwarmGetField(
@@ -495,7 +495,7 @@ CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
   }
 
   // Restore the local grid array.
-  PetscCall(DMDAVecRestoreArrayDOF(grid, gridvec, &array));
+  PetscCall(DMDAVecRestoreArray(grid, gridvec, &array));
 
   // Restore the parameters array.
   PetscCall(DMSwarmRestoreField(
