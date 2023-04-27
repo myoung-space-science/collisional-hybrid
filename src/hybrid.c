@@ -323,8 +323,9 @@ InitializeSwarmCoordinates(DM *swarm, UserContext *user)
 
 
 static PetscErrorCode
-InitializeParticles(DM *mesh, DM *swarm, UserContext *user)
+InitializeParticles(DM *swarm, UserContext *user)
 {
+  DM          mesh;
   PetscInt    np;
   PetscScalar *coords;
   Species     *params;
@@ -334,6 +335,9 @@ InitializeParticles(DM *mesh, DM *swarm, UserContext *user)
   PetscReal   dx, x, dy, y, dz, z;
 
   PetscFunctionBeginUser;
+
+  // Get the mesh DM from the swarm DM.
+  PetscCall(DMSwarmGetCellDM(*swarm, &mesh));
 
   // Initialize coordinates in the particle DM.
   PetscCall(InitializeSwarmCoordinates(swarm, user));
@@ -461,7 +465,7 @@ int main(int argc, char **args)
   PetscCall(KSPSetDM(ksp, mesh));
 
   // Set initial particle positions and velocities.
-  PetscCall(InitializeParticles(&mesh, &swarm, &user));
+  PetscCall(InitializeParticles(&swarm, &user));
 
   // Compute initial density and electric field.
   PetscCall(CollectParticles(&mesh, &swarm, &user));
