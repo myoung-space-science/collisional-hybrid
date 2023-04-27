@@ -64,9 +64,14 @@ ProcessOptions(UserContext *options)
   PetscBool found;
   PetscInt  np;
 
-  options->grid.nx = 7;
-  options->grid.ny = 7;
-  options->grid.nz = 7;
+  // Declare default parameter values. The default value of nx, ny, and nz is
+  // set such that it will signal to the grid-setup routine whether the user
+  // provided a non-negative value for each. That will allow it to properly
+  // handle cases when the user provides equivalent values via PETSc's
+  // -da_grid_{x,y,z} flags.
+  options->grid.nx = -1;
+  options->grid.ny = -1;
+  options->grid.nz = -1;
   options->grid.Lx = 1.0;
   options->grid.Ly = 1.0;
   options->grid.Lz = 1.0;
@@ -79,15 +84,33 @@ ProcessOptions(UserContext *options)
 
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-nx", &intArg, &found));
   if (found) {
-    options->grid.nx = intArg;
+    if (intArg < 0) {
+      PetscCall(PetscPrintf(
+                PETSC_COMM_WORLD,
+                "Warning: Ignoring negative value for nx: %d\n", intArg));
+    } else {
+      options->grid.nx = intArg;
+    }
   }
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-ny", &intArg, &found));
   if (found) {
-    options->grid.ny = intArg;
+    if (intArg < 0) {
+      PetscCall(PetscPrintf(
+                PETSC_COMM_WORLD,
+                "Warning: Ignoring negative value for ny: %d\n", intArg));
+    } else {
+      options->grid.ny = intArg;
+    }
   }
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-nz", &intArg, &found));
   if (found) {
-    options->grid.nz = intArg;
+    if (intArg < 0) {
+      PetscCall(PetscPrintf(
+                PETSC_COMM_WORLD,
+                "Warning: Ignoring negative value for nz: %d\n", intArg));
+    } else {
+      options->grid.nz = intArg;
+    }
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-Lx", &realArg, &found));
   if (found) {
@@ -139,9 +162,9 @@ ProcessOptions(UserContext *options)
 static PetscErrorCode
 CreateMeshDM(DM *mesh, UserContext *user)
 {
-  PetscInt       nx=user->grid.nx;
-  PetscInt       ny=user->grid.ny;
-  PetscInt       nz=user->grid.nz;
+  PetscInt       nx=(user->grid.nx > 0 ? user->grid.nx : 7);
+  PetscInt       ny=(user->grid.ny > 0 ? user->grid.ny : 7);
+  PetscInt       nz=(user->grid.nz > 0 ? user->grid.nz : 7);
   DMBoundaryType xBC=DM_BOUNDARY_PERIODIC;
   DMBoundaryType yBC=DM_BOUNDARY_PERIODIC;
   DMBoundaryType zBC=DM_BOUNDARY_PERIODIC;
@@ -162,6 +185,21 @@ CreateMeshDM(DM *mesh, UserContext *user)
   PetscCall(DMDASetElementType(*mesh, DMDA_ELEMENT_Q1));
   PetscCall(DMSetFromOptions(*mesh));
   PetscCall(DMSetUp(*mesh));
+  // Coordinate values of nx, ny, and nz passed via -n{x,y,z} or
+  // -da_grid_{x,y,z}. Note that this gives precedence to the latter.
+  PetscCall(DMDAGetInfo(
+            *mesh, NULL,
+            &nx, &ny, &nz,
+            NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
+  if (user->grid.nx == -1) {
+    user->grid.nx = nx;
+  }
+  if (user->grid.ny == -1) {
+    user->grid.ny = ny;
+  }
+  if (user->grid.nz == -1) {
+    user->grid.nz = nz;
+  }
   PetscCall(DMDASetUniformCoordinates(
             *mesh,
             0.0, user->grid.Lx,
