@@ -63,6 +63,7 @@ typedef struct {
 typedef struct {
   PetscScalar n;          // scalar density
   PetscScalar flux[NDIM]; // vector flux
+  PetscScalar phi;        // scalar electrostatic potential
 } GridNode;
 
 static PetscErrorCode
