@@ -533,6 +533,19 @@ WriteHDF5(DM grid, Vec full, PetscViewer viewer)
 }
 
 
+static PetscErrorCode
+ComputeInitialPhi(KSP ksp, Vec phi, Context *ctx)
+{
+  // Note that this function requires this signature for use with
+  // `KSPSetComputeInitialGuess`.
+
+  PetscFunctionBeginUser;
+
+  PetscCall(VecSet(phi, 0.0));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
 int main(int argc, char **args)
 {
   UserContext user;
@@ -589,6 +602,7 @@ int main(int argc, char **args)
   PetscCall(KSPSetDM(ksp, grid));
 
   // Compute initial electric field.
+  PetscCall(KSPSetComputeInitialGuess(ksp, ComputeInitialPhi, &ctx));
 
   // Output initial conditions.
 
