@@ -507,6 +507,32 @@ CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
 }
 
 
+static PetscErrorCode
+WriteHDF5(DM grid, Vec full, PetscViewer viewer)
+{
+  PetscInt nFields;
+  char **fieldNames;
+  IS *is;
+  DM *fieldArray;
+  PetscInt field;
+  Vec fieldVec;
+
+  PetscFunctionBeginUser;
+
+  PetscCall(DMCreateFieldDecomposition(
+            grid, &nFields, &fieldNames, &is, &fieldArray));
+  for (field=0; field<nFields; field++) {
+    PetscCall(DMGetGlobalVector(fieldArray[field], &fieldVec));
+    PetscCall(VecStrideGather(full, field, fieldVec, INSERT_VALUES));
+    PetscCall(PetscObjectSetName((PetscObject)fieldVec, fieldNames[field]));
+    PetscCall(VecView(fieldVec, viewer));
+    PetscCall(DMRestoreGlobalVector(fieldArray[field], &fieldVec));
+  }
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 int main(int argc, char **args)
 {
   UserContext user;
@@ -560,23 +586,7 @@ int main(int argc, char **args)
   // [DEV] View the global grid vector.
   PetscCall(PetscViewerHDF5Open(
             PETSC_COMM_WORLD, "grid.hdf", FILE_MODE_WRITE, &viewer));
-  {
-    PetscInt nFields;
-    char **fieldNames;
-    IS *is;
-    DM *fieldArray;
-    PetscInt field;
-    Vec fieldVec;
-    PetscCall(DMCreateFieldDecomposition(
-              grid, &nFields, &fieldNames, &is, &fieldArray));
-    for (field=0; field<nFields; field++) {
-      PetscCall(DMGetGlobalVector(fieldArray[field], &fieldVec));
-      PetscCall(VecStrideGather(gvec, field, fieldVec, INSERT_VALUES));
-      PetscCall(PetscObjectSetName((PetscObject)fieldVec, fieldNames[field]));
-      PetscCall(VecView(fieldVec, viewer));
-      PetscCall(DMRestoreGlobalVector(fieldArray[field], &fieldVec));
-    }
-  }
+  PetscCall(WriteHDF5(grid, gvec, viewer));
 
   // Compute initial electric field.
 
