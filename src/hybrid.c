@@ -219,8 +219,8 @@ CreateMeshDM(DM *mesh, Context *ctx)
             0.0, ctx->user.grid.Lz));
   PetscCall(DMDASetFieldName(*mesh, 0, "density"));
   PetscCall(DMDASetFieldName(*mesh, 1, "x flux"));
-  PetscCall(DMDASetFieldName(*mesh, 1, "y flux"));
-  PetscCall(DMDASetFieldName(*mesh, 1, "z flux"));
+  PetscCall(DMDASetFieldName(*mesh, 2, "y flux"));
+  PetscCall(DMDASetFieldName(*mesh, 3, "z flux"));
   PetscCall(DMDASetFieldName(*mesh, 4, "potential"));
   PetscCall(DMSetApplicationContext(*mesh, &ctx->user));
   PetscCall(DMView(*mesh, PETSC_VIEWER_STDOUT_WORLD));
