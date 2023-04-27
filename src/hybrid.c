@@ -560,7 +560,23 @@ int main(int argc, char **args)
   // [DEV] View the global grid vector.
   PetscCall(PetscViewerHDF5Open(
             PETSC_COMM_WORLD, "grid.hdf", FILE_MODE_WRITE, &viewer));
-  PetscCall(VecView(gvec, viewer));
+  {
+    PetscInt nFields;
+    char **fieldNames;
+    IS *is;
+    DM *fieldArray;
+    PetscInt field;
+    Vec fieldVec;
+    PetscCall(DMCreateFieldDecomposition(
+              grid, &nFields, &fieldNames, &is, &fieldArray));
+    for (field=0; field<nFields; field++) {
+      PetscCall(DMGetGlobalVector(fieldArray[field], &fieldVec));
+      PetscCall(VecStrideGather(gvec, field, fieldVec, INSERT_VALUES));
+      PetscCall(PetscObjectSetName((PetscObject)fieldVec, fieldNames[field]));
+      PetscCall(VecView(fieldVec, viewer));
+      PetscCall(DMRestoreGlobalVector(fieldArray[field], &fieldVec));
+    }
+  }
 
   // Compute initial electric field.
 
