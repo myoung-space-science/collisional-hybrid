@@ -15,34 +15,34 @@ static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 #define NPPCELL 1
 
 typedef struct {
-  PetscInt nx;  // number of cells in x dimension
-  PetscInt ny;  // number of cells in y dimension
-  PetscInt nz;  // number of cells in z dimension
+  PetscInt  nx; // number of cells in x dimension
+  PetscInt  ny; // number of cells in y dimension
+  PetscInt  nz; // number of cells in z dimension
   PetscReal Lx; // length of x dimension
   PetscReal Ly; // length of y dimension
   PetscReal Lz; // length of z dimension
 } UserGrid;
 
 typedef struct {
-  PetscInt np;   // number of particles
-  PetscReal q;   // the charge of each particle / fundamental charge
-  PetscReal m;   // the mass of each particle / proton mass
-  PetscReal nu;  // the neutral-collision frequency of each particle
-  PetscReal vx;  // initial x velocity
-  PetscReal vy;  // initial y velocity
-  PetscReal vz;  // initial z velocity
+  PetscInt  np; // number of particles
+  PetscReal q;  // the charge of each particle / fundamental charge
+  PetscReal m;  // the mass of each particle / proton mass
+  PetscReal nu; // the neutral-collision frequency of each particle
+  PetscReal vx; // initial x velocity
+  PetscReal vy; // initial y velocity
+  PetscReal vz; // initial z velocity
 } UserPIC;
 
 typedef struct {
-  PetscReal q;   // charge
-  PetscReal m;   // mass
-  PetscReal nu;  // frequency of collisions with neutral particles
-  PetscReal x;   // x position
-  PetscReal y;   // y position
-  PetscReal z;   // z position
-  PetscReal vx;  // x velocity
-  PetscReal vy;  // y velocity
-  PetscReal vz;  // z velocity
+  PetscReal q;  // charge
+  PetscReal m;  // mass
+  PetscReal nu; // frequency of collisions with neutral particles
+  PetscReal x;  // x position
+  PetscReal y;  // y position
+  PetscReal z;  // z position
+  PetscReal vx; // x velocity
+  PetscReal vy; // y velocity
+  PetscReal vz; // z velocity
 } Species;
 
 typedef struct {
