@@ -46,6 +46,12 @@ typedef struct {
   PetscReal q;  // charge
   PetscReal m;  // mass
   PetscReal nu; // frequency of collisions with neutral particles
+  PetscReal Ox; // x component of gyrofrequency (q*Bx / m)
+  PetscReal Oy; // y component of gyrofrequency (q*By / m)
+  PetscReal Oz; // z component of gyrofrequency (q*Bz / m)
+  PetscReal Kx; // x component of magnetization (q*Bx / m*nu)
+  PetscReal Ky; // y component of magnetization (q*By / m*nu)
+  PetscReal Kz; // z component of magnetization (q*Bz / m*nu)
   PetscReal x;  // x position
   PetscReal y;  // y position
   PetscReal z;  // z position
@@ -403,6 +409,12 @@ InitializeParticles(DM *swarm, Context *ctx)
     params[ip].q  = Q * ctx->pic.q;
     params[ip].m  = MP * ctx->pic.m;
     params[ip].nu = ctx->pic.nu;
+    params[ip].Ox = params[ip].q * ctx->plasma.Bx / params[ip].m;
+    params[ip].Oy = params[ip].q * ctx->plasma.By / params[ip].m;
+    params[ip].Oz = params[ip].q * ctx->plasma.Bz / params[ip].m;
+    params[ip].Kx = params[ip].Ox / params[ip].nu;
+    params[ip].Ky = params[ip].Oy / params[ip].nu;
+    params[ip].Kz = params[ip].Oz / params[ip].nu;
     params[ip].x  = coords[ip*NDIM + 0];
     params[ip].y  = coords[ip*NDIM + 1];
     params[ip].z  = coords[ip*NDIM + 2];
