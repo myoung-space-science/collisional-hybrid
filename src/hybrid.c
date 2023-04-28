@@ -34,11 +34,6 @@ typedef struct {
 } UserPIC;
 
 typedef struct {
-  UserGrid grid; // grid information
-  UserPIC pic;   // particle information
-} UserContext;
-
-typedef struct {
   PetscReal q;   // charge
   PetscReal m;   // mass
   PetscReal nu;  // frequency of collisions with neutral particles
@@ -56,8 +51,9 @@ typedef struct {
 } MPIContext;
 
 typedef struct {
-  UserContext user;
-  MPIContext  mpi;
+  UserGrid   grid; // grid information
+  UserPIC    pic;  // particle information
+  MPIContext mpi;  // MPI information
 } Context;
 
 typedef struct {
@@ -67,7 +63,7 @@ typedef struct {
 } GridNode;
 
 static PetscErrorCode
-ProcessOptions(UserContext *options)
+ProcessOptions(Context *ctx)
 {
   /* This could read all options from the command line, but we may want to use
   libconfig to read most of the options from a user-provided file, and only
@@ -86,18 +82,18 @@ ProcessOptions(UserContext *options)
   // provided a non-negative value for each. That will allow it to properly
   // handle cases when the user provides equivalent values via PETSc's
   // -da_grid_{x,y,z} flags.
-  options->grid.nx = -1;
-  options->grid.ny = -1;
-  options->grid.nz = -1;
-  options->grid.Lx = 1.0;
-  options->grid.Ly = 1.0;
-  options->grid.Lz = 1.0;
-  options->pic.q = 1.0;
-  options->pic.m = 1.0;
-  options->pic.nu = 1.0;
-  options->pic.vx = 0.0;
-  options->pic.vy = 0.0;
-  options->pic.vz = 0.0;
+  ctx->grid.nx = -1;
+  ctx->grid.ny = -1;
+  ctx->grid.nz = -1;
+  ctx->grid.Lx = 1.0;
+  ctx->grid.Ly = 1.0;
+  ctx->grid.Lz = 1.0;
+  ctx->pic.q = 1.0;
+  ctx->pic.m = 1.0;
+  ctx->pic.nu = 1.0;
+  ctx->pic.vx = 0.0;
+  ctx->pic.vy = 0.0;
+  ctx->pic.vz = 0.0;
 
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-nx", &intArg, &found));
   if (found) {
@@ -106,7 +102,7 @@ ProcessOptions(UserContext *options)
                 PETSC_COMM_WORLD,
                 "Warning: Ignoring negative value for nx: %d\n", intArg));
     } else {
-      options->grid.nx = intArg;
+      ctx->grid.nx = intArg;
     }
   }
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-ny", &intArg, &found));
@@ -116,7 +112,7 @@ ProcessOptions(UserContext *options)
                 PETSC_COMM_WORLD,
                 "Warning: Ignoring negative value for ny: %d\n", intArg));
     } else {
-      options->grid.ny = intArg;
+      ctx->grid.ny = intArg;
     }
   }
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-nz", &intArg, &found));
@@ -126,50 +122,50 @@ ProcessOptions(UserContext *options)
                 PETSC_COMM_WORLD,
                 "Warning: Ignoring negative value for nz: %d\n", intArg));
     } else {
-      options->grid.nz = intArg;
+      ctx->grid.nz = intArg;
     }
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-Lx", &realArg, &found));
   if (found) {
-    options->grid.Lx = realArg;
+    ctx->grid.Lx = realArg;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-Ly", &realArg, &found));
   if (found) {
-    options->grid.Ly = realArg;
+    ctx->grid.Ly = realArg;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-Lz", &realArg, &found));
   if (found) {
-    options->grid.Lz = realArg;
+    ctx->grid.Lz = realArg;
   }
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-np", &intArg, &found));
   if (found) {
-    options->pic.np = intArg;
+    ctx->pic.np = intArg;
   } else {
-    options->pic.np = options->grid.nx * options->grid.ny * options->grid.nz;
+    ctx->pic.np = ctx->grid.nx * ctx->grid.ny * ctx->grid.nz;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-q", &realArg, &found));
   if (found) {
-    options->pic.q = realArg;
+    ctx->pic.q = realArg;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-m", &realArg, &found));
   if (found) {
-    options->pic.m = realArg;
+    ctx->pic.m = realArg;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-nu", &realArg, &found));
   if (found) {
-    options->pic.nu = realArg;
+    ctx->pic.nu = realArg;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-vx", &realArg, &found));
   if (found) {
-    options->pic.vx = realArg;
+    ctx->pic.vx = realArg;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-vy", &realArg, &found));
   if (found) {
-    options->pic.vy = realArg;
+    ctx->pic.vy = realArg;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-vz", &realArg, &found));
   if (found) {
-    options->pic.vz = realArg;
+    ctx->pic.vz = realArg;
   }
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -179,9 +175,9 @@ ProcessOptions(UserContext *options)
 static PetscErrorCode
 CreateGridDM(DM *grid, Context *ctx)
 {
-  PetscInt       nx=(ctx->user.grid.nx > 0 ? ctx->user.grid.nx : 7);
-  PetscInt       ny=(ctx->user.grid.ny > 0 ? ctx->user.grid.ny : 7);
-  PetscInt       nz=(ctx->user.grid.nz > 0 ? ctx->user.grid.nz : 7);
+  PetscInt       nx=(ctx->grid.nx > 0 ? ctx->grid.nx : 7);
+  PetscInt       ny=(ctx->grid.ny > 0 ? ctx->grid.ny : 7);
+  PetscInt       nz=(ctx->grid.nz > 0 ? ctx->grid.nz : 7);
   DMBoundaryType xBC=DM_BOUNDARY_PERIODIC;
   DMBoundaryType yBC=DM_BOUNDARY_PERIODIC;
   DMBoundaryType zBC=DM_BOUNDARY_PERIODIC;
@@ -208,26 +204,26 @@ CreateGridDM(DM *grid, Context *ctx)
             *grid, NULL,
             &nx, &ny, &nz,
             NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
-  if (ctx->user.grid.nx == -1) {
-    ctx->user.grid.nx = nx;
+  if (ctx->grid.nx == -1) {
+    ctx->grid.nx = nx;
   }
-  if (ctx->user.grid.ny == -1) {
-    ctx->user.grid.ny = ny;
+  if (ctx->grid.ny == -1) {
+    ctx->grid.ny = ny;
   }
-  if (ctx->user.grid.nz == -1) {
-    ctx->user.grid.nz = nz;
+  if (ctx->grid.nz == -1) {
+    ctx->grid.nz = nz;
   }
   PetscCall(DMDASetUniformCoordinates(
             *grid,
-            0.0, ctx->user.grid.Lx,
-            0.0, ctx->user.grid.Ly,
-            0.0, ctx->user.grid.Lz));
+            0.0, ctx->grid.Lx,
+            0.0, ctx->grid.Ly,
+            0.0, ctx->grid.Lz));
   PetscCall(DMDASetFieldName(*grid, 0, "density"));
   PetscCall(DMDASetFieldName(*grid, 1, "x flux"));
   PetscCall(DMDASetFieldName(*grid, 2, "y flux"));
   PetscCall(DMDASetFieldName(*grid, 3, "z flux"));
   PetscCall(DMDASetFieldName(*grid, 4, "potential"));
-  PetscCall(DMSetApplicationContext(*grid, &ctx->user));
+  PetscCall(DMSetApplicationContext(*grid, &ctx));
   PetscCall(DMView(*grid, PETSC_VIEWER_STDOUT_WORLD));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -256,7 +252,7 @@ CreateSwarmDM(DM *swarm, DM *grid, Context *ctx)
             *swarm, "Species", sizeof(Species)));
   PetscCall(DMSwarmFinalizeFieldRegister(*swarm));
   // Set the per-processor swarm size and buffer length for efficient resizing.
-  np = ctx->user.pic.np / ctx->mpi.size;
+  np = ctx->pic.np / ctx->mpi.size;
   PetscCall(DMSwarmSetLocalSizes(*swarm, np, bufsize));
   PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
 
@@ -345,7 +341,7 @@ InitializeParticles(DM *swarm, Context *ctx)
   PetscFunctionBeginUser;
 
   // Initialize coordinates in the particle DM.
-  PetscCall(InitializeSwarmCoordinates(swarm, &ctx->user));
+  PetscCall(InitializeSwarmCoordinates(swarm, &ctx));
 
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(*swarm, &np));
@@ -364,15 +360,15 @@ InitializeParticles(DM *swarm, Context *ctx)
 
   // Loop over particles and assign parameter values.
   for (ip=0; ip<np; ip++) {
-    params[ip].q  = Q * ctx->user.pic.q;
-    params[ip].m  = MP * ctx->user.pic.m;
-    params[ip].nu = ctx->user.pic.nu;
+    params[ip].q  = Q * ctx->pic.q;
+    params[ip].m  = MP * ctx->pic.m;
+    params[ip].nu = ctx->pic.nu;
     params[ip].x  = coords[ip*NDIM + 0];
     params[ip].y  = coords[ip*NDIM + 1];
     params[ip].z  = coords[ip*NDIM + 2];
-    params[ip].vx = ctx->user.pic.vx;
-    params[ip].vy = ctx->user.pic.vy;
-    params[ip].vz = ctx->user.pic.vz;
+    params[ip].vx = ctx->pic.vx;
+    params[ip].vy = ctx->pic.vy;
+    params[ip].vz = ctx->pic.vz;
   }
 
   // Restore the parameters array.
@@ -434,9 +430,9 @@ CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
             grid, NULL,
             &i0, &j0, &k0,
             NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
-  dx = ctx->user.grid.Lx / (PetscReal)i0;
-  dy = ctx->user.grid.Ly / (PetscReal)j0;
-  dz = ctx->user.grid.Lz / (PetscReal)k0;
+  dx = ctx->grid.Lx / (PetscReal)i0;
+  dy = ctx->grid.Ly / (PetscReal)j0;
+  dz = ctx->grid.Lz / (PetscReal)k0;
 
   // Loop over particles.
   for (ip=0; ip<np; ip++) {
@@ -567,7 +563,6 @@ ComputeLHS(KSP ksp, Vec phi, Context *ctx)
 
 int main(int argc, char **args)
 {
-  UserContext user;
   MPIContext  mpi;
   Context     ctx;
   DM          grid, swarm;
@@ -582,14 +577,13 @@ int main(int argc, char **args)
   PetscCall(PetscInitialize(&argc, &args, (char *)0, help));
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n********** START **********\n\n"));
 
+  // Assign parameter values from user arguments or defaults.
+  PetscCall(ProcessOptions(&ctx));
+
   // Store MPI information in the application context.
   PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &mpi.rank));
   PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &mpi.size));
   ctx.mpi = mpi;
-
-  // Assign parameter values from user arguments or defaults.
-  PetscCall(ProcessOptions(&user));
-  ctx.user = user;
 
   // Set up discrete grid.
   PetscCall(CreateGridDM(&grid, &ctx));
