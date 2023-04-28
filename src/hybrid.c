@@ -34,6 +34,15 @@ typedef struct {
 } UserPIC;
 
 typedef struct {
+  PetscReal Bx; // the x component of the background magnetic field
+  PetscReal By; // the y component of the background magnetic field
+  PetscReal Bz; // the z component of the background magnetic field
+  PetscReal Ex; // the x component of the background electric field
+  PetscReal Ey; // the y component of the background electric field
+  PetscReal Ez; // the z component of the background electric field
+} UserPlasma;
+
+typedef struct {
   PetscReal q;  // charge
   PetscReal m;  // mass
   PetscReal nu; // frequency of collisions with neutral particles
@@ -51,9 +60,10 @@ typedef struct {
 } MPIContext;
 
 typedef struct {
-  UserGrid   grid; // grid information
-  UserPIC    pic;  // particle information
-  MPIContext mpi;  // MPI information
+  UserGrid   grid;   // grid information
+  UserPIC    pic;    // particle information
+  UserPlasma plasma; // plasma information
+  MPIContext mpi;    // MPI information
 } Context;
 
 typedef struct {
@@ -94,6 +104,12 @@ ProcessOptions(Context *ctx)
   ctx->pic.vx = 0.0;
   ctx->pic.vy = 0.0;
   ctx->pic.vz = 0.0;
+  ctx->plasma.Bx = 0.0;
+  ctx->plasma.By = 0.0;
+  ctx->plasma.Bz = 0.0;
+  ctx->plasma.Ex = 0.0;
+  ctx->plasma.Ey = 0.0;
+  ctx->plasma.Ez = 0.0;
 
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-nx", &intArg, &found));
   if (found) {
@@ -166,6 +182,30 @@ ProcessOptions(Context *ctx)
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-vz", &realArg, &found));
   if (found) {
     ctx->pic.vz = realArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Bx", &realArg, &found));
+  if (found) {
+    ctx->plasma.Bx = realArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-By", &realArg, &found));
+  if (found) {
+    ctx->plasma.By = realArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Bz", &realArg, &found));
+  if (found) {
+    ctx->plasma.Bz = realArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Ex", &realArg, &found));
+  if (found) {
+    ctx->plasma.Ex = realArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Ey", &realArg, &found));
+  if (found) {
+    ctx->plasma.Ey = realArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Ez", &realArg, &found));
+  if (found) {
+    ctx->plasma.Ez = realArg;
   }
 
   PetscFunctionReturn(PETSC_SUCCESS);
