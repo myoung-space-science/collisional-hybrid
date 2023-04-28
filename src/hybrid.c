@@ -406,6 +406,7 @@ InitializeParticles(DM *swarm, Context *ctx)
 
   // Loop over particles and assign parameter values.
   for (ip=0; ip<np; ip++) {
+    // Why assign common species values to each particle?
     params[ip].q  = Q * ctx->pic.q;
     params[ip].m  = MP * ctx->pic.m;
     params[ip].nu = ctx->pic.nu;
@@ -607,7 +608,46 @@ ComputeRHS(KSP ksp, Vec phi, Context *ctx)
 static PetscErrorCode
 ComputeLHS(KSP ksp, Vec phi, Context *ctx)
 {
+  DM           dm;
+  PetscInt     il, ih, jl, jh, kl, kh;
+  PetscInt     i, j, k;
+  // diagonal coefficient
+  PetscScalar  vijk;
+  // star-stencil coefficients
+  PetscScalar  vpjk,vmjk,vipk,vimk,vijp,vijm;
+  // x-y corners
+  PetscScalar  vmmk,vpmk,vmpk,vppk;
+  // x-z corners
+  PetscScalar  vpjp,vpjm,vmjp,vmjm;
+  // y-z corners
+  PetscScalar  vipp,vipm,vimp,vimm;
+  PetscScalar  val[19];
+  MatStencil   row, col[19];
+  MatNullSpace nullspace;
+  // components of magnetization vector
+  PetscScalar  Kx, Ky, Kz;
+  // components of magnetization tensor
+  PetscScalar  rxx, ryx, rzx, rxy, ryy, rzy, rxz, ryz, rzz;
+  // geometric scale factors (some redundancy)
+  PetscScalar  sxx, syx, szx, sxy, syy, szy, sxz, syz, szz;
+
   PetscFunctionBeginUser;
+
+  PetscCall(KSPGetDM(ksp, &dm));
+
+  // TODO: Define Kx, Ky, Kz
+
+  rxx = 1 + Kx*Kx;
+  rxy = Ky*Kx - Kz;
+  rxz = Kz*Kx + Ky;
+
+  ryx = Kx*Ky + Kz;
+  ryy = 1 + Ky*Ky;
+  ryz = Kz*Ky - Kx;
+
+  rzx = Kx*Kz - Ky;
+  rzy = Ky*Kz + Kx;
+  rzz = 1 + Kz*Kz;
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
