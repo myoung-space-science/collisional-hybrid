@@ -792,12 +792,10 @@ ComputeLHS(KSP ksp, Mat J, Mat A, Context *ctx)
   PetscInt     ni, nj, nk;
   // geometric scale factors
   PetscScalar  sxx, syx, szx, sxy, syy, szy, sxz, syz, szz;
-  // sub-DM for density
-  DM           densityDM;
-  // vector representing density
-  Vec          density;
-  // array of density values
-  PetscScalar  ***n;
+  // local grid vector
+  Vec          gridvec;
+  // array representation of grid quantities
+  GridNode  ***array;
   // grid indices
   PetscInt     i, j, k;
   // the density value at the current and neighboring grid points
@@ -876,54 +874,24 @@ ComputeLHS(KSP ksp, Mat J, Mat A, Context *ctx)
   szz = dx*dy/dz / detA; // 2*dxdydz / (|A|*2*dz^2)
 
   // Extract the density array.
-  {
-    DM        *fieldDMs;
-    PetscInt  nf;
-    char      **fieldNames;
-    IS        *fieldISs;
-    PetscInt  field;
-    PetscBool found;
-    Vec       global;
-
-    PetscCall(DMGetGlobalVector(grid, &global));
-    PetscCall(DMCreateFieldDecomposition(
-              grid, nf, fieldNames, &fieldISs, &fieldDMs));
-    for (field=0; field<nf; field++) {
-      PetscCall(PetscStrcmp(fieldNames[field], "density", &found));
-      if (found) {
-        densityDM = fieldDMs[field];
-        break;
-      }
-    }
-    PetscCall(DMGetGlobalVector(densityDM, &density));
-    PetscCall(VecStrideGather(global, field, density, INSERT_VALUES));
-    for (field=0; field<nf; field++) {
-      PetscFree(fieldNames[field]);
-      PetscCall(ISDestroy(&fieldISs[field]));
-      PetscCall(DMDestroy(&fieldDMs[field]));
-    }
-    PetscFree(fieldNames);
-    PetscFree(fieldISs);
-    PetscFree(fieldDMs);
-    PetscCall(DMRestoreGlobalVector(grid, &global));
-  }
-  // Get the density array.
-  //
-  // It may be simpler to just get the global array and index only DOF 0?
-  PetscCall(DMDAVecGetArray(densityDM, density, &n));
+  PetscCall(DMGetLocalVector(grid, &gridvec));
+  PetscCall(DMDAVecGetArray(grid, gridvec, &array));
 
   // Get this processor's indices.
   PetscCall(DMDAGetCorners(grid, &i0, &j0, &k0, &ni, &nj, &nk));
+
+  // Loop over grid points.
   for (k=k0; k<k0+nk; k++) {
     for (j=j0; j<j0+nj; j++) {
       for (i=i0; i<i0+ni; i++) {
-        nijk = n[k][j][i];
-        nmjk = n[k][j][i-1];
-        npjk = n[k][j][i+1];
-        nimk = n[k][j-1][i];
-        nipk = n[k][j+1][i];
-        nijm = n[k-1][j][i];
-        nijp = n[k+1][j][i];
+        // Assign density values
+        nijk = array[k][j][i].n;
+        nmjk = array[k][j][i-1].n;
+        npjk = array[k][j][i+1].n;
+        nimk = array[k][j-1][i].n;
+        nipk = array[k][j+1][i].n;
+        nijm = array[k-1][j][i].n;
+        nijp = array[k+1][j][i].n;
 
         /* x-y corner coefficients */
         vppk =  sxy*rxy*(npjk + nijk) + syx*ryx*(nipk + nijk);
@@ -969,105 +937,123 @@ ComputeLHS(KSP ksp, Mat J, Mat A, Context *ctx)
         col[0].i = i+1;
         col[0].j = j;
         col[0].k = k;
+        col[0].c = 4;
         // Interior node (i-1, j, k)
         val[1] = vmjk;
         col[1].i = i-1;
         col[1].j = j;
         col[1].k = k;
+        col[1].c = 4;
         // Interior node (i, j+1, k)
         val[2] = vipk;
         col[2].i = i;
         col[2].j = j+1;
         col[2].k = k;
+        col[2].c = 4;
         // Interior node (i, j-1, k)
         val[3] = vimk;
         col[3].i = i;
         col[3].j = j-1;
         col[3].k = k;
+        col[3].c = 4;
         // Interior node (i, j, k+1)
         val[4] = vijp;
         col[4].i = i;
         col[4].j = j;
         col[4].k = k+1;
+        col[4].c = 4;
         // Interior node (i, j, k-1)
         val[5] = vijm;
         col[5].i = i;
         col[5].j = j;
         col[5].k = k-1;
+        col[5].c = 4;
         // Interior node (i+1, j+1, k)
         val[6] = vppk;
         col[6].i = i+1;
         col[6].j = j+1;
         col[6].k = k;
+        col[6].c = 4;
         // Interior node (i+1, j-1, k)
         val[7] = vpmk;
         col[7].i = i+1;
         col[7].j = j-1;
         col[7].k = k;
+        col[7].c = 4;
         // Interior node (i-1, j+1, k)
         val[8] = vmpk;
         col[8].i = i-1;
         col[8].j = j+1;
         col[8].k = k;
+        col[8].c = 4;
         // Interior node (i-1, j-1, k)
         val[9] = vmmk;
         col[9].i = i-1;
         col[9].j = j-1;
         col[9].k = k;
+        col[9].c = 4;
         // Interior node (i+1, j, k+1)
         val[10] = vpjp;
         col[10].i = i+1;
         col[10].j = j;
         col[10].k = k+1;
+        col[10].c = 4;
         // Interior node (i+1, j, k-1)
         val[11] = vpjm;
         col[11].i = i+1;
         col[11].j = j;
         col[11].k = k-1;
+        col[11].c = 4;
         // Interior node (i-1, j, k+1)
         val[12] = vmjp;
         col[12].i = i-1;
         col[12].j = j;
         col[12].k = k+1;
+        col[12].c = 4;
         // Interior node (i-1, j, k-1)
         val[13] = vmjm;
         col[13].i = i-1;
         col[13].j = j;
         col[13].k = k-1;
+        col[13].c = 4;
         // Interior node (i, j+1, k+1)
         val[14] = vipp;
         col[14].i = i;
         col[14].j = j+1;
         col[14].k = k+1;
+        col[14].c = 4;
         // Interior node (i, j+1, k-1)
         val[15] = vipm;
         col[15].i = i;
         col[15].j = j+1;
         col[15].k = k-1;
+        col[15].c = 4;
         // Interior node (i, j-1, k+1)
         val[16] = vimp;
         col[16].i = i;
         col[16].j = j-1;
         col[16].k = k+1;
+        col[16].c = 4;
         // Interior node (i, j-1, k-1)
         val[17] = vimm;
         col[17].i = i;
         col[17].j = j-1;
         col[17].k = k-1;
+        col[17].c = 4;
         // Interior node (i, j, k)
         val[18] = vijk;
         col[18].i = row.i;
         col[18].j = row.j;
         col[18].k = row.k;
+        col[18].c = 4;
         PetscCall(MatSetValuesStencil(
                   A, 1, &row, NVALUES, col, val, INSERT_VALUES));
       }
     }
   }
 
-  PetscCall(DMDAVecRestoreArray(densityDM, density,&n));
-  PetscCall(DMRestoreLocalVector(densityDM, &density));
-  PetscCall(DMDestroy(&densityDM));
+  PetscCall(DMDAVecRestoreArray(grid, gridvec, &array));
+  PetscCall(DMRestoreLocalVector(grid, &gridvec));
 
   PetscCall(MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY));
   PetscCall(MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY));
@@ -1133,11 +1119,15 @@ int main(int argc, char **args)
   // Set up the linear-solver context.
   PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
   PetscCall(KSPSetDM(ksp, grid));
+  PetscCall(KSPSetFromOptions(ksp));
 
   // Compute initial electric field.
   PetscCall(KSPSetComputeInitialGuess(ksp, ComputeInitialPhi, &ctx));
   PetscCall(KSPSetComputeRHS(ksp, ComputeRHS, &ctx));
   PetscCall(KSPSetComputeOperators(ksp, ComputeLHS, &ctx));
+
+  // Solve the system.
+  PetscCall(KSPSolve(ksp, NULL, NULL));
 
   // Output initial conditions.
 
