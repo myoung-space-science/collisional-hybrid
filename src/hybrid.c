@@ -16,61 +16,51 @@ static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 #define NPPCELL 1
 
 typedef struct {
-  PetscInt  nx; // number of cells in x dimension
-  PetscInt  ny; // number of cells in y dimension
-  PetscInt  nz; // number of cells in z dimension
-  PetscReal Lx; // length of x dimension
-  PetscReal Ly; // length of y dimension
-  PetscReal Lz; // length of z dimension
-} UserGrid;
+  PetscInt x; // x component
+  PetscInt y; // y component
+  PetscInt z; // z component
+} IntVector;
 
 typedef struct {
-  PetscInt  np; // number of particles
-  PetscReal q;  // the charge of each particle / fundamental charge
-  PetscReal m;  // the mass of each particle / proton mass
-  PetscReal nu; // the neutral-collision frequency of each particle
-  PetscReal vx; // initial x velocity
-  PetscReal vy; // initial y velocity
-  PetscReal vz; // initial z velocity
-} UserPIC;
+  PetscReal x; // x component
+  PetscReal y; // y component
+  PetscReal z; // z component
+} RealVector;
 
 typedef struct {
-  PetscReal Bx; // the x component of the background magnetic field
-  PetscReal By; // the y component of the background magnetic field
-  PetscReal Bz; // the z component of the background magnetic field
-  PetscReal Ex; // the x component of the background electric field
-  PetscReal Ey; // the y component of the background electric field
-  PetscReal Ez; // the z component of the background electric field
-} UserPlasma;
+  IntVector  N;  // number of cells
+  RealVector L;  // physical length
+  RealVector p0; // lower physical bound
+  RealVector p1; // upper physical bound
+} Grid;
 
 typedef struct {
-  PetscReal q;  // charge
-  PetscReal m;  // mass
-  PetscReal nu; // frequency of collisions with neutral particles
-  PetscReal Ox; // x component of gyrofrequency (q*Bx / m)
-  PetscReal Oy; // y component of gyrofrequency (q*By / m)
-  PetscReal Oz; // z component of gyrofrequency (q*Bz / m)
-  PetscReal Kx; // x component of magnetization (q*Bx / m*nu)
-  PetscReal Ky; // y component of magnetization (q*By / m*nu)
-  PetscReal Kz; // z component of magnetization (q*Bz / m*nu)
-  PetscReal x;  // x position
-  PetscReal y;  // y position
-  PetscReal z;  // z position
-  PetscReal vx; // x velocity
-  PetscReal vy; // y velocity
-  PetscReal vz; // z velocity
+  PetscReal  q;     // charge
+  PetscReal  m;     // mass
+  PetscReal  nu;    // frequency of collisions with neutral particles
+  RealVector Omega; // gyrofrequency components
+  RealVector kappa; // magnetization components
+  RealVector v0;    // drift velocity
+  RealVector vT;    // thermal velocity
 } Species;
 
 typedef struct {
-  PetscMPIInt rank;
-  PetscMPIInt size;
+  RealVector B0; // constant magnetic-field amplitude
+  RealVector E0; // constant electric-field amplitude
+  PetscReal  Np; // number of charged particles
+} Plasma;
+
+typedef struct {
+  PetscMPIInt rank; // global processor number
+  PetscMPIInt size; // total number of processors
 } MPIContext;
 
 typedef struct {
-  UserGrid   grid;   // grid information
-  UserPIC    pic;    // particle information
-  UserPlasma plasma; // plasma information
-  MPIContext mpi;    // MPI information
+  Grid       grid;      // grid information
+  Species    electrons; // electron parameter values
+  Species    ions;      // ion parameter values
+  Plasma     plasma;    // plasma information
+  MPIContext mpi;       // MPI information
 } Context;
 
 typedef struct {
@@ -94,126 +84,261 @@ ProcessOptions(Context *ctx)
   PetscReal realArg;
   PetscBool found;
 
-  // Declare default parameter values. The default value of nx, ny, and nz is
-  // set such that it will signal to the grid-setup routine whether the user
-  // provided a non-negative value for each. That will allow it to properly
-  // handle cases when the user provides equivalent values via PETSc's
-  // -da_grid_{x,y,z} flags.
-  ctx->grid.nx = -1;
-  ctx->grid.ny = -1;
-  ctx->grid.nz = -1;
-  ctx->grid.Lx = 1.0;
-  ctx->grid.Ly = 1.0;
-  ctx->grid.Lz = 1.0;
-  ctx->pic.q = 1.0;
-  ctx->pic.m = 1.0;
-  ctx->pic.nu = 1.0;
-  ctx->pic.vx = 0.0;
-  ctx->pic.vy = 0.0;
-  ctx->pic.vz = 0.0;
-  ctx->plasma.Bx = 0.0;
-  ctx->plasma.By = 0.0;
-  ctx->plasma.Bz = 0.0;
-  ctx->plasma.Ex = 0.0;
-  ctx->plasma.Ey = 0.0;
-  ctx->plasma.Ez = 0.0;
+  // Set fundamental parameter values.
+  ctx->electrons.q = -Q;
+  ctx->electrons.m = ME;
 
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "-nx", &intArg, &found));
+  // Read optional parameter values from user input.
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-Nx", &intArg, &found));
   if (found) {
     if (intArg < 0) {
       PetscCall(PetscPrintf(
                 PETSC_COMM_WORLD,
-                "Warning: Ignoring negative value for nx: %d\n", intArg));
+                "Warning: Ignoring negative value for Nx: %d\n", intArg));
     } else {
-      ctx->grid.nx = intArg;
+      ctx->grid.N.x = intArg;
     }
-  }
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "-ny", &intArg, &found));
-  if (found) {
-    if (intArg < 0) {
-      PetscCall(PetscPrintf(
-                PETSC_COMM_WORLD,
-                "Warning: Ignoring negative value for ny: %d\n", intArg));
-    } else {
-      ctx->grid.ny = intArg;
-    }
-  }
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "-nz", &intArg, &found));
-  if (found) {
-    if (intArg < 0) {
-      PetscCall(PetscPrintf(
-                PETSC_COMM_WORLD,
-                "Warning: Ignoring negative value for nz: %d\n", intArg));
-    } else {
-      ctx->grid.nz = intArg;
-    }
-  }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Lx", &realArg, &found));
-  if (found) {
-    ctx->grid.Lx = realArg;
-  }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Ly", &realArg, &found));
-  if (found) {
-    ctx->grid.Ly = realArg;
-  }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Lz", &realArg, &found));
-  if (found) {
-    ctx->grid.Lz = realArg;
-  }
-  PetscCall(PetscOptionsGetInt(NULL, NULL, "-np", &intArg, &found));
-  if (found) {
-    ctx->pic.np = intArg;
   } else {
-    ctx->pic.np = ctx->grid.nx * ctx->grid.ny * ctx->grid.nz;
+    ctx->grid.N.x = -1;
   }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-q", &realArg, &found));
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-Ny", &intArg, &found));
   if (found) {
-    ctx->pic.q = realArg;
+    if (intArg < 0) {
+      PetscCall(PetscPrintf(
+                PETSC_COMM_WORLD,
+                "Warning: Ignoring negative value for Ny: %d\n", intArg));
+    } else {
+      ctx->grid.N.y = intArg;
+    }
+  } else {
+    ctx->grid.N.y = -1;
   }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-m", &realArg, &found));
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-Nz", &intArg, &found));
   if (found) {
-    ctx->pic.m = realArg;
+    if (intArg < 0) {
+      PetscCall(PetscPrintf(
+                PETSC_COMM_WORLD,
+                "Warning: Ignoring negative value for Nz: %d\n", intArg));
+    } else {
+      ctx->grid.N.z = intArg;
+    }
+  } else {
+    ctx->grid.N.z = -1;
   }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-nu", &realArg, &found));
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-x0", &realArg, &found));
   if (found) {
-    ctx->pic.nu = realArg;
+    ctx->grid.p0.x = realArg;
+  } else {
+    ctx->grid.p0.x = 0.0;
   }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vx", &realArg, &found));
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-y0", &realArg, &found));
   if (found) {
-    ctx->pic.vx = realArg;
+    ctx->grid.p0.y = realArg;
+  } else {
+    ctx->grid.p0.y = 0.0;
   }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vy", &realArg, &found));
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-z0", &realArg, &found));
   if (found) {
-    ctx->pic.vy = realArg;
+    ctx->grid.p0.z = realArg;
+  } else {
+    ctx->grid.p0.z = 0.0;
   }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vz", &realArg, &found));
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-x1", &realArg, &found));
   if (found) {
-    ctx->pic.vz = realArg;
+    ctx->grid.p1.x = realArg;
+  } else {
+    ctx->grid.p1.x = 1.0;
   }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Bx", &realArg, &found));
+  if (ctx->grid.p1.x == ctx->grid.p0.x) {
+      PetscCall(PetscPrintf(
+                PETSC_COMM_WORLD,
+                "Warning: zero-width x dimension\n", intArg));
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-y1", &realArg, &found));
   if (found) {
-    ctx->plasma.Bx = realArg;
+    ctx->grid.p1.y = realArg;
+  } else {
+    ctx->grid.p1.y = 1.0;
   }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-By", &realArg, &found));
+  if (ctx->grid.p1.y == ctx->grid.p0.y) {
+      PetscCall(PetscPrintf(
+                PETSC_COMM_WORLD,
+                "Warning: zero-width y dimension\n", intArg));
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-z1", &realArg, &found));
   if (found) {
-    ctx->plasma.By = realArg;
+    ctx->grid.p1.z = realArg;
+  } else {
+    ctx->grid.p1.z = 1.0;
   }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Bz", &realArg, &found));
+  if (ctx->grid.p1.z == ctx->grid.p0.z) {
+      PetscCall(PetscPrintf(
+                PETSC_COMM_WORLD,
+                "Warning: zero-width z dimension\n", intArg));
+  }
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-Np", &intArg, &found));
   if (found) {
-    ctx->plasma.Bz = realArg;
+    ctx->plasma.Np = intArg;
+  } else {
+    ctx->plasma.Np = -1;
   }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Ex", &realArg, &found));
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-qi", &realArg, &found));
   if (found) {
-    ctx->plasma.Ex = realArg;
+    ctx->ions.q = realArg;
+  } else {
+    ctx->ions.q = Q;
   }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Ey", &realArg, &found));
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-mi", &realArg, &found));
   if (found) {
-    ctx->plasma.Ey = realArg;
+    ctx->ions.m = realArg;
+  } else {
+    ctx->ions.m = MP;
   }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Ez", &realArg, &found));
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-nue", &realArg, &found));
   if (found) {
-    ctx->plasma.Ez = realArg;
+    ctx->electrons.nu = realArg;
+  } else {
+    ctx->electrons.nu = 1.0;
   }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-nui", &realArg, &found));
+  if (found) {
+    ctx->ions.nu = realArg;
+  } else {
+    ctx->ions.nu = 1.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-ve0x", &realArg, &found));
+  if (found) {
+    ctx->electrons.v0.x = realArg;
+  } else {
+    ctx->electrons.v0.x = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-ve0y", &realArg, &found));
+  if (found) {
+    ctx->electrons.v0.y = realArg;
+  } else {
+    ctx->electrons.v0.y = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-ve0z", &realArg, &found));
+  if (found) {
+    ctx->electrons.v0.z = realArg;
+  } else {
+    ctx->electrons.v0.z = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vi0x", &realArg, &found));
+  if (found) {
+    ctx->ions.v0.x = realArg;
+  } else {
+    ctx->ions.v0.x = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vi0y", &realArg, &found));
+  if (found) {
+    ctx->ions.v0.y = realArg;
+  } else {
+    ctx->ions.v0.y = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vi0z", &realArg, &found));
+  if (found) {
+    ctx->ions.v0.z = realArg;
+  } else {
+    ctx->ions.v0.z = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-veTx", &realArg, &found));
+  if (found) {
+    ctx->electrons.vT.x = realArg;
+  } else {
+    ctx->electrons.vT.x = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-veTy", &realArg, &found));
+  if (found) {
+    ctx->electrons.vT.y = realArg;
+  } else {
+    ctx->electrons.vT.y = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-veTz", &realArg, &found));
+  if (found) {
+    ctx->electrons.vT.z = realArg;
+  } else {
+    ctx->electrons.vT.z = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-viTx", &realArg, &found));
+  if (found) {
+    ctx->ions.vT.x = realArg;
+  } else {
+    ctx->ions.vT.x = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-viTy", &realArg, &found));
+  if (found) {
+    ctx->ions.vT.y = realArg;
+  } else {
+    ctx->ions.vT.y = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-viTz", &realArg, &found));
+  if (found) {
+    ctx->ions.vT.z = realArg;
+  } else {
+    ctx->ions.vT.z = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-B0x", &realArg, &found));
+  if (found) {
+    ctx->plasma.B0.x = realArg;
+  } else {
+    ctx->plasma.B0.x = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-B0y", &realArg, &found));
+  if (found) {
+    ctx->plasma.B0.y = realArg;
+  } else {
+    ctx->plasma.B0.y = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-B0z", &realArg, &found));
+  if (found) {
+    ctx->plasma.B0.z = realArg;
+  } else {
+    ctx->plasma.B0.z = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-E0x", &realArg, &found));
+  if (found) {
+    ctx->plasma.E0.x = realArg;
+  } else {
+    ctx->plasma.E0.x = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-E0y", &realArg, &found));
+  if (found) {
+    ctx->plasma.E0.y = realArg;
+  } else {
+    ctx->plasma.E0.y = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-E0z", &realArg, &found));
+  if (found) {
+    ctx->plasma.E0.z = realArg;
+  } else {
+    ctx->plasma.E0.z = 0.0;
+  }
+
+  // Set grid lengths from lower and upper bounds.
+  ctx->grid.L.x = ctx->grid.p1.x - ctx->grid.p0.x;
+  ctx->grid.L.y = ctx->grid.p1.y - ctx->grid.p0.y;
+  ctx->grid.L.z = ctx->grid.p1.z - ctx->grid.p0.z;
+  // Set species gyrofrequency from q, B0, and m.
+  ctx->electrons.Omega.x = 
+    ctx->electrons.q * ctx->plasma.B0.x / ctx->electrons.m;
+  ctx->electrons.Omega.y = 
+    ctx->electrons.q * ctx->plasma.B0.y / ctx->electrons.m;
+  ctx->electrons.Omega.z = 
+    ctx->electrons.q * ctx->plasma.B0.z / ctx->electrons.m;
+  ctx->ions.Omega.x = 
+    ctx->ions.q * ctx->plasma.B0.x / ctx->ions.m;
+  ctx->ions.Omega.y = 
+    ctx->ions.q * ctx->plasma.B0.y / ctx->ions.m;
+  ctx->ions.Omega.z = 
+    ctx->ions.q * ctx->plasma.B0.z / ctx->ions.m;
+  // Set species magnetization from Omega and nu.
+  ctx->electrons.kappa.x = ctx->electrons.Omega.x / ctx->electrons.nu;
+  ctx->electrons.kappa.y = ctx->electrons.Omega.y / ctx->electrons.nu;
+  ctx->electrons.kappa.z = ctx->electrons.Omega.z / ctx->electrons.nu;
+  ctx->ions.kappa.x = ctx->ions.Omega.x / ctx->ions.nu;
+  ctx->ions.kappa.y = ctx->ions.Omega.y / ctx->ions.nu;
+  ctx->ions.kappa.z = ctx->ions.Omega.z / ctx->ions.nu;
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -222,9 +347,9 @@ ProcessOptions(Context *ctx)
 static PetscErrorCode
 CreateGridDM(DM *grid, Context *ctx)
 {
-  PetscInt       nx=(ctx->grid.nx > 0 ? ctx->grid.nx : 7);
-  PetscInt       ny=(ctx->grid.ny > 0 ? ctx->grid.ny : 7);
-  PetscInt       nz=(ctx->grid.nz > 0 ? ctx->grid.nz : 7);
+  PetscInt       Nx=(ctx->grid.N.x > 0 ? ctx->grid.N.x : 7);
+  PetscInt       Ny=(ctx->grid.N.y > 0 ? ctx->grid.N.y : 7);
+  PetscInt       Nz=(ctx->grid.N.z > 0 ? ctx->grid.N.z : 7);
   DMBoundaryType xBC=DM_BOUNDARY_PERIODIC;
   DMBoundaryType yBC=DM_BOUNDARY_PERIODIC;
   DMBoundaryType zBC=DM_BOUNDARY_PERIODIC;
@@ -233,44 +358,56 @@ CreateGridDM(DM *grid, Context *ctx)
 
   PetscFunctionBeginUser;
 
+  // Create the grid DM.
   PetscCall(DMDACreate3d(
             PETSC_COMM_WORLD,
             xBC, yBC, zBC,
             DMDA_STENCIL_BOX,
-            nx, ny, nz,
+            Nx, Ny, Nz,
             PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE,
             dof, width,
             NULL, NULL, NULL,
             grid));
+  // Perform basic setup.
   PetscCall(DMDASetElementType(*grid, DMDA_ELEMENT_Q1));
   PetscCall(DMSetFromOptions(*grid));
   PetscCall(DMSetUp(*grid));
-  // Coordinate values of nx, ny, and nz passed via -n{x,y,z} or
+  // Synchronize values of Nx, Ny, and Nz passed via -n{x,y,z} or
   // -da_grid_{x,y,z}. Note that this gives precedence to the latter.
   PetscCall(DMDAGetInfo(
             *grid, NULL,
-            &nx, &ny, &nz,
+            &Nx, &Ny, &Nz,
             NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
-  if (ctx->grid.nx == -1) {
-    ctx->grid.nx = nx;
+  // Update the grid context where necessary.
+  if (ctx->grid.N.x == -1) {
+    ctx->grid.N.x = Nx;
   }
-  if (ctx->grid.ny == -1) {
-    ctx->grid.ny = ny;
+  if (ctx->grid.N.y == -1) {
+    ctx->grid.N.y = Ny;
   }
-  if (ctx->grid.nz == -1) {
-    ctx->grid.nz = nz;
+  if (ctx->grid.N.z == -1) {
+    ctx->grid.N.z = Nz;
   }
+  // Set the number of charged particles equal to the number of grid cells, if
+  // necessary. Note that this must occur after synchronizing grid cells.
+  if (ctx->plasma.Np == -1) {
+    ctx->plasma.Np = ctx->grid.N.x * ctx->grid.N.y * ctx->grid.N.z;
+  }
+  // Set uniform coordinates on the grid DM.
   PetscCall(DMDASetUniformCoordinates(
             *grid,
-            0.0, ctx->grid.Lx,
-            0.0, ctx->grid.Ly,
-            0.0, ctx->grid.Lz));
+            ctx->grid.p0.x, ctx->grid.p1.x,
+            ctx->grid.p0.y, ctx->grid.p1.y,
+            ctx->grid.p0.z, ctx->grid.p1.z));
+  // Declare grid-quantity names.
   PetscCall(DMDASetFieldName(*grid, 0, "density"));
   PetscCall(DMDASetFieldName(*grid, 1, "x flux"));
   PetscCall(DMDASetFieldName(*grid, 2, "y flux"));
   PetscCall(DMDASetFieldName(*grid, 3, "z flux"));
   PetscCall(DMDASetFieldName(*grid, 4, "potential"));
+  // Associate the user context with the grid DM.
   PetscCall(DMSetApplicationContext(*grid, &ctx));
+  // View information about the grid DM.
   PetscCall(DMView(*grid, PETSC_VIEWER_STDOUT_WORLD));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -282,25 +419,32 @@ CreateSwarmDM(DM *swarm, DM *grid, Context *ctx)
 {
   PetscInt dim;
   PetscInt bufsize=0;
-  PetscInt np;
 
   PetscFunctionBeginUser;
 
+  // Create the swarm DM.
   PetscCall(DMCreate(PETSC_COMM_WORLD, swarm));
-  PetscCall(PetscObjectSetOptionsPrefix((PetscObject)(*swarm), "pic_"));
+  // Perform basic setup.
+  PetscCall(PetscObjectSetOptionsPrefix((PetscObject)(*swarm), "ions_"));
   PetscCall(DMSetType(*swarm, DMSWARM));
   PetscCall(PetscObjectSetName((PetscObject)*swarm, "Ions"));
+  // Synchronize the swarm DM with the grid DM.
   PetscCall(DMGetDimension(*grid, &dim));
   PetscCall(DMSetDimension(*swarm, dim));
-  PetscCall(DMSwarmSetType(*swarm, DMSWARM_PIC));
   PetscCall(DMSwarmSetCellDM(*swarm, *grid));
+  // Declare this to be a PIC swarm. This must occur after setting `dim`.
+  PetscCall(DMSwarmSetType(*swarm, DMSWARM_PIC));
+  // Register fields that each particle will have.
   PetscCall(DMSwarmInitializeFieldRegister(*swarm));
   PetscCall(DMSwarmRegisterUserStructField(
-            *swarm, "Species", sizeof(Species)));
+            *swarm, "position", sizeof(RealVector)));
+  PetscCall(DMSwarmRegisterUserStructField(
+            *swarm, "velocity", sizeof(RealVector)));
   PetscCall(DMSwarmFinalizeFieldRegister(*swarm));
   // Set the per-processor swarm size and buffer length for efficient resizing.
-  np = ctx->pic.np / ctx->mpi.size;
-  PetscCall(DMSwarmSetLocalSizes(*swarm, np, bufsize));
+  PetscCall(DMSwarmSetLocalSizes(
+            *swarm, ctx->plasma.Np / ctx->mpi.size, bufsize));
+  // View information about the swarm DM.
   PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -382,7 +526,7 @@ InitializeParticles(DM *swarm, Context *ctx)
 {
   PetscInt    np;
   PetscScalar *coords;
-  Species     *params;
+  RealVector  *pos, *vel;
   PetscInt    ip;
 
   PetscFunctionBeginUser;
@@ -393,45 +537,47 @@ InitializeParticles(DM *swarm, Context *ctx)
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(*swarm, &np));
 
-  // Get a representation of the particle coordinates.
+  // Get an array representation of the swarm coordinates.
   PetscCall(DMSwarmGetField(
             *swarm,
             DMSwarmPICField_coor, NULL, NULL,
             (void **)&coords));
 
-  // Get a representation of the particle parameters.
+  // Get an array representation of the particle positions.
   PetscCall(DMSwarmGetField(
             *swarm,
-            "Species", NULL, NULL,
-            (void **)&params));
+            "position", NULL, NULL,
+            (void **)&pos));
+
+  // Get an array representation of the particle velocities.
+  PetscCall(DMSwarmGetField(
+            *swarm,
+            "velocity", NULL, NULL,
+            (void **)&vel));
 
   // Loop over particles and assign parameter values.
   for (ip=0; ip<np; ip++) {
-    // Why assign common species values to each particle?
-    params[ip].q  = Q * ctx->pic.q;
-    params[ip].m  = MP * ctx->pic.m;
-    params[ip].nu = ctx->pic.nu;
-    params[ip].Ox = params[ip].q * ctx->plasma.Bx / params[ip].m;
-    params[ip].Oy = params[ip].q * ctx->plasma.By / params[ip].m;
-    params[ip].Oz = params[ip].q * ctx->plasma.Bz / params[ip].m;
-    params[ip].Kx = params[ip].Ox / params[ip].nu;
-    params[ip].Ky = params[ip].Oy / params[ip].nu;
-    params[ip].Kz = params[ip].Oz / params[ip].nu;
-    params[ip].x  = coords[ip*NDIM + 0];
-    params[ip].y  = coords[ip*NDIM + 1];
-    params[ip].z  = coords[ip*NDIM + 2];
-    params[ip].vx = ctx->pic.vx;
-    params[ip].vy = ctx->pic.vy;
-    params[ip].vz = ctx->pic.vz;
+    pos[ip].x = coords[ip*NDIM + 0];
+    pos[ip].y = coords[ip*NDIM + 1];
+    pos[ip].z = coords[ip*NDIM + 2];
+    vel[ip].x = ctx->ions.v0.x;
+    vel[ip].y = ctx->ions.v0.y;
+    vel[ip].z = ctx->ions.v0.z;
   }
 
-  // Restore the parameters array.
+  // Restore the particle-positions array.
   PetscCall(DMSwarmRestoreField(
             *swarm,
-            "Species", NULL, NULL,
-            (void **)&params));
+            "position", NULL, NULL,
+            (void **)&pos));
 
-  // Restore the coordinates array.
+  // Restore the particle-velocities array.
+  PetscCall(DMSwarmRestoreField(
+            *swarm,
+            "velocity", NULL, NULL,
+            (void **)&vel));
+
+  // Restore the swarm-coordinates array.
   PetscCall(DMSwarmRestoreField(
             *swarm,
             DMSwarmPICField_coor, NULL, NULL,
@@ -452,12 +598,12 @@ CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
   PetscInt    dim;
   PetscInt    i0, j0, k0;
   PetscReal   x, y, z, dx, dy, dz;
-  Species     *particles, particle;
+  RealVector  r, *pos, v, *vel;
   PetscInt    ip, np;
   PetscInt    ixl, ixh, iyl, iyh, izl, izh;
   PetscReal   wxl, wxh, wyl, wyh, wzl, wzh;
   PetscReal   hhh, lhh, hlh, llh, hhl, lhl, hll, lll;
-  PetscReal   v[NDIM];
+  PetscReal   w[NDIM];
 
   PetscFunctionBeginUser;
 
@@ -470,11 +616,17 @@ CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
   // Get a 4-D array corresponding to the local grid quantities.
   PetscCall(DMDAVecGetArray(grid, gridvec, &array));
 
-  // Get a representation of the particle parameters.
+  // Get an array representation of the particle positions.
   PetscCall(DMSwarmGetField(
             *swarm,
-            "Species", NULL, NULL,
-            (void **)&particles));
+            "position", NULL, NULL,
+            (void **)&pos));
+
+  // Get an array representation of the particle velocities.
+  PetscCall(DMSwarmGetField(
+            *swarm,
+            "velocity", NULL, NULL,
+            (void **)&vel));
 
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(*swarm, &np));
@@ -484,17 +636,17 @@ CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
             grid, NULL,
             &i0, &j0, &k0,
             NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
-  dx = ctx->grid.Lx / (PetscReal)i0;
-  dy = ctx->grid.Ly / (PetscReal)j0;
-  dz = ctx->grid.Lz / (PetscReal)k0;
+  dx = ctx->grid.L.x / (PetscReal)i0;
+  dy = ctx->grid.L.y / (PetscReal)j0;
+  dz = ctx->grid.L.z / (PetscReal)k0;
 
   // Loop over particles.
   for (ip=0; ip<np; ip++) {
     // Get the current particle's parameters.
-    particle = particles[ip];
-    x = particle.x / dx;
-    y = particle.y / dy;
-    z = particle.z / dz;
+    r = pos[ip];
+    x = r.x / dx;
+    y = r.y / dy;
+    z = r.z / dz;
     // Compute the x-dimension neighbors and corresponding weights.
     ixl = (PetscInt)x;
     ixh = ixl+1;
@@ -529,29 +681,36 @@ CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
     array[izh][iyl][ixl].n += hll;
     array[izl][iyl][ixl].n += lll;
     // Assign flux values (first moments wrt velocity).
-    v[0] = particle.vx;
-    v[1] = particle.vy;
-    v[2] = particle.vz;
+    v = vel[ip];
+    w[0] = v.x;
+    w[1] = v.y;
+    w[2] = v.z;
     for (dim=0; dim<NDIM; dim++) {
-      array[izh][iyh][ixh].flux[dim] += v[dim]*hhh;
-      array[izl][iyh][ixh].flux[dim] += v[dim]*lhh;
-      array[izh][iyl][ixh].flux[dim] += v[dim]*hlh;
-      array[izl][iyl][ixh].flux[dim] += v[dim]*llh;
-      array[izh][iyh][ixl].flux[dim] += v[dim]*hhl;
-      array[izl][iyh][ixl].flux[dim] += v[dim]*lhl;
-      array[izh][iyl][ixl].flux[dim] += v[dim]*hll;
-      array[izl][iyl][ixl].flux[dim] += v[dim]*lll;
+      array[izh][iyh][ixh].flux[dim] += w[dim]*hhh;
+      array[izl][iyh][ixh].flux[dim] += w[dim]*lhh;
+      array[izh][iyl][ixh].flux[dim] += w[dim]*hlh;
+      array[izl][iyl][ixh].flux[dim] += w[dim]*llh;
+      array[izh][iyh][ixl].flux[dim] += w[dim]*hhl;
+      array[izl][iyh][ixl].flux[dim] += w[dim]*lhl;
+      array[izh][iyl][ixl].flux[dim] += w[dim]*hll;
+      array[izl][iyl][ixl].flux[dim] += w[dim]*lll;
     }
   }
 
   // Restore the local grid array.
   PetscCall(DMDAVecRestoreArray(grid, gridvec, &array));
 
-  // Restore the parameters array.
+  // Restore the particle-positions array.
   PetscCall(DMSwarmRestoreField(
             *swarm,
-            "Species", NULL, NULL,
-            (void **)&particles));
+            "position", NULL, NULL,
+            (void **)&pos));
+
+  // Restore the particle-velocities array.
+  PetscCall(DMSwarmRestoreField(
+            *swarm,
+            "velocity", NULL, NULL,
+            (void **)&vel));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
