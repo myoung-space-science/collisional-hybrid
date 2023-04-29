@@ -156,7 +156,7 @@ ProcessOptions(Context *ctx)
   if (ctx->grid.p1.x == ctx->grid.p0.x) {
       PetscCall(PetscPrintf(
                 PETSC_COMM_WORLD,
-                "Warning: zero-width x dimension\n", intArg));
+                "Warning: zero-width x dimension\n"));
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-y1", &realArg, &found));
   if (found) {
@@ -167,7 +167,7 @@ ProcessOptions(Context *ctx)
   if (ctx->grid.p1.y == ctx->grid.p0.y) {
       PetscCall(PetscPrintf(
                 PETSC_COMM_WORLD,
-                "Warning: zero-width y dimension\n", intArg));
+                "Warning: zero-width y dimension\n"));
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-z1", &realArg, &found));
   if (found) {
@@ -178,7 +178,7 @@ ProcessOptions(Context *ctx)
   if (ctx->grid.p1.z == ctx->grid.p0.z) {
       PetscCall(PetscPrintf(
                 PETSC_COMM_WORLD,
-                "Warning: zero-width z dimension\n", intArg));
+                "Warning: zero-width z dimension\n"));
   }
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-Np", &intArg, &found));
   if (found) {
