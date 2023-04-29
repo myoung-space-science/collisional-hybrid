@@ -594,7 +594,7 @@ static PetscErrorCode
 CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
 {
   DM          grid;
-  GridNode   ***array;
+  GridNode    ***array;
   PetscInt    dim;
   PetscInt    i0, j0, k0;
   PetscReal   x, y, z, dx, dy, dz;
