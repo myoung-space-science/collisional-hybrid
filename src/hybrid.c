@@ -1075,7 +1075,7 @@ int main(int argc, char **args)
   KSP         ksp;
   PetscMPIInt rank, size;
   Vec         gvec, lvec;
-  PetscViewer      viewer;
+  PetscViewer viewer;
 
   PetscFunctionBeginUser;
 
