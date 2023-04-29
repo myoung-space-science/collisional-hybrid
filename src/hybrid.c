@@ -826,6 +826,9 @@ ComputeLHS(KSP ksp, Mat J, Mat A, Context *ctx)
   Ky = ctx->electrons.kappa.y;
   Kz = ctx->electrons.kappa.z;
 
+  // Compute the value of the matrix determinant.
+  detA = 1 + Kx*Kx + Ky*Ky + Kz*Kz;
+
   // Define components of the magnetization tensor.
   rxx = 1 + Kx*Kx;
   rxy = Ky*Kx - Kz;
