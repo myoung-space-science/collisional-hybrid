@@ -767,6 +767,8 @@ ComputeRHS(KSP ksp, Vec rhs, void *_ctx)
 {
   PetscFunctionBeginUser;
 
+  PetscCall(VecSetRandom(rhs, NULL));
+
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
