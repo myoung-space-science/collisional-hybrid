@@ -749,7 +749,7 @@ WriteHDF5(DM grid, Vec full, PetscViewer viewer)
 
 
 static PetscErrorCode
-ComputeInitialPhi(KSP ksp, Vec phi, Context *ctx)
+ComputeInitialPhi(KSP ksp, Vec phi, void *_ctx)
 {
   // Note that this function requires this signature for use with
   // `KSPSetComputeInitialGuess`.
@@ -763,7 +763,7 @@ ComputeInitialPhi(KSP ksp, Vec phi, Context *ctx)
 
 
 static PetscErrorCode
-ComputeRHS(KSP ksp, Vec phi, Context *ctx)
+ComputeRHS(KSP ksp, Vec rhs, void *_ctx)
 {
   PetscFunctionBeginUser;
 
@@ -772,8 +772,10 @@ ComputeRHS(KSP ksp, Vec phi, Context *ctx)
 
 
 static PetscErrorCode
-ComputeLHS(KSP ksp, Mat J, Mat A, Context *ctx)
+ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
 {
+  // the problem context
+  Context      *ctx=(Context *)_ctx;
   // the grid DM of this solver context
   DM           grid;
   // components of magnetization vector
