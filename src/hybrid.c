@@ -1073,7 +1073,6 @@ int main(int argc, char **args)
   Context     ctx;
   DM          grid, swarm;
   KSP         ksp;
-  PetscMPIInt rank, size;
   Vec         gvec, lvec;
   PetscViewer viewer;
 
