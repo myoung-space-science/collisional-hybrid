@@ -345,7 +345,7 @@ ProcessOptions(Context *ctx)
 
 
 static PetscErrorCode
-CreateGridDM(DM *grid, Context *ctx)
+InitializeGridDM(DM *grid, Context *ctx)
 {
   PetscInt       Nx=(ctx->grid.N.x > 0 ? ctx->grid.N.x : 7);
   PetscInt       Ny=(ctx->grid.N.y > 0 ? ctx->grid.N.y : 7);
@@ -415,7 +415,7 @@ CreateGridDM(DM *grid, Context *ctx)
 
 
 static PetscErrorCode
-CreateSwarmDM(DM *swarm, DM *grid, Context *ctx)
+InitializeSwarmDM(DM *swarm, DM *grid, Context *ctx)
 {
   PetscInt dim;
   PetscInt bufsize=0;
@@ -838,10 +838,10 @@ int main(int argc, char **args)
   ctx.mpi = mpi;
 
   // Set up discrete grid.
-  PetscCall(CreateGridDM(&grid, &ctx));
+  PetscCall(InitializeGridDM(&grid, &ctx));
 
   // Set up particle swarm.
-  PetscCall(CreateSwarmDM(&swarm, &grid, &ctx));
+  PetscCall(InitializeSwarmDM(&swarm, &grid, &ctx));
 
   // Set initial particle positions and velocities.
   PetscCall(InitializeParticles(&swarm, &ctx));
