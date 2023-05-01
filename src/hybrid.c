@@ -1137,8 +1137,6 @@ BuildLHSOperator(Mat A, DM dm, Context *ctx)
   PetscScalar  Kx, Ky, Kz;
   // components of magnetization tensor
   PetscScalar  rxx, ryx, rzx, rxy, ryy, rzy, rxz, ryz, rzz;
-  // number of cells in each dimension of the global grid
-  PetscInt     Nx, Ny, Nz;
   // grid-cell spacing in each dimension
   PetscReal    dx, dy, dz;
   // the DM of the grid
