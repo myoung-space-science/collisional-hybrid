@@ -1083,6 +1083,7 @@ int main(int argc, char **args)
   KSP         ksp;
   Vec         gvec, lvec;
   PetscViewer viewer;
+  Vec         phi;
 
   PetscFunctionBeginUser;
 
@@ -1135,6 +1136,7 @@ int main(int argc, char **args)
 
   // Solve the system.
   PetscCall(KSPSolve(ksp, NULL, NULL));
+  PetscCall(KSPGetSolution(ksp, &phi));
 
   // Output initial conditions.
 
