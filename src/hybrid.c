@@ -67,6 +67,7 @@ typedef struct {
   Plasma     plasma;    // plasma information
   MPIContext mpi;       // MPI information
   Vec        global;
+  DM         swarm;
 } Context;
 
 typedef struct {
@@ -430,45 +431,54 @@ InitializePotentialDM(DM grid, DM *solve)
 
 
 static PetscErrorCode
-InitializeSwarmDM(DM *swarm, DM *grid, Context *ctx)
+InitializeSwarmDM(DM grid, Context *ctx)
 {
+  DM       swarm;
   PetscInt dim;
   PetscInt bufsize=0;
 
   PetscFunctionBeginUser;
 
   // Create the swarm DM.
-  PetscCall(DMCreate(PETSC_COMM_WORLD, swarm));
+  PetscCall(DMCreate(PETSC_COMM_WORLD, &swarm));
   // Perform basic setup.
-  PetscCall(PetscObjectSetOptionsPrefix((PetscObject)(*swarm), "ions_"));
-  PetscCall(DMSetType(*swarm, DMSWARM));
-  PetscCall(PetscObjectSetName((PetscObject)*swarm, "Ions"));
+  PetscCall(PetscObjectSetOptionsPrefix((PetscObject)(swarm), "ions_"));
+  PetscCall(DMSetType(swarm, DMSWARM));
+  PetscCall(PetscObjectSetName((PetscObject)swarm, "Ions"));
   // Synchronize the swarm DM with the grid DM.
-  PetscCall(DMGetDimension(*grid, &dim));
-  PetscCall(DMSetDimension(*swarm, dim));
-  PetscCall(DMSwarmSetCellDM(*swarm, *grid));
+  PetscCall(DMGetDimension(grid, &dim));
+  PetscCall(DMSetDimension(swarm, dim));
+  PetscCall(DMSwarmSetCellDM(swarm, grid));
   // Declare this to be a PIC swarm. This must occur after setting `dim`.
-  PetscCall(DMSwarmSetType(*swarm, DMSWARM_PIC));
+  PetscCall(DMSwarmSetType(swarm, DMSWARM_PIC));
   // Register fields that each particle will have.
-  PetscCall(DMSwarmInitializeFieldRegister(*swarm));
+  PetscCall(DMSwarmInitializeFieldRegister(swarm));
+  // --> (x, y, z) position components
   PetscCall(DMSwarmRegisterUserStructField(
-            *swarm, "position", sizeof(RealVector)));
+            swarm, "position", sizeof(RealVector)));
+  // --> (x, y, z) velocity components
   PetscCall(DMSwarmRegisterUserStructField(
-            *swarm, "velocity", sizeof(RealVector)));
-  PetscCall(DMSwarmFinalizeFieldRegister(*swarm));
+            swarm, "velocity", sizeof(RealVector)));
+  PetscCall(DMSwarmFinalizeFieldRegister(swarm));
   // Set the per-processor swarm size and buffer length for efficient resizing.
   PetscCall(DMSwarmSetLocalSizes(
-            *swarm, ctx->plasma.Np / ctx->mpi.size, bufsize));
+            swarm, ctx->plasma.Np / ctx->mpi.size, bufsize));
   // View information about the swarm DM.
-  PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
+  PetscCall(PetscPrintf(
+            PETSC_COMM_WORLD,
+            "\n--> InitializeSwarmDM\n"));
+  PetscCall(DMView(swarm, PETSC_VIEWER_STDOUT_WORLD));
+  // Assign the swarm to the application context.
+  ctx->swarm = swarm;
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 
 static PetscErrorCode
-InitializeSwarmCoordinates(DM *swarm, Context *ctx)
+InitializeSwarmCoordinates(Context *ctx)
 {
+  DM          swarm=ctx->swarm;
   PetscInt    np;
   PetscScalar *coords;
   PetscInt    ip;
@@ -480,10 +490,10 @@ InitializeSwarmCoordinates(DM *swarm, Context *ctx)
 
   // Place an equal number of particles in each cell.
   PetscCall(DMSwarmInsertPointsUsingCellDM(
-            *swarm, DMSWARMPIC_LAYOUT_REGULAR, NPPCELL));
+            swarm, DMSWARMPIC_LAYOUT_REGULAR, NPPCELL));
 
   // Update the particle DM.
-  PetscCall(DMSwarmMigrate(*swarm, PETSC_TRUE));
+  PetscCall(DMSwarmMigrate(swarm, PETSC_TRUE));
 
   // Create a random-number generator to nudge particle positions.
   PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
@@ -494,12 +504,12 @@ InitializeSwarmCoordinates(DM *swarm, Context *ctx)
 
   // Get a representation of the particle coordinates.
   PetscCall(DMSwarmGetField(
-            *swarm,
+            swarm,
             DMSwarmPICField_coor, NULL, NULL,
             (void **)&coords));
 
   // Get the number of particles on this rank.
-  PetscCall(DMSwarmGetLocalSize(*swarm, &np));
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
 
   // Loop over particles and assign positions.
   for (ip=0; ip<np; ip++) {
@@ -522,7 +532,7 @@ InitializeSwarmCoordinates(DM *swarm, Context *ctx)
 
   // Restore the coordinates array.
   PetscCall(DMSwarmRestoreField(
-            *swarm,
+            swarm,
             DMSwarmPICField_coor, NULL, NULL,
             (void **)&coords));
 
@@ -530,15 +540,16 @@ InitializeSwarmCoordinates(DM *swarm, Context *ctx)
   PetscCall(PetscRandomDestroy(&random));
 
   // Update the swarm.
-  PetscCall(DMSwarmMigrate(*swarm, PETSC_TRUE));
+  PetscCall(DMSwarmMigrate(swarm, PETSC_TRUE));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 
 static PetscErrorCode
-InitializeParticles(DM *swarm, Context *ctx)
+InitializeParticles(Context *ctx)
 {
+  DM          swarm=ctx->swarm;
   PetscInt    np;
   PetscScalar *coords;
   RealVector  *pos, *vel;
@@ -547,26 +558,26 @@ InitializeParticles(DM *swarm, Context *ctx)
   PetscFunctionBeginUser;
 
   // Initialize coordinates in the particle DM.
-  PetscCall(InitializeSwarmCoordinates(swarm, &ctx));
+  PetscCall(InitializeSwarmCoordinates(&(*ctx)));
 
   // Get the number of particles on this rank.
-  PetscCall(DMSwarmGetLocalSize(*swarm, &np));
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
 
   // Get an array representation of the swarm coordinates.
   PetscCall(DMSwarmGetField(
-            *swarm,
+            swarm,
             DMSwarmPICField_coor, NULL, NULL,
             (void **)&coords));
 
   // Get an array representation of the particle positions.
   PetscCall(DMSwarmGetField(
-            *swarm,
+            swarm,
             "position", NULL, NULL,
             (void **)&pos));
 
   // Get an array representation of the particle velocities.
   PetscCall(DMSwarmGetField(
-            *swarm,
+            swarm,
             "velocity", NULL, NULL,
             (void **)&vel));
 
@@ -582,33 +593,36 @@ InitializeParticles(DM *swarm, Context *ctx)
 
   // Restore the particle-positions array.
   PetscCall(DMSwarmRestoreField(
-            *swarm,
+            swarm,
             "position", NULL, NULL,
             (void **)&pos));
 
   // Restore the particle-velocities array.
   PetscCall(DMSwarmRestoreField(
-            *swarm,
+            swarm,
             "velocity", NULL, NULL,
             (void **)&vel));
 
   // Restore the swarm-coordinates array.
   PetscCall(DMSwarmRestoreField(
-            *swarm,
+            swarm,
             DMSwarmPICField_coor, NULL, NULL,
             (void **)&coords));
 
   // Display information about the particle DM.
-  PetscCall(DMView(*swarm, PETSC_VIEWER_STDOUT_WORLD));
+  PetscCall(PetscPrintf(
+            PETSC_COMM_WORLD,
+            "\n--> InitializeParticles\n"));
+  PetscCall(DMView(swarm, PETSC_VIEWER_STDOUT_WORLD));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 
 static PetscErrorCode
-CollectParticles(DM *swarm, Context *ctx)
+CollectParticles(Context *ctx)
 {
-  DM          grid;
+  DM          grid, swarm=ctx->swarm;
   Vec         gridvec;
   GridNode    ***array;
   PetscInt    dim;
@@ -624,7 +638,7 @@ CollectParticles(DM *swarm, Context *ctx)
   PetscFunctionBeginUser;
 
   // Get the grid DM from the swarm DM.
-  PetscCall(DMSwarmGetCellDM(*swarm, &grid));
+  PetscCall(DMSwarmGetCellDM(swarm, &grid));
 
   // Get a vector for the local portion of the grid.
   PetscCall(DMGetLocalVector(grid, &gridvec));
@@ -637,18 +651,18 @@ CollectParticles(DM *swarm, Context *ctx)
 
   // Get an array representation of the particle positions.
   PetscCall(DMSwarmGetField(
-            *swarm,
+            swarm,
             "position", NULL, NULL,
             (void **)&pos));
 
   // Get an array representation of the particle velocities.
   PetscCall(DMSwarmGetField(
-            *swarm,
+            swarm,
             "velocity", NULL, NULL,
             (void **)&vel));
 
   // Get the number of particles on this rank.
-  PetscCall(DMSwarmGetLocalSize(*swarm, &np));
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
 
   // Compute grid grid spacing.
   PetscCall(DMDAGetInfo(
@@ -727,13 +741,13 @@ CollectParticles(DM *swarm, Context *ctx)
 
   // Restore the particle-positions array.
   PetscCall(DMSwarmRestoreField(
-            *swarm,
+            swarm,
             "position", NULL, NULL,
             (void **)&pos));
 
   // Restore the particle-velocities array.
   PetscCall(DMSwarmRestoreField(
-            *swarm,
+            swarm,
             "velocity", NULL, NULL,
             (void **)&vel));
 
@@ -799,7 +813,9 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
 {
   // the problem context
   Context      *ctx=(Context *)_ctx;
-  // the grid DM of this solver context
+  // the DM of this solver context
+  DM           dm;
+  // the DM of the grid
   DM           grid;
   // components of magnetization vector
   PetscScalar  Kx, Ky, Kz;
@@ -866,13 +882,13 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   rzz = 1 + Kz*Kz;
 
   // Get the grid DM associated with the Krylov solver.
-  PetscCall(KSPGetDM(ksp, &grid));
+  PetscCall(KSPGetDM(ksp, &dm));
 
   // Compute grid-cell spacing. Note that the number of grid cells may depend on
   // the Krylov context (e.g., when using multigrid methods), so `N{x,y,z} !=
   // ctx->grid.N{x,y,z}` in general.
   PetscCall(DMDAGetInfo(
-            grid, NULL,
+            dm, NULL,
             &Nx, &Ny, &Nz,
             NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
   dx = 1.0 / (PetscReal)Nx;
@@ -901,25 +917,102 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   syz = 0.25*dx  / detA; // 2*dxdydz / (|A|*8*dydz)
   szz = dx*dy/dz / detA; // 2*dxdydz / (|A|*2*dz^2)
 
+  // Get the grid DM from the context.
+  PetscCall(DMSwarmGetCellDM(ctx->swarm, &grid));
+
+  PetscCall(PetscPrintf(
+            PETSC_COMM_WORLD,
+            "\n--> ComputeLHS\n"));
+  PetscCall(DMView(dm, PETSC_VIEWER_STDOUT_WORLD));
+  PetscCall(DMView(grid, PETSC_VIEWER_STDOUT_WORLD));
+
   // Extract the density array.
   PetscCall(DMGetLocalVector(grid, &gridvec));
+  PetscCall(DMGlobalToLocalBegin(grid, ctx->global, INSERT_VALUES, gridvec));
+  PetscCall(DMGlobalToLocalEnd(grid, ctx->global, INSERT_VALUES, gridvec));
   PetscCall(DMDAVecGetArray(grid, gridvec, &array));
+  {
+    PetscInt vecsize;
+    PetscCall(VecGetSize(gridvec, &vecsize));
+    PetscCall(PetscSynchronizedPrintf(
+              PETSC_COMM_WORLD,
+              "[%d] Size of ctx->global: %d\n",
+              ctx->mpi.rank, vecsize));
+    PetscCall(PetscSynchronizedFlush(
+              PETSC_COMM_WORLD, PETSC_STDOUT));
+  }
 
   // Get this processor's indices.
-  PetscCall(DMDAGetCorners(grid, &i0, &j0, &k0, &ni, &nj, &nk));
+  PetscCall(DMDAGetCorners(dm, &i0, &j0, &k0, &ni, &nj, &nk));
 
   // Loop over grid points.
   for (k=k0; k<k0+nk; k++) {
     for (j=j0; j<j0+nj; j++) {
       for (i=i0; i<i0+ni; i++) {
+        PetscCall(PetscSynchronizedPrintf(
+                  PETSC_COMM_WORLD,
+                  "[%d] (%03d, %03d, %03d)\n",
+                  ctx->mpi.rank, i, j, k));
+        PetscCall(PetscSynchronizedFlush(
+                  PETSC_COMM_WORLD, PETSC_STDOUT));
+
         // Assign density values
+        PetscCall(PetscSynchronizedPrintf(
+                  PETSC_COMM_WORLD,
+                  "[%d] nijk = array[%03d][%03d][%03d].n;\n",
+                  ctx->mpi.rank, k, j, i));
+        PetscCall(PetscSynchronizedFlush(
+                  PETSC_COMM_WORLD, PETSC_STDOUT));
         nijk = array[k][j][i].n;
+        PetscCall(PetscSynchronizedPrintf(
+                  PETSC_COMM_WORLD,
+                  "[%d] nmjk = array[%03d][%03d][%03d].n;\n",
+                  ctx->mpi.rank, k, j, i-1));
+        PetscCall(PetscSynchronizedFlush(
+                  PETSC_COMM_WORLD, PETSC_STDOUT));
         nmjk = array[k][j][i-1].n;
+        PetscCall(PetscSynchronizedPrintf(
+                  PETSC_COMM_WORLD,
+                  "[%d] npjk = array[%03d][%03d][%03d].n;\n",
+                  ctx->mpi.rank, k, j, i+1));
+        PetscCall(PetscSynchronizedFlush(
+                  PETSC_COMM_WORLD, PETSC_STDOUT));
         npjk = array[k][j][i+1].n;
+        PetscCall(PetscSynchronizedPrintf(
+                  PETSC_COMM_WORLD,
+                  "[%d] nimk = array[%03d][%03d][%03d].n;\n",
+                  ctx->mpi.rank, k, j-1, i));
+        PetscCall(PetscSynchronizedFlush(
+                  PETSC_COMM_WORLD, PETSC_STDOUT));
         nimk = array[k][j-1][i].n;
+        PetscCall(PetscSynchronizedPrintf(
+                  PETSC_COMM_WORLD,
+                  "[%d] nipk = array[%03d][%03d][%03d].n;\n",
+                  ctx->mpi.rank, k, j+1, i));
+        PetscCall(PetscSynchronizedFlush(
+                  PETSC_COMM_WORLD, PETSC_STDOUT));
         nipk = array[k][j+1][i].n;
+        PetscCall(PetscSynchronizedPrintf(
+                  PETSC_COMM_WORLD,
+                  "[%d] nijm = array[%03d][%03d][%03d].n;\n",
+                  ctx->mpi.rank, k-1, j, i));
+        PetscCall(PetscSynchronizedFlush(
+                  PETSC_COMM_WORLD, PETSC_STDOUT));
         nijm = array[k-1][j][i].n;
+        PetscCall(PetscSynchronizedPrintf(
+                  PETSC_COMM_WORLD,
+                  "[%d] nijp = array[%03d][%03d][%03d].n;\n",
+                  ctx->mpi.rank, k+1, j, i));
+        PetscCall(PetscSynchronizedFlush(
+                  PETSC_COMM_WORLD, PETSC_STDOUT));
         nijp = array[k+1][j][i].n;
+
+        PetscCall(PetscSynchronizedPrintf(
+                  PETSC_COMM_WORLD,
+                  "[%d] Assigned temporary density values.\n",
+                  ctx->mpi.rank));
+        PetscCall(PetscSynchronizedFlush(
+                  PETSC_COMM_WORLD, PETSC_STDOUT));
 
         /* x-y corner coefficients */
         vppk =  sxy*rxy*(npjk + nijk) + syx*ryx*(nipk + nijk);
@@ -1057,6 +1150,13 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
         col[18].k = row.k;
         PetscCall(MatSetValuesStencil(
                   A, 1, &row, NVALUES, col, val, INSERT_VALUES));
+
+        PetscCall(PetscSynchronizedPrintf(
+                  PETSC_COMM_WORLD,
+                  "[%d] Assigned matrix values.\n", ctx->mpi.rank));
+        PetscCall(PetscSynchronizedFlush(
+                  PETSC_COMM_WORLD, PETSC_STDOUT));
+
       }
     }
   }
@@ -1080,7 +1180,7 @@ int main(int argc, char **args)
 {
   MPIContext  mpi;
   Context     ctx;
-  DM          grid, swarm, solve;
+  DM          grid, solve;
   KSP         ksp;
   Vec         gvec, lvec;
   PetscViewer viewer;
@@ -1106,13 +1206,13 @@ int main(int argc, char **args)
   PetscCall(VecZeroEntries(ctx.global));
 
   // Set up particle swarm.
-  PetscCall(InitializeSwarmDM(&swarm, &grid, &ctx));
+  PetscCall(InitializeSwarmDM(grid, &ctx));
 
   // Set initial particle positions and velocities.
-  PetscCall(InitializeParticles(&swarm, &ctx));
+  PetscCall(InitializeParticles(&ctx));
 
   // Compute initial density and flux.
-  PetscCall(CollectParticles(&swarm, &ctx));
+  PetscCall(CollectParticles(&ctx));
 
   // [DEV] View the global grid vector.
   PetscCall(PetscViewerHDF5Open(
@@ -1163,7 +1263,7 @@ int main(int argc, char **args)
   PetscCall(KSPDestroy(&ksp));
   PetscCall(VecDestroy(&ctx.global));
   PetscCall(DMDestroy(&grid));
-  PetscCall(DMDestroy(&swarm));
+  PetscCall(DMDestroy(&ctx.swarm));
 
   // Finalize PETSc and MPI.
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n*********** END ***********\n"));
