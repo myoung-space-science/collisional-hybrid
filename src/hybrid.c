@@ -357,7 +357,7 @@ InitializeGridDM(DM *grid, Context *ctx)
   DMBoundaryType xBC=DM_BOUNDARY_PERIODIC;
   DMBoundaryType yBC=DM_BOUNDARY_PERIODIC;
   DMBoundaryType zBC=DM_BOUNDARY_PERIODIC;
-  PetscInt       dof=5;
+  PetscInt       dof=4;
   PetscInt       width=1;
 
   PetscFunctionBeginUser;
