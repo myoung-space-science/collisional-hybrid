@@ -423,7 +423,7 @@ InitializePotentialDM(DM grid, DM *solve)
 {
   PetscFunctionBeginUser;
 
-  PetscCall(DMConvert(grid, DMDA, solve));
+  PetscCall(DMDACreateCompatibleDMDA(grid, 1, solve));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
