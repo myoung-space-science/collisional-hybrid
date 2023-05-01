@@ -1398,7 +1398,6 @@ int main(int argc, char **args)
   DM          grid, solve;
   KSP         ksp;
   Mat         A;
-  Vec         gvec, lvec;
   PetscViewer viewer;
   Vec         b, x;
 
