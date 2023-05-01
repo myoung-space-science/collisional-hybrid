@@ -418,6 +418,17 @@ InitializeGridDM(DM *grid, Context *ctx)
 
 
 static PetscErrorCode
+InitializePotentialDM(DM grid, DM *solve)
+{
+  PetscFunctionBeginUser;
+
+  PetscCall(DMConvert(grid, DMDA, solve));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+static PetscErrorCode
 InitializeSwarmDM(DM *swarm, DM *grid, Context *ctx)
 {
   PetscInt dim;
