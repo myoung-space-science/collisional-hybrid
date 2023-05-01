@@ -1239,12 +1239,6 @@ BuildLHSOperator(Mat A, DM dm, Context *ctx)
   for (k=k0; k<k0+nk; k++) {
     for (j=j0; j<j0+nj; j++) {
       for (i=i0; i<i0+ni; i++) {
-        PetscCall(PetscSynchronizedPrintf(
-                  PETSC_COMM_WORLD,
-                  "[%d] (%03d, %03d, %03d)\n",
-                  ctx->mpi.rank, i, j, k));
-        PetscCall(PetscSynchronizedFlush(
-                  PETSC_COMM_WORLD, PETSC_STDOUT));
 
         // Assign density values
         nijk = array[k][j][i].n;
@@ -1456,11 +1450,8 @@ int main(int argc, char **args)
   PetscCall(KSPSetOperators(ksp, A, A));
   PetscCall(KSPSetFromOptions(ksp));
   PetscCall(KSPSetUp(ksp));
-  // PetscCall(KSPView(ksp, PETSC_VIEWER_STDOUT_WORLD));
   PetscCall(BuildRHSFunction(b));
   PetscCall(KSPSolve(ksp, b, x));
-  // PetscCall(VecView(x, PETSC_VIEWER_STDOUT_WORLD));
-  PetscCall(MatView(A, PETSC_VIEWER_STDOUT_WORLD));
 
   // Output initial conditions.
 
