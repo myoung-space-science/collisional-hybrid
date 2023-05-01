@@ -464,9 +464,6 @@ InitializeSwarmDM(DM grid, Context *ctx)
   PetscCall(DMSwarmSetLocalSizes(
             swarm, ctx->plasma.Np / ctx->mpi.size, bufsize));
   // View information about the swarm DM.
-  PetscCall(PetscPrintf(
-            PETSC_COMM_WORLD,
-            "\n--> InitializeSwarmDM\n"));
   PetscCall(DMView(swarm, PETSC_VIEWER_STDOUT_WORLD));
   // Assign the swarm to the application context.
   ctx->swarm = swarm;
@@ -610,9 +607,6 @@ InitializeParticles(Context *ctx)
             (void **)&coords));
 
   // Display information about the particle DM.
-  PetscCall(PetscPrintf(
-            PETSC_COMM_WORLD,
-            "\n--> InitializeParticles\n"));
   PetscCall(DMView(swarm, PETSC_VIEWER_STDOUT_WORLD));
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -923,7 +917,13 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   PetscCall(PetscPrintf(
             PETSC_COMM_WORLD,
             "\n--> ComputeLHS\n"));
+  PetscCall(PetscPrintf(
+            PETSC_COMM_WORLD,
+            "\n    Solver DM:\n"));
   PetscCall(DMView(dm, PETSC_VIEWER_STDOUT_WORLD));
+  PetscCall(PetscPrintf(
+            PETSC_COMM_WORLD,
+            "\n    Grid DM:\n"));
   PetscCall(DMView(grid, PETSC_VIEWER_STDOUT_WORLD));
 
   // Extract the density array.
@@ -931,19 +931,13 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   PetscCall(DMGlobalToLocalBegin(grid, ctx->global, INSERT_VALUES, gridvec));
   PetscCall(DMGlobalToLocalEnd(grid, ctx->global, INSERT_VALUES, gridvec));
   PetscCall(DMDAVecGetArray(grid, gridvec, &array));
-  {
-    PetscInt vecsize;
-    PetscCall(VecGetSize(gridvec, &vecsize));
-    PetscCall(PetscSynchronizedPrintf(
-              PETSC_COMM_WORLD,
-              "[%d] Size of ctx->global: %d\n",
-              ctx->mpi.rank, vecsize));
-    PetscCall(PetscSynchronizedFlush(
-              PETSC_COMM_WORLD, PETSC_STDOUT));
-  }
 
   // Get this processor's indices.
   PetscCall(DMDAGetCorners(dm, &i0, &j0, &k0, &ni, &nj, &nk));
+
+  PetscCall(PetscPrintf(
+            PETSC_COMM_WORLD,
+            "\n    Beginning iterations.\n"));
 
   // Loop over grid points.
   for (k=k0; k<k0+nk; k++) {
@@ -957,62 +951,13 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
                   PETSC_COMM_WORLD, PETSC_STDOUT));
 
         // Assign density values
-        PetscCall(PetscSynchronizedPrintf(
-                  PETSC_COMM_WORLD,
-                  "[%d] nijk = array[%03d][%03d][%03d].n;\n",
-                  ctx->mpi.rank, k, j, i));
-        PetscCall(PetscSynchronizedFlush(
-                  PETSC_COMM_WORLD, PETSC_STDOUT));
         nijk = array[k][j][i].n;
-        PetscCall(PetscSynchronizedPrintf(
-                  PETSC_COMM_WORLD,
-                  "[%d] nmjk = array[%03d][%03d][%03d].n;\n",
-                  ctx->mpi.rank, k, j, i-1));
-        PetscCall(PetscSynchronizedFlush(
-                  PETSC_COMM_WORLD, PETSC_STDOUT));
         nmjk = array[k][j][i-1].n;
-        PetscCall(PetscSynchronizedPrintf(
-                  PETSC_COMM_WORLD,
-                  "[%d] npjk = array[%03d][%03d][%03d].n;\n",
-                  ctx->mpi.rank, k, j, i+1));
-        PetscCall(PetscSynchronizedFlush(
-                  PETSC_COMM_WORLD, PETSC_STDOUT));
         npjk = array[k][j][i+1].n;
-        PetscCall(PetscSynchronizedPrintf(
-                  PETSC_COMM_WORLD,
-                  "[%d] nimk = array[%03d][%03d][%03d].n;\n",
-                  ctx->mpi.rank, k, j-1, i));
-        PetscCall(PetscSynchronizedFlush(
-                  PETSC_COMM_WORLD, PETSC_STDOUT));
         nimk = array[k][j-1][i].n;
-        PetscCall(PetscSynchronizedPrintf(
-                  PETSC_COMM_WORLD,
-                  "[%d] nipk = array[%03d][%03d][%03d].n;\n",
-                  ctx->mpi.rank, k, j+1, i));
-        PetscCall(PetscSynchronizedFlush(
-                  PETSC_COMM_WORLD, PETSC_STDOUT));
         nipk = array[k][j+1][i].n;
-        PetscCall(PetscSynchronizedPrintf(
-                  PETSC_COMM_WORLD,
-                  "[%d] nijm = array[%03d][%03d][%03d].n;\n",
-                  ctx->mpi.rank, k-1, j, i));
-        PetscCall(PetscSynchronizedFlush(
-                  PETSC_COMM_WORLD, PETSC_STDOUT));
         nijm = array[k-1][j][i].n;
-        PetscCall(PetscSynchronizedPrintf(
-                  PETSC_COMM_WORLD,
-                  "[%d] nijp = array[%03d][%03d][%03d].n;\n",
-                  ctx->mpi.rank, k+1, j, i));
-        PetscCall(PetscSynchronizedFlush(
-                  PETSC_COMM_WORLD, PETSC_STDOUT));
         nijp = array[k+1][j][i].n;
-
-        PetscCall(PetscSynchronizedPrintf(
-                  PETSC_COMM_WORLD,
-                  "[%d] Assigned temporary density values.\n",
-                  ctx->mpi.rank));
-        PetscCall(PetscSynchronizedFlush(
-                  PETSC_COMM_WORLD, PETSC_STDOUT));
 
         /* x-y corner coefficients */
         vppk =  sxy*rxy*(npjk + nijk) + syx*ryx*(nipk + nijk);
@@ -1150,13 +1095,6 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
         col[18].k = row.k;
         PetscCall(MatSetValuesStencil(
                   A, 1, &row, NVALUES, col, val, INSERT_VALUES));
-
-        PetscCall(PetscSynchronizedPrintf(
-                  PETSC_COMM_WORLD,
-                  "[%d] Assigned matrix values.\n", ctx->mpi.rank));
-        PetscCall(PetscSynchronizedFlush(
-                  PETSC_COMM_WORLD, PETSC_STDOUT));
-
       }
     }
   }
