@@ -168,11 +168,9 @@ if [ ${debug} == 1 ]; then
     mpiexec -n ${np} ${bindir}/${prog} \
         -debug_terminal "gnome-terminal --" \
         -start_in_debugger \
-        --outname ${outname} \
         ${extra}
 else
     mpiexec -n ${np} ${bindir}/${prog} \
-        -ksp_monitor_short \
         --outname ${outname} \
         ${extra} &> run.log
 fi
