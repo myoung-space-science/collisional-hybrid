@@ -409,7 +409,6 @@ InitializeGridDM(DM *grid, Context *ctx)
   PetscCall(DMDASetFieldName(*grid, 1, "x flux"));
   PetscCall(DMDASetFieldName(*grid, 2, "y flux"));
   PetscCall(DMDASetFieldName(*grid, 3, "z flux"));
-  PetscCall(DMDASetFieldName(*grid, 4, "potential"));
   // Associate the user context with the grid DM.
   PetscCall(DMSetApplicationContext(*grid, &ctx));
   // View information about the grid DM.
