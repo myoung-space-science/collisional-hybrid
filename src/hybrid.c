@@ -1118,7 +1118,7 @@ int main(int argc, char **args)
 {
   MPIContext  mpi;
   Context     ctx;
-  DM          grid, solve;
+  DM          grid, solve, composite;
   KSP         ksp;
   Vec         gvec, lvec;
   PetscViewer viewer;
@@ -1160,7 +1160,12 @@ int main(int argc, char **args)
   // Set up the linear-solver context.
   PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
   PetscCall(InitializePotentialDM(grid, &solve));
-  PetscCall(KSPSetDM(ksp, solve));
+  PetscCall(DMCompositeCreate(PETSC_COMM_WORLD, &composite));
+  PetscCall(DMCompositeAddDM(composite, grid));
+  PetscCall(DMCompositeAddDM(composite, solve));
+  PetscCall(DMSetUp(composite));
+  PetscCall(KSPSetDM(ksp, composite));
+  PetscCall(KSPSetDMActive(ksp, PETSC_FALSE));
   PetscCall(KSPSetFromOptions(ksp));
 
   // Compute initial electric field.
