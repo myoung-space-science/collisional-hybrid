@@ -66,6 +66,7 @@ typedef struct {
   Species    ions;      // ion parameter values
   Plasma     plasma;    // plasma information
   MPIContext mpi;       // MPI information
+  Vec        global;
 } Context;
 
 typedef struct {
