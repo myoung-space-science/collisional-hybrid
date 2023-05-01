@@ -3,3 +3,4 @@ runs
 petsc-tutorials
 .vscode
 **/__pycache__/*
+dev
