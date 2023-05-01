@@ -1088,7 +1088,7 @@ int main(int argc, char **args)
 {
   MPIContext  mpi;
   Context     ctx;
-  DM          grid, swarm;
+  DM          grid, swarm, solve;
   KSP         ksp;
   Vec         gvec, lvec;
   PetscViewer viewer;
@@ -1135,7 +1135,8 @@ int main(int argc, char **args)
 
   // Set up the linear-solver context.
   PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
-  PetscCall(KSPSetDM(ksp, grid));
+  PetscCall(InitializePotentialDM(grid, &solve));
+  PetscCall(KSPSetDM(ksp, solve));
   PetscCall(KSPSetFromOptions(ksp));
 
   // Compute initial electric field.
