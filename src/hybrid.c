@@ -606,9 +606,10 @@ InitializeParticles(DM *swarm, Context *ctx)
 
 
 static PetscErrorCode
-CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
+CollectParticles(DM *swarm, Context *ctx)
 {
   DM          grid;
+  Vec         gridvec;
   GridNode    ***array;
   PetscInt    dim;
   PetscInt    i0, j0, k0;
@@ -624,6 +625,9 @@ CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
 
   // Get the grid DM from the swarm DM.
   PetscCall(DMSwarmGetCellDM(*swarm, &grid));
+
+  // Get a vector for the local portion of the grid.
+  PetscCall(DMGetLocalVector(grid, &gridvec));
 
   // Make sure the local grid vector has zeroes everywhere.
   PetscCall(VecZeroEntries(gridvec));
@@ -714,6 +718,12 @@ CollectParticles(DM *swarm, Context *ctx, Vec gridvec)
 
   // Restore the local grid array.
   PetscCall(DMDAVecRestoreArray(grid, gridvec, &array));
+
+  // Communicate local information to the persistent global grid vector.
+  PetscCall(DMLocalToGlobal(grid, gridvec, ADD_VALUES, ctx->global));
+
+  // Restore the local grid vector.
+  PetscCall(DMRestoreLocalVector(grid, &gridvec));
 
   // Restore the particle-positions array.
   PetscCall(DMSwarmRestoreField(
@@ -1092,6 +1102,8 @@ int main(int argc, char **args)
 
   // Set up discrete grid.
   PetscCall(InitializeGridDM(&grid, &ctx));
+  PetscCall(DMCreateGlobalVector(grid, &ctx.global));
+  PetscCall(VecZeroEntries(ctx.global));
 
   // Set up particle swarm.
   PetscCall(InitializeSwarmDM(&swarm, &grid, &ctx));
@@ -1100,20 +1112,12 @@ int main(int argc, char **args)
   PetscCall(InitializeParticles(&swarm, &ctx));
 
   // Compute initial density and flux.
-  PetscCall(DMCreateGlobalVector(grid, &gvec));
-  PetscCall(VecZeroEntries(gvec));
-  PetscCall(DMGetLocalVector(grid, &lvec));
-  PetscCall(DMGlobalToLocalBegin(grid, gvec, INSERT_VALUES, lvec));
-  PetscCall(DMGlobalToLocalEnd(grid, gvec, INSERT_VALUES, lvec));
-  PetscCall(CollectParticles(&swarm, &ctx, lvec));
-  PetscCall(DMLocalToGlobalBegin(grid, lvec, ADD_VALUES, gvec));
-  PetscCall(DMLocalToGlobalEnd(grid, lvec, ADD_VALUES, gvec));
-  PetscCall(DMRestoreLocalVector(grid, &lvec));
+  PetscCall(CollectParticles(&swarm, &ctx));
 
   // [DEV] View the global grid vector.
   PetscCall(PetscViewerHDF5Open(
             PETSC_COMM_WORLD, "grid.hdf", FILE_MODE_WRITE, &viewer));
-  PetscCall(WriteHDF5(grid, gvec, viewer));
+  PetscCall(WriteHDF5(grid, ctx.global, viewer));
 
   // Set up the linear-solver context.
   PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
@@ -1157,7 +1161,7 @@ int main(int argc, char **args)
   // Free memory.
   PetscCall(PetscViewerDestroy(&viewer));
   PetscCall(KSPDestroy(&ksp));
-  PetscCall(VecDestroy(&gvec));
+  PetscCall(VecDestroy(&ctx.global));
   PetscCall(DMDestroy(&grid));
   PetscCall(DMDestroy(&swarm));
 
