@@ -807,6 +807,8 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
 {
   // the problem context
   Context      *ctx=(Context *)_ctx;
+  // the composite DM
+  DM           composite;
   // the DM of this solver context
   DM           dm;
   // the DM of the grid
@@ -875,8 +877,11 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   rzy = Ky*Kz + Kx;
   rzz = 1 + Kz*Kz;
 
-  // Get the grid DM associated with the Krylov solver.
-  PetscCall(KSPGetDM(ksp, &dm));
+  // Get the composite DM associated with the Krylov solver.
+  PetscCall(KSPGetDM(ksp, &composite));
+
+  // Get the individual DMs.
+  PetscCall(DMCompositeGetEntries(composite, &grid, &dm));
 
   // Compute grid-cell spacing. Note that the number of grid cells may depend on
   // the Krylov context (e.g., when using multigrid methods), so `N{x,y,z} !=
@@ -912,7 +917,7 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   szz = dx*dy/dz / detA; // 2*dxdydz / (|A|*2*dz^2)
 
   // Get the grid DM from the context.
-  PetscCall(DMSwarmGetCellDM(ctx->swarm, &grid));
+  // PetscCall(DMSwarmGetCellDM(ctx->swarm, &grid));
 
   PetscCall(PetscPrintf(
             PETSC_COMM_WORLD,
@@ -1114,15 +1119,294 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
 }
 
 
+static PetscErrorCode
+BuildRHSFunction(Vec b)
+{
+  PetscFunctionBeginUser;
+
+  PetscCall(VecSetRandom(b, NULL));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+static PetscErrorCode
+BuildLHSOperator(Mat A, DM dm, Context *ctx)
+{
+  // components of magnetization vector
+  PetscScalar  Kx, Ky, Kz;
+  // components of magnetization tensor
+  PetscScalar  rxx, ryx, rzx, rxy, ryy, rzy, rxz, ryz, rzz;
+  // number of cells in each dimension of the global grid
+  PetscInt     Nx, Ny, Nz;
+  // grid-cell spacing in each dimension
+  PetscReal    dx, dy, dz;
+  // the DM of the grid
+  DM           grid;
+  // matrix determinant
+  PetscReal    detA;
+  // indices of the lower left corner of the local grid
+  PetscInt     i0, j0, k0;
+  // number of non-ghost cells in each dimension of the local grid
+  PetscInt     ni, nj, nk;
+  // geometric scale factors
+  PetscScalar  sxx, syx, szx, sxy, syy, szy, sxz, syz, szz;
+  // local grid vector
+  Vec          gridvec;
+  // array representation of grid quantities
+  GridNode  ***array;
+  // grid indices
+  PetscInt     i, j, k;
+  // the density value at the current and neighboring grid points
+  PetscScalar  nijk, npjk, nmjk, nipk, nimk, nijp, nijm;
+  // diagonal coefficient
+  PetscScalar  vijk;
+  // star-stencil coefficients
+  PetscScalar  vpjk, vmjk, vipk, vimk, vijp, vijm;
+  // x-y corners
+  PetscScalar  vmmk, vpmk, vmpk, vppk;
+  // x-z corners
+  PetscScalar  vpjp, vpjm, vmjp, vmjm;
+  // y-z corners
+  PetscScalar  vipp, vipm, vimp, vimm;
+  // the current value at each active stencil point
+  PetscScalar  val[NVALUES];
+  // the current matrix row
+  MatStencil   row;
+  // the current matrix column of each active stencil point
+  MatStencil   col[NVALUES];
+  // the operator nullspace
+  MatNullSpace nullspace;
+
+  PetscFunctionBeginUser;
+
+  // Extract values of electron magnetization.
+  Kx = ctx->electrons.kappa.x;
+  Ky = ctx->electrons.kappa.y;
+  Kz = ctx->electrons.kappa.z;
+
+  // Compute the value of the matrix determinant.
+  detA = 1 + Kx*Kx + Ky*Ky + Kz*Kz;
+
+  // Define components of the magnetization tensor.
+  rxx = 1 + Kx*Kx;
+  rxy = Ky*Kx - Kz;
+  rxz = Kz*Kx + Ky;
+  ryx = Kx*Ky + Kz;
+  ryy = 1 + Ky*Ky;
+  ryz = Kz*Ky - Kx;
+  rzx = Kx*Kz - Ky;
+  rzy = Ky*Kz + Kx;
+  rzz = 1 + Kz*Kz;
+
+  // Compute grid-cell spacing.
+  dx = 1.0 / (PetscReal)ctx->grid.N.x;
+  dy = 1.0 / (PetscReal)ctx->grid.N.y;
+  dz = 1.0 / (PetscReal)ctx->grid.N.z;
+
+  /* Compute geometric scale factors for stencil values. Note that there is some
+  redundancy for the sake of organization.
+
+  Diagonal factors have the form
+  - `sii = 2*di*dj*dk / (2*di^2*|A|) = dj*dk / (di*|A|)`
+
+  Off-diagonal factors have the form
+  - `sij = 2*di*dj*dk / (8*di*dj*|A|) = dk / (4*|A|)`
+  */
+  sxx = dy*dz/dx / detA;
+  syx = 0.25*dz  / detA;
+  szx = 0.25*dy  / detA;
+  sxy = 0.25*dz  / detA;
+  syy = dx*dz/dy / detA;
+  szy = 0.25*dx  / detA;
+  sxz = 0.25*dy  / detA;
+  syz = 0.25*dx  / detA;
+  szz = dx*dy/dz / detA;
+
+  // Get the grid DM from the context.
+  PetscCall(DMSwarmGetCellDM(ctx->swarm, &grid));
+
+  // Extract the density array.
+  PetscCall(DMGetLocalVector(grid, &gridvec));
+  PetscCall(DMGlobalToLocalBegin(grid, ctx->global, INSERT_VALUES, gridvec));
+  PetscCall(DMGlobalToLocalEnd(grid, ctx->global, INSERT_VALUES, gridvec));
+  PetscCall(DMDAVecGetArray(grid, gridvec, &array));
+
+  // Get this processor's indices.
+  PetscCall(DMDAGetCorners(dm, &i0, &j0, &k0, &ni, &nj, &nk));
+
+  // Loop over grid points.
+  for (k=k0; k<k0+nk; k++) {
+    for (j=j0; j<j0+nj; j++) {
+      for (i=i0; i<i0+ni; i++) {
+        PetscCall(PetscSynchronizedPrintf(
+                  PETSC_COMM_WORLD,
+                  "[%d] (%03d, %03d, %03d)\n",
+                  ctx->mpi.rank, i, j, k));
+        PetscCall(PetscSynchronizedFlush(
+                  PETSC_COMM_WORLD, PETSC_STDOUT));
+
+        // Assign density values
+        nijk = array[k][j][i].n;
+        nmjk = array[k][j][i-1].n;
+        npjk = array[k][j][i+1].n;
+        nimk = array[k][j-1][i].n;
+        nipk = array[k][j+1][i].n;
+        nijm = array[k-1][j][i].n;
+        nijp = array[k+1][j][i].n;
+
+        /* x-y corner coefficients */
+        vppk =  sxy*rxy*(npjk + nijk) + syx*ryx*(nipk + nijk);
+        vpmk = -sxy*rxy*(npjk + nijk) - syx*ryx*(nijk + nimk);
+        vmpk = -sxy*rxy*(nijk + nmjk) - syx*ryx*(nipk + nijk);
+        vmmk =  sxy*rxy*(nijk + nmjk) + syx*ryx*(nijk + nimk);
+        /* x-z corner coefficients */
+        vpjp =  sxz*rxz*(npjk + nijk) + szx*rzx*(nijp + nijk);
+        vpjm = -sxz*rxz*(npjk + nijk) - szx*rzx*(nijk + nijm);
+        vmjp = -sxz*rxz*(nijk + nmjk) - szx*rzx*(nijp + nijk);
+        vmjm =  sxz*rxz*(nijk + nmjk) + szx*rzx*(nijk + nijm);
+        /* y-z corner coefficients */
+        vipp =  syz*ryz*(nipk + nijk) + szy*rzy*(nijp + nijk);
+        vipm = -syz*ryz*(nipk + nijk) - szy*rzy*(nijk + nijm);
+        vimp = -syz*ryz*(nijk + nimk) - szy*rzy*(nijp + nijk);
+        vimm =  syz*ryz*(nijk + nimk) + szy*rzy*(nijk + nijm);
+        /* star-stencil coefficients */
+        vpjk =  sxx*rxx*(npjk + nijk) + vppk + vpmk + vpjp + vpjm;
+        vmjk =  sxx*rxx*(nijk + nmjk) + vmpk + vmmk + vmjp + vmjm;
+        vipk =  syy*ryy*(nipk + nijk) + vppk + vmpk + vipp + vipm;
+        vimk =  syy*ryy*(nijk + nimk) + vpmk + vmmk + vimp + vimm;
+        vijp =  szz*rzz*(nijp + nijk) + vpjp + vmjp + vipp + vimp;
+        vijm =  szz*rzz*(nijk + nijm) + vpjm + vmjm + vipm + vimm;
+        /* diagonal coefficient */
+        vijk = -(vpjk + vipk + vijp + vmjk + vimk + vijm);
+
+        row.i = i; row.j = j; row.k = k;
+        // Interior node (i+1, j, k)
+        val[0] = vpjk;
+        col[0].i = i+1;
+        col[0].j = j;
+        col[0].k = k;
+        // Interior node (i-1, j, k)
+        val[1] = vmjk;
+        col[1].i = i-1;
+        col[1].j = j;
+        col[1].k = k;
+        // Interior node (i, j+1, k)
+        val[2] = vipk;
+        col[2].i = i;
+        col[2].j = j+1;
+        col[2].k = k;
+        // Interior node (i, j-1, k)
+        val[3] = vimk;
+        col[3].i = i;
+        col[3].j = j-1;
+        col[3].k = k;
+        // Interior node (i, j, k+1)
+        val[4] = vijp;
+        col[4].i = i;
+        col[4].j = j;
+        col[4].k = k+1;
+        // Interior node (i, j, k-1)
+        val[5] = vijm;
+        col[5].i = i;
+        col[5].j = j;
+        col[5].k = k-1;
+        // Interior node (i+1, j+1, k)
+        val[6] = vppk;
+        col[6].i = i+1;
+        col[6].j = j+1;
+        col[6].k = k;
+        // Interior node (i+1, j-1, k)
+        val[7] = vpmk;
+        col[7].i = i+1;
+        col[7].j = j-1;
+        col[7].k = k;
+        // Interior node (i-1, j+1, k)
+        val[8] = vmpk;
+        col[8].i = i-1;
+        col[8].j = j+1;
+        col[8].k = k;
+        // Interior node (i-1, j-1, k)
+        val[9] = vmmk;
+        col[9].i = i-1;
+        col[9].j = j-1;
+        col[9].k = k;
+        // Interior node (i+1, j, k+1)
+        val[10] = vpjp;
+        col[10].i = i+1;
+        col[10].j = j;
+        col[10].k = k+1;
+        // Interior node (i+1, j, k-1)
+        val[11] = vpjm;
+        col[11].i = i+1;
+        col[11].j = j;
+        col[11].k = k-1;
+        // Interior node (i-1, j, k+1)
+        val[12] = vmjp;
+        col[12].i = i-1;
+        col[12].j = j;
+        col[12].k = k+1;
+        // Interior node (i-1, j, k-1)
+        val[13] = vmjm;
+        col[13].i = i-1;
+        col[13].j = j;
+        col[13].k = k-1;
+        // Interior node (i, j+1, k+1)
+        val[14] = vipp;
+        col[14].i = i;
+        col[14].j = j+1;
+        col[14].k = k+1;
+        // Interior node (i, j+1, k-1)
+        val[15] = vipm;
+        col[15].i = i;
+        col[15].j = j+1;
+        col[15].k = k-1;
+        // Interior node (i, j-1, k+1)
+        val[16] = vimp;
+        col[16].i = i;
+        col[16].j = j-1;
+        col[16].k = k+1;
+        // Interior node (i, j-1, k-1)
+        val[17] = vimm;
+        col[17].i = i;
+        col[17].j = j-1;
+        col[17].k = k-1;
+        // Interior node (i, j, k)
+        val[18] = vijk;
+        col[18].i = row.i;
+        col[18].j = row.j;
+        col[18].k = row.k;
+        PetscCall(MatSetValuesStencil(
+                  A, 1, &row, NVALUES, col, val, INSERT_VALUES));
+      }
+    }
+  }
+
+  PetscCall(DMDAVecRestoreArray(grid, gridvec, &array));
+  PetscCall(DMRestoreLocalVector(grid, &gridvec));
+
+  PetscCall(MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY));
+  PetscCall(MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY));
+
+  PetscCall(MatNullSpaceCreate(
+            PETSC_COMM_WORLD, PETSC_TRUE, 0, NULL, &nullspace));
+  PetscCall(MatSetNullSpace(A, nullspace));
+  PetscCall(MatNullSpaceDestroy(&nullspace));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 int main(int argc, char **args)
 {
   MPIContext  mpi;
   Context     ctx;
-  DM          grid, solve, composite;
+  DM          grid, solve;
   KSP         ksp;
+  Mat         A;
   Vec         gvec, lvec;
   PetscViewer viewer;
-  Vec         phi;
+  Vec         b, x;
 
   PetscFunctionBeginUser;
 
@@ -1157,25 +1441,26 @@ int main(int argc, char **args)
             PETSC_COMM_WORLD, "grid.hdf", FILE_MODE_WRITE, &viewer));
   PetscCall(WriteHDF5(grid, ctx.global, viewer));
 
-  // Set up the linear-solver context.
-  PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
-  PetscCall(InitializePotentialDM(grid, &solve));
-  PetscCall(DMCompositeCreate(PETSC_COMM_WORLD, &composite));
-  PetscCall(DMCompositeAddDM(composite, grid));
-  PetscCall(DMCompositeAddDM(composite, solve));
-  PetscCall(DMSetUp(composite));
-  PetscCall(KSPSetDM(ksp, composite));
-  PetscCall(KSPSetDMActive(ksp, PETSC_FALSE));
-  PetscCall(KSPSetFromOptions(ksp));
-
   // Compute initial electric field.
-  PetscCall(KSPSetComputeInitialGuess(ksp, ComputeInitialPhi, &ctx));
-  PetscCall(KSPSetComputeRHS(ksp, ComputeRHS, &ctx));
-  PetscCall(KSPSetComputeOperators(ksp, ComputeLHS, &ctx));
-
-  // Solve the system.
-  PetscCall(KSPSolve(ksp, NULL, NULL));
-  PetscCall(KSPGetSolution(ksp, &phi));
+  PetscCall(InitializePotentialDM(grid, &solve));
+  PetscCall(DMCreateMatrix(solve, &A));
+  PetscCall(DMCreateGlobalVector(solve, &b));
+  PetscCall(DMCreateGlobalVector(solve, &x));
+  PetscCall(MatZeroEntries(A));
+  PetscCall(VecZeroEntries(b));
+  PetscCall(VecZeroEntries(x));
+  PetscCall(BuildLHSOperator(A, solve, &ctx));
+  PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
+  PetscCall(KSPSetDM(ksp, solve));
+  PetscCall(KSPSetDMActive(ksp, PETSC_FALSE));
+  PetscCall(KSPSetOperators(ksp, A, A));
+  PetscCall(KSPSetFromOptions(ksp));
+  PetscCall(KSPSetUp(ksp));
+  // PetscCall(KSPView(ksp, PETSC_VIEWER_STDOUT_WORLD));
+  PetscCall(BuildRHSFunction(b));
+  PetscCall(KSPSolve(ksp, b, x));
+  // PetscCall(VecView(x, PETSC_VIEWER_STDOUT_WORLD));
+  PetscCall(MatView(A, PETSC_VIEWER_STDOUT_WORLD));
 
   // Output initial conditions.
 
@@ -1205,8 +1490,12 @@ int main(int argc, char **args)
   PetscCall(PetscViewerDestroy(&viewer));
   PetscCall(KSPDestroy(&ksp));
   PetscCall(VecDestroy(&ctx.global));
+  PetscCall(VecDestroy(&b));
+  PetscCall(VecDestroy(&x));
   PetscCall(DMDestroy(&grid));
   PetscCall(DMDestroy(&ctx.swarm));
+  PetscCall(MatDestroy(&A));
+  PetscCall(DMDestroy(&solve));
 
   // Finalize PETSc and MPI.
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n*********** END ***********\n"));
