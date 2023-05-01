@@ -954,115 +954,96 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
         col[0].i = i+1;
         col[0].j = j;
         col[0].k = k;
-        col[0].c = 4;
         // Interior node (i-1, j, k)
         val[1] = vmjk;
         col[1].i = i-1;
         col[1].j = j;
         col[1].k = k;
-        col[1].c = 4;
         // Interior node (i, j+1, k)
         val[2] = vipk;
         col[2].i = i;
         col[2].j = j+1;
         col[2].k = k;
-        col[2].c = 4;
         // Interior node (i, j-1, k)
         val[3] = vimk;
         col[3].i = i;
         col[3].j = j-1;
         col[3].k = k;
-        col[3].c = 4;
         // Interior node (i, j, k+1)
         val[4] = vijp;
         col[4].i = i;
         col[4].j = j;
         col[4].k = k+1;
-        col[4].c = 4;
         // Interior node (i, j, k-1)
         val[5] = vijm;
         col[5].i = i;
         col[5].j = j;
         col[5].k = k-1;
-        col[5].c = 4;
         // Interior node (i+1, j+1, k)
         val[6] = vppk;
         col[6].i = i+1;
         col[6].j = j+1;
         col[6].k = k;
-        col[6].c = 4;
         // Interior node (i+1, j-1, k)
         val[7] = vpmk;
         col[7].i = i+1;
         col[7].j = j-1;
         col[7].k = k;
-        col[7].c = 4;
         // Interior node (i-1, j+1, k)
         val[8] = vmpk;
         col[8].i = i-1;
         col[8].j = j+1;
         col[8].k = k;
-        col[8].c = 4;
         // Interior node (i-1, j-1, k)
         val[9] = vmmk;
         col[9].i = i-1;
         col[9].j = j-1;
         col[9].k = k;
-        col[9].c = 4;
         // Interior node (i+1, j, k+1)
         val[10] = vpjp;
         col[10].i = i+1;
         col[10].j = j;
         col[10].k = k+1;
-        col[10].c = 4;
         // Interior node (i+1, j, k-1)
         val[11] = vpjm;
         col[11].i = i+1;
         col[11].j = j;
         col[11].k = k-1;
-        col[11].c = 4;
         // Interior node (i-1, j, k+1)
         val[12] = vmjp;
         col[12].i = i-1;
         col[12].j = j;
         col[12].k = k+1;
-        col[12].c = 4;
         // Interior node (i-1, j, k-1)
         val[13] = vmjm;
         col[13].i = i-1;
         col[13].j = j;
         col[13].k = k-1;
-        col[13].c = 4;
         // Interior node (i, j+1, k+1)
         val[14] = vipp;
         col[14].i = i;
         col[14].j = j+1;
         col[14].k = k+1;
-        col[14].c = 4;
         // Interior node (i, j+1, k-1)
         val[15] = vipm;
         col[15].i = i;
         col[15].j = j+1;
         col[15].k = k-1;
-        col[15].c = 4;
         // Interior node (i, j-1, k+1)
         val[16] = vimp;
         col[16].i = i;
         col[16].j = j-1;
         col[16].k = k+1;
-        col[16].c = 4;
         // Interior node (i, j-1, k-1)
         val[17] = vimm;
         col[17].i = i;
         col[17].j = j-1;
         col[17].k = k-1;
-        col[17].c = 4;
         // Interior node (i, j, k)
         val[18] = vijk;
         col[18].i = row.i;
         col[18].j = row.j;
         col[18].k = row.k;
-        col[18].c = 4;
         PetscCall(MatSetValuesStencil(
                   A, 1, &row, NVALUES, col, val, INSERT_VALUES));
       }
