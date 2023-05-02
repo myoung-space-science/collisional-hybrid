@@ -54,7 +54,8 @@ run_basic_physics() {
         -viTx 247.0 \
         -viTy 247.0 \
         -viTz 247.0 \
-        -ksp_monitor_short
+        -ksp_monitor_short \
+        -ksp_converged_reason
 }
 case_map['basic-physics']=run_basic_physics
 
