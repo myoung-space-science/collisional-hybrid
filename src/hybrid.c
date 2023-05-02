@@ -73,6 +73,7 @@ typedef struct {
   MPIContext mpi;       // MPI information
   Vec        global;
   DM         swarm;
+  PetscViewer rhsView;  // viewer for RHS vector
 } Context;
 
 typedef struct {
@@ -1379,6 +1380,10 @@ int main(int argc, char **args)
   // Assign parameter values from user arguments or defaults.
   PetscCall(ProcessOptions(&ctx));
 
+  // Set up the RHS vector viewer.
+  PetscCall(PetscViewerHDF5Open(
+            PETSC_COMM_WORLD, "rhs.hdf", FILE_MODE_WRITE, &ctx.rhsView));
+
   // Store MPI information in the application context.
   ctx.mpi = mpi;
 
@@ -1448,6 +1453,7 @@ int main(int argc, char **args)
   PetscCall(PetscViewerDestroy(&contextView));
   PetscCall(PetscViewerDestroy(&outputView));
   PetscCall(KSPDestroy(&ksp));
+  PetscCall(PetscViewerDestroy(&ctx.rhsView));
   PetscCall(VecDestroy(&ctx.global));
   PetscCall(DMDestroy(&grid));
   PetscCall(DMDestroy(&ctx.swarm));
