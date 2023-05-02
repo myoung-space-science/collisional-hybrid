@@ -351,16 +351,14 @@ ProcessOptions(Context *ctx)
   ctx->ions.kappa.y = ctx->ions.Omega.y / ctx->ions.nu;
   ctx->ions.kappa.z = ctx->ions.Omega.z / ctx->ions.nu;
   // Set species temperature from fluid velocities.
-  ctx->electrons.T = PetscSqrtReal(
-    (0.5 * ctx->electrons.m / KB)
+  ctx->electrons.T = (0.5 * ctx->electrons.m / KB)
     * ( PetscSqr(ctx->electrons.vT.x)
       + PetscSqr(ctx->electrons.vT.y)
-      + PetscSqr(ctx->electrons.vT.z)));
-  ctx->ions.T = PetscSqrtReal(
-    (0.5 * ctx->ions.m / KB)
+      + PetscSqr(ctx->electrons.vT.z));
+  ctx->ions.T = (0.5 * ctx->ions.m / KB)
     * ( PetscSqr(ctx->ions.vT.x)
       + PetscSqr(ctx->ions.vT.y)
-      + PetscSqr(ctx->ions.vT.z)));
+      + PetscSqr(ctx->ions.vT.z));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
