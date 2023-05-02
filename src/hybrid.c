@@ -675,6 +675,7 @@ EchoSetup(Context ctx, PetscViewer viewer)
   PetscCall(PetscViewerASCIIPrintf(viewer, "veTx = %f [m/s]\n", ctx.electrons.vT.x));
   PetscCall(PetscViewerASCIIPrintf(viewer, "veTy = %f [m/s]\n", ctx.electrons.vT.y));
   PetscCall(PetscViewerASCIIPrintf(viewer, "veTz = %f [m/s]\n", ctx.electrons.vT.z));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "Te = %f [K]\n", ctx.electrons.T));
   PetscCall(PetscViewerASCIIPrintf(
             viewer, "Omega_ex = %g [s^-1]\n", ctx.electrons.Omega.x));
   PetscCall(PetscViewerASCIIPrintf(
@@ -696,6 +697,7 @@ EchoSetup(Context ctx, PetscViewer viewer)
   PetscCall(PetscViewerASCIIPrintf(viewer, "viTx = %f [m/s]\n", ctx.ions.vT.x));
   PetscCall(PetscViewerASCIIPrintf(viewer, "viTy = %f [m/s]\n", ctx.ions.vT.y));
   PetscCall(PetscViewerASCIIPrintf(viewer, "viTz = %f [m/s]\n", ctx.ions.vT.z));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "Ti = %f [K]\n", ctx.ions.T));
   PetscCall(PetscViewerASCIIPrintf(
             viewer, "Omega_ix = %g [s^-1]\n", ctx.ions.Omega.x));
   PetscCall(PetscViewerASCIIPrintf(
