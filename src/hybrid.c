@@ -857,7 +857,14 @@ WriteHDF5(DM grid, Vec full, PetscViewer viewer)
     PetscCall(DMRestoreGlobalVector(fieldArray[field], &fieldVec));
   }
 
-  // TODO: Free memory (see documentation for DMCreateFieldDecomposition)
+  for (field=0; field<nFields; field++) {
+    PetscFree(fieldNames[field]);
+    PetscCall(ISDestroy(&is[field]));
+    PetscCall(DMDestroy(&fieldArray[field]));
+  }
+  PetscFree(fieldNames);
+  PetscFree(is);
+  PetscFree(fieldArray);
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
