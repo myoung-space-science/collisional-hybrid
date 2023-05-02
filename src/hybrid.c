@@ -1,6 +1,7 @@
 /* 3D Hybrid PIC */
 static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 
+#include <time.h>
 #include <petsc.h>
 #include <petscdm.h>
 #include <petscdmda.h>
@@ -1071,6 +1072,7 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
 int main(int argc, char **args)
 {
   MPIContext  mpi;
+  time_t      startTime, endTime;
   Context     ctx;
   DM          grid, solve;
   KSP         ksp;
@@ -1081,14 +1083,19 @@ int main(int argc, char **args)
 
   // Initialize PETSc and MPI.
   PetscCall(PetscInitialize(&argc, &args, (char *)0, help));
-  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n********** START **********\n\n"));
+  PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &mpi.rank));
+  PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &mpi.size));
+  if (mpi.rank == 0) {
+    time(&startTime);
+  }
+  PetscCall(PetscPrintf(
+            PETSC_COMM_WORLD,
+            "\n**************** START *****************\n\n"));
 
   // Assign parameter values from user arguments or defaults.
   PetscCall(ProcessOptions(&ctx));
 
   // Store MPI information in the application context.
-  PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &mpi.rank));
-  PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &mpi.size));
   ctx.mpi = mpi;
 
   // Set up discrete grid.
@@ -1153,8 +1160,27 @@ int main(int argc, char **args)
   PetscCall(DMDestroy(&ctx.swarm));
   PetscCall(DMDestroy(&solve));
 
+  // Write time information
+  if (mpi.rank == 0) {
+    time(&endTime);
+  }
+  PetscCall(PetscPrintf(
+            PETSC_COMM_WORLD,
+            "\n----------------------------------------\n"));
+  PetscCall(PetscPrintf(
+            PETSC_COMM_WORLD,
+            "Start time: %s", asctime(localtime(&startTime))));
+  PetscCall(PetscPrintf(
+            PETSC_COMM_WORLD,
+            "End time:   %s", asctime(localtime(&endTime))));
+  PetscCall(PetscPrintf(
+            PETSC_COMM_WORLD,
+            "----------------------------------------\n"));
+
   // Finalize PETSc and MPI.
-  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n*********** END ***********\n"));
+  PetscCall(PetscPrintf(
+            PETSC_COMM_WORLD,
+            "\n***************** END ******************\n"));
   PetscCall(PetscFinalize());
 
   return 0;
