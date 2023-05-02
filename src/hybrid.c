@@ -500,6 +500,7 @@ InitializeSwarmCoordinates(Context *ctx)
   PetscScalar *coords;
   PetscInt    ip;
   PetscRandom random;
+  PetscReal   delta;
   PetscReal   dx, x, dy, y, dz, z;
 
   PetscFunctionBeginUser;
@@ -512,8 +513,9 @@ InitializeSwarmCoordinates(Context *ctx)
   PetscCall(DMSwarmMigrate(swarm, PETSC_TRUE));
 
   // Create a random-number generator to nudge particle positions.
+  delta = 0.5*PetscMin(ctx->grid.d.x, PetscMin(ctx->grid.d.y, ctx->grid.d.z));
   PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &random));
-  PetscCall(PetscRandomSetInterval(random, -0.1, +0.1));
+  PetscCall(PetscRandomSetInterval(random, -delta, +delta));
   PetscCall(PetscRandomSetSeed(random, (unsigned long)ctx->mpi.rank));
   PetscCall(PetscRandomSeed(random));
 
