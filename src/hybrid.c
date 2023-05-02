@@ -499,7 +499,6 @@ InitializeSwarmCoordinates(Context *ctx)
   PetscInt    np;
   PetscScalar *coords;
   PetscInt    ip;
-  PetscMPIInt rank;
   PetscRandom random;
   PetscReal   dx, x, dy, y, dz, z;
 
@@ -513,10 +512,9 @@ InitializeSwarmCoordinates(Context *ctx)
   PetscCall(DMSwarmMigrate(swarm, PETSC_TRUE));
 
   // Create a random-number generator to nudge particle positions.
-  PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &rank));
   PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &random));
   PetscCall(PetscRandomSetInterval(random, -0.1, +0.1));
-  PetscCall(PetscRandomSetSeed(random, (unsigned long)rank));
+  PetscCall(PetscRandomSetSeed(random, (unsigned long)ctx->mpi.rank));
   PetscCall(PetscRandomSeed(random));
 
   // Get a representation of the particle coordinates.
