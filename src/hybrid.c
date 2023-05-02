@@ -36,6 +36,7 @@ typedef struct {
 typedef struct {
   IntVector  N;  // number of cells
   RealVector L;  // physical length
+  RealVector d;  // physical cell spacing
   RealVector p0; // lower physical bound
   RealVector p1; // upper physical bound
 } Grid;
@@ -400,6 +401,10 @@ InitializeGridDM(DM *grid, Context *ctx)
   if (ctx->plasma.Np == -1) {
     ctx->plasma.Np = ctx->grid.N.x * ctx->grid.N.y * ctx->grid.N.z;
   }
+  // Define the physical grid-cell spacing.
+  ctx->grid.d.x = 1.0 / (PetscReal)ctx->grid.N.x;
+  ctx->grid.d.y = 1.0 / (PetscReal)ctx->grid.N.y;
+  ctx->grid.d.z = 1.0 / (PetscReal)ctx->grid.N.z;
   // Set uniform coordinates on the grid DM.
   PetscCall(DMDASetUniformCoordinates(
             *grid,
