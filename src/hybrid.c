@@ -328,17 +328,17 @@ ProcessOptions(Context *ctx)
   ctx->grid.L.z = ctx->grid.p1.z - ctx->grid.p0.z;
   // Set species gyrofrequency from q, B0, and m.
   ctx->electrons.Omega.x = 
-    ctx->electrons.q * ctx->plasma.B0.x / ctx->electrons.m;
+    PetscAbsReal(ctx->electrons.q * ctx->plasma.B0.x / ctx->electrons.m);
   ctx->electrons.Omega.y = 
-    ctx->electrons.q * ctx->plasma.B0.y / ctx->electrons.m;
+    PetscAbsReal(ctx->electrons.q * ctx->plasma.B0.y / ctx->electrons.m);
   ctx->electrons.Omega.z = 
-    ctx->electrons.q * ctx->plasma.B0.z / ctx->electrons.m;
+    PetscAbsReal(ctx->electrons.q * ctx->plasma.B0.z / ctx->electrons.m);
   ctx->ions.Omega.x = 
-    ctx->ions.q * ctx->plasma.B0.x / ctx->ions.m;
+    PetscAbsReal(ctx->ions.q * ctx->plasma.B0.x / ctx->ions.m);
   ctx->ions.Omega.y = 
-    ctx->ions.q * ctx->plasma.B0.y / ctx->ions.m;
+    PetscAbsReal(ctx->ions.q * ctx->plasma.B0.y / ctx->ions.m);
   ctx->ions.Omega.z = 
-    ctx->ions.q * ctx->plasma.B0.z / ctx->ions.m;
+    PetscAbsReal(ctx->ions.q * ctx->plasma.B0.z / ctx->ions.m);
   // Set species magnetization from Omega and nu.
   ctx->electrons.kappa.x = ctx->electrons.Omega.x / ctx->electrons.nu;
   ctx->electrons.kappa.y = ctx->electrons.Omega.y / ctx->electrons.nu;
