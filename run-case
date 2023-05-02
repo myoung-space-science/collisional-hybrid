@@ -36,9 +36,7 @@ run_gamg_basic() {
         -pc_gamg_type agg \
         -Nx 16 -Ny 16 -Nz 16 -n 2
 }
-case_map['gamg basic']=run_gamg_basic
 case_map['gamg-basic']=run_gamg_basic
-case_map['gamg_basic']=run_gamg_basic
 
 # Define a function to print names of registered cases.
 show_cases() {
