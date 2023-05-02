@@ -19,24 +19,6 @@ is equivalent to
 "
 }
 
-# Read CLI input.
-name=
-case "${1}" in
-    -h | --help )
-        show_help
-        exit
-        ;;
-    * )
-        name="${1}"
-        ;;
-esac
-
-# Exit with an error if the user didn't provide a name.
-if [ -z "${name}" ]; then
-    echo "Got an empty name. Exiting."
-    exit 1
-fi
-
 # Set up the mapping from name to function.
 declare -A case_map
 
@@ -58,13 +40,47 @@ case_map['gamg basic']=run_gamg_basic
 case_map['gamg-basic']=run_gamg_basic
 case_map['gamg_basic']=run_gamg_basic
 
-# Run the case, if possible.
-if [ -v case_map[${name}] ]; then
-    pushd "${projdir}" &> /dev/null
-    ${case_map[${name}]}
-    popd &> /dev/null
-else
-    echo "Unknown case: \"${name}\""
-    exit 1
-fi
+# Define a function to print names of registered cases.
+show_cases() {
+    for key in "${!case_map[@]}"; do
+        echo "$key"
+    done
+}
+
+# Define the function that will run a registered case.
+run_case() {
+    if [ -z "${1}" ]; then
+        # Exit with an error if the user didn't provide a name.
+        echo "Got an empty name. Exiting."
+        exit 1
+    fi
+    if [ -v case_map[${1}] ]; then
+        # Move the runtime directory to the top of the stack.
+        pushd "${projdir}" &> /dev/null
+        # Run the case.
+        ${case_map[${1}]}
+        # Remove the runtime directory from the stack.
+        popd &> /dev/null
+    else
+        # Exit with an error if we don't recognize the case name.
+        echo "Unknown case: \"${1}\""
+        exit 1
+    fi
+}
+
+# Read CLI input.
+case "${1}" in
+    -h | --help )
+        show_help
+        exit
+        ;;
+    --show-cases )
+        show_cases
+        exit
+        ;;
+    * )
+        run_case "${1}"
+        exit
+        ;;
+esac
 
