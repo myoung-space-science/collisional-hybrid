@@ -618,6 +618,77 @@ InitializeParticles(Context *ctx)
 
 
 static PetscErrorCode
+EchoSetup(Context ctx, PetscViewer viewer)
+{
+  PetscFunctionBeginUser;
+
+  PetscCall(PetscOptionsView(NULL, viewer));
+  PetscCall(PetscViewerASCIIPrintf(
+            viewer, "\nParameter Values\n"));
+  PetscCall(PetscViewerASCIIPrintf(
+            viewer,   "----------------\n"));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "Nx = %d\n", ctx.grid.N.x));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "Ny = %d\n", ctx.grid.N.y));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "Nz = %d\n", ctx.grid.N.z));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "x0 = %f\n", ctx.grid.p0.x));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "y0 = %f\n", ctx.grid.p0.y));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "z0 = %f\n", ctx.grid.p0.z));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "x1 = %f\n", ctx.grid.p1.x));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "y1 = %f\n", ctx.grid.p1.y));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "z1 = %f\n", ctx.grid.p1.z));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "Np = %d\n", ctx.plasma.Np));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "B0x = %f\n", ctx.plasma.B0.x));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "B0y = %f\n", ctx.plasma.B0.y));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "B0z = %f\n", ctx.plasma.B0.z));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "E0x = %f\n", ctx.plasma.E0.x));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "E0y = %f\n", ctx.plasma.E0.y));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "E0z = %f\n", ctx.plasma.E0.z));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "nue = %f\n", ctx.electrons.nu));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "ve0x = %f\n", ctx.electrons.v0.x));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "ve0y = %f\n", ctx.electrons.v0.y));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "ve0z = %f\n", ctx.electrons.v0.z));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "veTx = %f\n", ctx.electrons.vT.x));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "veTy = %f\n", ctx.electrons.vT.y));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "veTz = %f\n", ctx.electrons.vT.z));
+  PetscCall(PetscViewerASCIIPrintf(
+            viewer, "Omega_ex = %f\n", ctx.electrons.Omega.x));
+  PetscCall(PetscViewerASCIIPrintf(
+            viewer, "Omega_ey = %f\n", ctx.electrons.Omega.y));
+  PetscCall(PetscViewerASCIIPrintf(
+            viewer, "Omega_ez = %f\n", ctx.electrons.Omega.z));
+  PetscCall(PetscViewerASCIIPrintf(
+            viewer, "kappa_ex = %f\n", ctx.electrons.kappa.x));
+  PetscCall(PetscViewerASCIIPrintf(
+            viewer, "kappa_ey = %f\n", ctx.electrons.kappa.y));
+  PetscCall(PetscViewerASCIIPrintf(
+            viewer, "kappa_ez = %f\n", ctx.electrons.kappa.z));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "qi = %f\n", ctx.ions.q));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "mi = %f\n", ctx.ions.m));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "nui = %f\n", ctx.ions.nu));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "vi0x = %f\n", ctx.ions.v0.x));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "vi0y = %f\n", ctx.ions.v0.y));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "vi0z = %f\n", ctx.ions.v0.z));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "viTx = %f\n", ctx.ions.vT.x));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "viTy = %f\n", ctx.ions.vT.y));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "viTz = %f\n", ctx.ions.vT.z));
+  PetscCall(PetscViewerASCIIPrintf(
+            viewer, "Omega_ix = %f\n", ctx.ions.Omega.x));
+  PetscCall(PetscViewerASCIIPrintf(
+            viewer, "Omega_iy = %f\n", ctx.ions.Omega.y));
+  PetscCall(PetscViewerASCIIPrintf(
+            viewer, "Omega_iz = %f\n", ctx.ions.Omega.z));
+  PetscCall(PetscViewerASCIIPrintf(
+            viewer, "kappa_ix = %f\n", ctx.ions.kappa.x));
+  PetscCall(PetscViewerASCIIPrintf(
+            viewer, "kappa_iy = %f\n", ctx.ions.kappa.y));
+  PetscCall(PetscViewerASCIIPrintf(
+            viewer, "kappa_iz = %f\n", ctx.ions.kappa.z));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+static PetscErrorCode
 CollectParticles(Context *ctx)
 {
   DM          grid, swarm=ctx->swarm;
@@ -1079,7 +1150,7 @@ int main(int argc, char **args)
   Context     ctx;
   DM          grid, solve;
   KSP         ksp;
-  PetscViewer outputView;
+  PetscViewer contextView, outputView;
   Vec         x;
 
   PetscFunctionBeginUser;
@@ -1111,6 +1182,14 @@ int main(int argc, char **args)
 
   // Set initial particle positions and velocities.
   PetscCall(InitializeParticles(&ctx));
+
+  // Echo the initial state.
+  PetscCall(PetscViewerASCIIOpen(
+            PETSC_COMM_WORLD, "context.txt", &contextView));
+  if (mpi.rank == 0) {
+    PetscCall(EchoSetup(ctx, contextView));
+  }
+  PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
 
   // Compute initial density and flux.
   PetscCall(CollectParticles(&ctx));
@@ -1156,6 +1235,7 @@ int main(int argc, char **args)
     // Output current time step
 
   // Free memory.
+  PetscCall(PetscViewerDestroy(&contextView));
   PetscCall(PetscViewerDestroy(&outputView));
   PetscCall(KSPDestroy(&ksp));
   PetscCall(VecDestroy(&ctx.global));
