@@ -1067,20 +1067,20 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   PetscReal    detA;
   // components of magnetization tensor
   PetscScalar  rxx, ryx, rzx, rxy, ryy, rzy, rxz, ryz, rzz;
+  // geometric scale factors
+  PetscScalar  sxx, syx, szx, sxy, syy, szy, sxz, syz, szz;
   // the DM of the grid
   DM           grid;
-  // the electrostatic-potential DM
+  // local grid vector
+  Vec          gridvec;
+  // array representation of grid quantities
+  GridNode  ***array;
+  // the DM of the KSP
   DM           dm;
   // indices of the lower left corner of the local grid
   PetscInt     i0, j0, k0;
   // number of non-ghost cells in each dimension of the local grid
   PetscInt     ni, nj, nk;
-  // geometric scale factors
-  PetscScalar  sxx, syx, szx, sxy, syy, szy, sxz, syz, szz;
-  // local grid vector
-  Vec          gridvec;
-  // array representation of grid quantities
-  GridNode  ***array;
   // grid indices
   PetscInt     i, j, k;
   // the density value at the current and neighboring grid points
