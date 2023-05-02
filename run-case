@@ -34,9 +34,13 @@ if [ -z "${name}" ]; then
     exit 1
 fi
 
+declare -A case_map
+
 run_default() {
     ./run.sh -Nx 8 -Ny 8 -Nz 8
 }
+case_map['default']=run_default
+
 run_gamg_basic() {
     ./run.sh \
         -ksp_monitor_short \
@@ -46,18 +50,17 @@ run_gamg_basic() {
         -pc_gamg_type agg \
         -Nx 16 -Ny 16 -Nz 16 -n 2
 }
+case_map['gamg basic']=run_gamg_basic
+case_map['gamg-basic']=run_gamg_basic
+case_map['gamg_basic']=run_gamg_basic
 
 pushd "${projdir}" &> /dev/null
 
-case "${name}" in
-    default )
-        run_default
-        exit $?
-        ;;
-    * )
-        echo "Unrecognized case: ${name}"
-        exit 1
-        ;;
-esac
+if [ -v case_map[${name}] ]; then
+    ${case_map[${name}]}
+else
+    echo "Unknown case: \"${name}\""
+    exit 1
+fi
 
 popd &> /dev/null
