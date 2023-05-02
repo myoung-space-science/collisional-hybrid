@@ -610,6 +610,9 @@ InitializeParticles(Context *ctx)
   // Display information about the particle DM.
   PetscCall(DMView(swarm, PETSC_VIEWER_STDOUT_WORLD));
 
+  // Update the parameter context.
+  PetscCall(DMSwarmGetSize(swarm, &ctx->plasma.Np));
+
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
