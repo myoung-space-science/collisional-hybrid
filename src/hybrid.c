@@ -73,7 +73,8 @@ typedef struct {
   MPIContext mpi;       // MPI information
   Vec        global;
   DM         swarm;
-  PetscViewer rhsView;  // viewer for RHS vector
+  PetscViewer gridView;   // viewer for arrays of simulated quantities
+  PetscViewer optionsView;  // viewer for parameter values
 } Context;
 
 typedef struct {
@@ -636,119 +637,119 @@ InitializeParticles(Context *ctx)
 
 
 static PetscErrorCode
-EchoSetup(Context ctx, PetscViewer viewer)
+EchoSetup(Context ctx)
 {
   PetscFunctionBeginUser;
 
-  PetscCall(PetscOptionsView(NULL, viewer));
+  PetscCall(PetscOptionsView(NULL, ctx.optionsView));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "\nParameter Values\n"));
+            ctx.optionsView, "\nParameter Values\n"));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer,   "----------------\n"));
+            ctx.optionsView,   "----------------\n"));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "Nx = %d\n", ctx.grid.N.x));
+            ctx.optionsView, "Nx = %d\n", ctx.grid.N.x));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "Ny = %d\n", ctx.grid.N.y));
+            ctx.optionsView, "Ny = %d\n", ctx.grid.N.y));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "Nz = %d\n", ctx.grid.N.z));
+            ctx.optionsView, "Nz = %d\n", ctx.grid.N.z));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "x0 = %f [m]\n", ctx.grid.p0.x));
+            ctx.optionsView, "x0 = %f [m]\n", ctx.grid.p0.x));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "y0 = %f [m]\n", ctx.grid.p0.y));
+            ctx.optionsView, "y0 = %f [m]\n", ctx.grid.p0.y));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "z0 = %f [m]\n", ctx.grid.p0.z));
+            ctx.optionsView, "z0 = %f [m]\n", ctx.grid.p0.z));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "x1 = %f [m]\n", ctx.grid.p1.x));
+            ctx.optionsView, "x1 = %f [m]\n", ctx.grid.p1.x));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "y1 = %f [m]\n", ctx.grid.p1.y));
+            ctx.optionsView, "y1 = %f [m]\n", ctx.grid.p1.y));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "z1 = %f [m]\n", ctx.grid.p1.z));
+            ctx.optionsView, "z1 = %f [m]\n", ctx.grid.p1.z));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "Lx = %f [m]\n", ctx.grid.L.x));
+            ctx.optionsView, "Lx = %f [m]\n", ctx.grid.L.x));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "Ly = %f [m]\n", ctx.grid.L.y));
+            ctx.optionsView, "Ly = %f [m]\n", ctx.grid.L.y));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "Lz = %f [m]\n", ctx.grid.L.z));
+            ctx.optionsView, "Lz = %f [m]\n", ctx.grid.L.z));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "dx = %f [m]\n", ctx.grid.d.x));
+            ctx.optionsView, "dx = %f [m]\n", ctx.grid.d.x));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "dy = %f [m]\n", ctx.grid.d.y));
+            ctx.optionsView, "dy = %f [m]\n", ctx.grid.d.y));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "dz = %f [m]\n", ctx.grid.d.z));
+            ctx.optionsView, "dz = %f [m]\n", ctx.grid.d.z));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "Np = %d\n", ctx.plasma.Np));
+            ctx.optionsView, "Np = %d\n", ctx.plasma.Np));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "B0x = %g [T]\n", ctx.plasma.B0.x));
+            ctx.optionsView, "B0x = %g [T]\n", ctx.plasma.B0.x));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "B0y = %g [T]\n", ctx.plasma.B0.y));
+            ctx.optionsView, "B0y = %g [T]\n", ctx.plasma.B0.y));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "B0z = %g [T]\n", ctx.plasma.B0.z));
+            ctx.optionsView, "B0z = %g [T]\n", ctx.plasma.B0.z));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "E0x = %g [N/C]\n", ctx.plasma.E0.x));
+            ctx.optionsView, "E0x = %g [N/C]\n", ctx.plasma.E0.x));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "E0y = %g [N/C]\n", ctx.plasma.E0.y));
+            ctx.optionsView, "E0y = %g [N/C]\n", ctx.plasma.E0.y));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "E0z = %g [N/C]\n", ctx.plasma.E0.z));
+            ctx.optionsView, "E0z = %g [N/C]\n", ctx.plasma.E0.z));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "nue = %g [s^-1]\n", ctx.electrons.nu));
+            ctx.optionsView, "nue = %g [s^-1]\n", ctx.electrons.nu));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "ve0x = %f [m/s]\n", ctx.electrons.v0.x));
+            ctx.optionsView, "ve0x = %f [m/s]\n", ctx.electrons.v0.x));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "ve0y = %f [m/s]\n", ctx.electrons.v0.y));
+            ctx.optionsView, "ve0y = %f [m/s]\n", ctx.electrons.v0.y));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "ve0z = %f [m/s]\n", ctx.electrons.v0.z));
+            ctx.optionsView, "ve0z = %f [m/s]\n", ctx.electrons.v0.z));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "veTx = %f [m/s]\n", ctx.electrons.vT.x));
+            ctx.optionsView, "veTx = %f [m/s]\n", ctx.electrons.vT.x));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "veTy = %f [m/s]\n", ctx.electrons.vT.y));
+            ctx.optionsView, "veTy = %f [m/s]\n", ctx.electrons.vT.y));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "veTz = %f [m/s]\n", ctx.electrons.vT.z));
+            ctx.optionsView, "veTz = %f [m/s]\n", ctx.electrons.vT.z));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "Te = %f [K]\n", ctx.electrons.T));
+            ctx.optionsView, "Te = %f [K]\n", ctx.electrons.T));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "Omega_ex = %g [s^-1]\n", ctx.electrons.Omega.x));
+            ctx.optionsView, "Omega_ex = %g [s^-1]\n", ctx.electrons.Omega.x));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "Omega_ey = %g [s^-1]\n", ctx.electrons.Omega.y));
+            ctx.optionsView, "Omega_ey = %g [s^-1]\n", ctx.electrons.Omega.y));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "Omega_ez = %g [s^-1]\n", ctx.electrons.Omega.z));
+            ctx.optionsView, "Omega_ez = %g [s^-1]\n", ctx.electrons.Omega.z));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "kappa_ex = %g\n", ctx.electrons.kappa.x));
+            ctx.optionsView, "kappa_ex = %g\n", ctx.electrons.kappa.x));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "kappa_ey = %g\n", ctx.electrons.kappa.y));
+            ctx.optionsView, "kappa_ey = %g\n", ctx.electrons.kappa.y));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "kappa_ez = %g\n", ctx.electrons.kappa.z));
+            ctx.optionsView, "kappa_ez = %g\n", ctx.electrons.kappa.z));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "qi = %e [C]\n", ctx.ions.q));
+            ctx.optionsView, "qi = %e [C]\n", ctx.ions.q));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "mi = %e [kg]\n", ctx.ions.m));
+            ctx.optionsView, "mi = %e [kg]\n", ctx.ions.m));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "nui = %g [s^-1]\n", ctx.ions.nu));
+            ctx.optionsView, "nui = %g [s^-1]\n", ctx.ions.nu));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "vi0x = %f [m/s]\n", ctx.ions.v0.x));
+            ctx.optionsView, "vi0x = %f [m/s]\n", ctx.ions.v0.x));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "vi0y = %f [m/s]\n", ctx.ions.v0.y));
+            ctx.optionsView, "vi0y = %f [m/s]\n", ctx.ions.v0.y));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "vi0z = %f [m/s]\n", ctx.ions.v0.z));
+            ctx.optionsView, "vi0z = %f [m/s]\n", ctx.ions.v0.z));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "viTx = %f [m/s]\n", ctx.ions.vT.x));
+            ctx.optionsView, "viTx = %f [m/s]\n", ctx.ions.vT.x));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "viTy = %f [m/s]\n", ctx.ions.vT.y));
+            ctx.optionsView, "viTy = %f [m/s]\n", ctx.ions.vT.y));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "viTz = %f [m/s]\n", ctx.ions.vT.z));
+            ctx.optionsView, "viTz = %f [m/s]\n", ctx.ions.vT.z));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "Ti = %f [K]\n", ctx.ions.T));
+            ctx.optionsView, "Ti = %f [K]\n", ctx.ions.T));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "Omega_ix = %g [s^-1]\n", ctx.ions.Omega.x));
+            ctx.optionsView, "Omega_ix = %g [s^-1]\n", ctx.ions.Omega.x));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "Omega_iy = %g [s^-1]\n", ctx.ions.Omega.y));
+            ctx.optionsView, "Omega_iy = %g [s^-1]\n", ctx.ions.Omega.y));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "Omega_iz = %g [s^-1]\n", ctx.ions.Omega.z));
+            ctx.optionsView, "Omega_iz = %g [s^-1]\n", ctx.ions.Omega.z));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "kappa_ix = %g\n", ctx.ions.kappa.x));
+            ctx.optionsView, "kappa_ix = %g\n", ctx.ions.kappa.x));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "kappa_iy = %g\n", ctx.ions.kappa.y));
+            ctx.optionsView, "kappa_iy = %g\n", ctx.ions.kappa.y));
   PetscCall(PetscViewerASCIIPrintf(
-            viewer, "kappa_iz = %g\n", ctx.ions.kappa.z));
+            ctx.optionsView, "kappa_iz = %g\n", ctx.ions.kappa.z));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -1091,6 +1092,10 @@ ComputeRHS(KSP ksp, Vec b, void *_ctx)
   PetscCall(MatNullSpaceRemove(nullspace, b));
   PetscCall(MatNullSpaceDestroy(&nullspace));
 
+  // Write the RHS vector to HDF5.
+  PetscCall(PetscObjectSetName((PetscObject)b, "rhs"));
+  PetscCall(VecView(b, ctx->gridView));
+
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -1361,7 +1366,7 @@ int main(int argc, char **args)
   Context     ctx;
   DM          grid, solve;
   KSP         ksp;
-  PetscViewer contextView, outputView;
+  PetscViewer contextView;
   Vec         x;
 
   PetscFunctionBeginUser;
@@ -1380,9 +1385,10 @@ int main(int argc, char **args)
   // Assign parameter values from user arguments or defaults.
   PetscCall(ProcessOptions(&ctx));
 
-  // Set up the RHS vector viewer.
+  // Set up the viewer for simulated quantities.
   PetscCall(PetscViewerHDF5Open(
-            PETSC_COMM_WORLD, "rhs.hdf", FILE_MODE_WRITE, &ctx.rhsView));
+            PETSC_COMM_WORLD, "grid.hdf", FILE_MODE_WRITE,
+            &ctx.gridView));
 
   // Store MPI information in the application context.
   ctx.mpi = mpi;
@@ -1400,9 +1406,9 @@ int main(int argc, char **args)
 
   // Echo the initial state.
   PetscCall(PetscViewerASCIIOpen(
-            PETSC_COMM_WORLD, "context.txt", &contextView));
+            PETSC_COMM_WORLD, "options.txt", &ctx.optionsView));
   if (mpi.rank == 0) {
-    PetscCall(EchoSetup(ctx, contextView));
+    PetscCall(EchoSetup(ctx));
   }
   PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
 
@@ -1422,10 +1428,8 @@ int main(int argc, char **args)
   PetscCall(PetscObjectSetName((PetscObject)x, "potential"));
 
   // Output initial conditions.
-  PetscCall(PetscViewerHDF5Open(
-            PETSC_COMM_WORLD, "grid.hdf", FILE_MODE_WRITE, &outputView));
-  PetscCall(VecViewComposite(grid, ctx.global, outputView));
-  PetscCall(VecView(x, outputView));
+  PetscCall(VecViewComposite(grid, ctx.global, ctx.gridView));
+  PetscCall(VecView(x, ctx.gridView));
 
   // Main time-step loop. See KSP ex70.c::SolveTimeDepStokes (~ line 1170) for
   // possible structure of time-step loop.
@@ -1450,10 +1454,9 @@ int main(int argc, char **args)
     // Output current time step
 
   // Free memory.
-  PetscCall(PetscViewerDestroy(&contextView));
-  PetscCall(PetscViewerDestroy(&outputView));
+  PetscCall(PetscViewerDestroy(&ctx.optionsView));
+  PetscCall(PetscViewerDestroy(&ctx.gridView));
   PetscCall(KSPDestroy(&ksp));
-  PetscCall(PetscViewerDestroy(&ctx.rhsView));
   PetscCall(VecDestroy(&ctx.global));
   PetscCall(DMDestroy(&grid));
   PetscCall(DMDestroy(&ctx.swarm));
