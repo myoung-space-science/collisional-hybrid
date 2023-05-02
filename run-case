@@ -1,0 +1,63 @@
+#!/bin/bash
+
+projdir=~/sandbox/dmswarm-hybrid
+runprog=${projdir}/run.sh
+
+show_help() {
+    printf "
+This is a collection of aliases for ${runprog}.
+Each case is keyed by a unique string. For example,
+
+``$ ./run-case default``
+
+is equivalent to
+
+``$ cd ${projdir}``
+``$ ./run.sh -Nx 8 -Ny 8 -Nz 8``
+"
+}
+
+name=
+
+case "${1}" in
+    -h | --help )
+        show_help
+        exit
+        ;;
+    * )
+        name="${1}"
+        ;;
+esac
+
+if [ -z "${name}" ]; then
+    echo "Got an empty name. Exiting."
+    exit 1
+fi
+
+run_default() {
+    ./run.sh -Nx 8 -Ny 8 -Nz 8
+}
+run_gamg_basic() {
+    ./run.sh \
+        -ksp_monitor_short \
+        -ksp_type gmres \
+        -ksp_max_it 100 \
+        -pc_type gamg \
+        -pc_gamg_type agg \
+        -Nx 16 -Ny 16 -Nz 16 -n 2
+}
+
+pushd "${projdir}" &> /dev/null
+
+case "${name}" in
+    default )
+        run_default
+        exit $?
+        ;;
+    * )
+        echo "Unrecognized case: ${name}"
+        exit 1
+        ;;
+esac
+
+popd &> /dev/null
