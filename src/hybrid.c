@@ -838,33 +838,33 @@ CollectParticles(Context *ctx)
 static PetscErrorCode
 WriteHDF5(DM grid, Vec full, PetscViewer viewer)
 {
-  PetscInt nFields;
-  char **fieldNames;
-  IS *is;
-  DM *fieldArray;
+  PetscInt nf;
+  char **names;
+  IS *isArray;
+  DM *dmArray;
   PetscInt field;
-  Vec fieldVec;
+  Vec vec;
 
   PetscFunctionBeginUser;
 
   PetscCall(DMCreateFieldDecomposition(
-            grid, &nFields, &fieldNames, &is, &fieldArray));
-  for (field=0; field<nFields; field++) {
-    PetscCall(DMGetGlobalVector(fieldArray[field], &fieldVec));
-    PetscCall(VecStrideGather(full, field, fieldVec, INSERT_VALUES));
-    PetscCall(PetscObjectSetName((PetscObject)fieldVec, fieldNames[field]));
-    PetscCall(VecView(fieldVec, viewer));
-    PetscCall(DMRestoreGlobalVector(fieldArray[field], &fieldVec));
+            grid, &nf, &names, &isArray, &dmArray));
+  for (field=0; field<nf; field++) {
+    PetscCall(DMGetGlobalVector(dmArray[field], &vec));
+    PetscCall(VecStrideGather(full, field, vec, INSERT_VALUES));
+    PetscCall(PetscObjectSetName((PetscObject)vec, names[field]));
+    PetscCall(VecView(vec, viewer));
+    PetscCall(DMRestoreGlobalVector(dmArray[field], &vec));
   }
 
-  for (field=0; field<nFields; field++) {
-    PetscFree(fieldNames[field]);
-    PetscCall(ISDestroy(&is[field]));
-    PetscCall(DMDestroy(&fieldArray[field]));
+  for (field=0; field<nf; field++) {
+    PetscFree(names[field]);
+    PetscCall(ISDestroy(&isArray[field]));
+    PetscCall(DMDestroy(&dmArray[field]));
   }
-  PetscFree(fieldNames);
-  PetscFree(is);
-  PetscFree(fieldArray);
+  PetscFree(names);
+  PetscFree(isArray);
+  PetscFree(dmArray);
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
