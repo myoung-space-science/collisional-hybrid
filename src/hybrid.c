@@ -836,7 +836,7 @@ CollectParticles(Context *ctx)
 
 
 static PetscErrorCode
-WriteHDF5(DM grid, Vec full, PetscViewer viewer)
+VecViewComposite(DM grid, Vec full, PetscViewer viewer)
 {
   PetscInt nf;
   char **names;
@@ -1208,7 +1208,7 @@ int main(int argc, char **args)
   // [DEV] View the global grid vector.
   PetscCall(PetscViewerHDF5Open(
             PETSC_COMM_WORLD, "grid.hdf", FILE_MODE_WRITE, &outputView));
-  PetscCall(WriteHDF5(grid, ctx.global, outputView));
+  PetscCall(VecViewComposite(grid, ctx.global, outputView));
 
   // Compute initial electric field.
   PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
