@@ -53,7 +53,7 @@ typedef struct {
 typedef struct {
   RealVector B0; // constant magnetic-field amplitude
   RealVector E0; // constant electric-field amplitude
-  PetscReal  Np; // number of charged particles
+  PetscInt   Np; // number of charged particles
 } Plasma;
 
 typedef struct {
