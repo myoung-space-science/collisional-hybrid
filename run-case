@@ -1,8 +1,10 @@
 #!/bin/bash
 
+# Declare the top-level directory and the program script.
 projdir=~/sandbox/dmswarm-hybrid
 runprog=${projdir}/run.sh
 
+# Define the help text.
 show_help() {
     printf "
 This is a collection of aliases for ${runprog}.
@@ -17,8 +19,8 @@ is equivalent to
 "
 }
 
+# Read CLI input.
 name=
-
 case "${1}" in
     -h | --help )
         show_help
@@ -29,18 +31,20 @@ case "${1}" in
         ;;
 esac
 
+# Exit with an error if the user didn't provide a name.
 if [ -z "${name}" ]; then
     echo "Got an empty name. Exiting."
     exit 1
 fi
 
+# Set up the mapping from name to function.
 declare -A case_map
 
+# Define the case functions.
 run_default() {
     ./run.sh -Nx 8 -Ny 8 -Nz 8
 }
 case_map['default']=run_default
-
 run_gamg_basic() {
     ./run.sh \
         -ksp_monitor_short \
@@ -54,13 +58,13 @@ case_map['gamg basic']=run_gamg_basic
 case_map['gamg-basic']=run_gamg_basic
 case_map['gamg_basic']=run_gamg_basic
 
-pushd "${projdir}" &> /dev/null
-
+# Run the case, if possible.
 if [ -v case_map[${name}] ]; then
+    pushd "${projdir}" &> /dev/null
     ${case_map[${name}]}
+    popd &> /dev/null
 else
     echo "Unknown case: \"${name}\""
     exit 1
 fi
 
-popd &> /dev/null
