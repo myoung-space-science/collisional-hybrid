@@ -1205,11 +1205,6 @@ int main(int argc, char **args)
   // Compute initial density and flux.
   PetscCall(CollectParticles(&ctx));
 
-  // [DEV] View the global grid vector.
-  PetscCall(PetscViewerHDF5Open(
-            PETSC_COMM_WORLD, "grid.hdf", FILE_MODE_WRITE, &outputView));
-  PetscCall(VecViewComposite(grid, ctx.global, outputView));
-
   // Compute initial electric field.
   PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
   PetscCall(InitializePotentialDM(grid, &solve));
@@ -1221,9 +1216,12 @@ int main(int argc, char **args)
   PetscCall(KSPSolve(ksp, NULL, NULL));
   PetscCall(KSPGetSolution(ksp, &x));
   PetscCall(PetscObjectSetName((PetscObject)x, "potential"));
-  PetscCall(VecView(x, outputView));
 
   // Output initial conditions.
+  PetscCall(PetscViewerHDF5Open(
+            PETSC_COMM_WORLD, "grid.hdf", FILE_MODE_WRITE, &outputView));
+  PetscCall(VecViewComposite(grid, ctx.global, outputView));
+  PetscCall(VecView(x, outputView));
 
   // Main time-step loop. See KSP ex70.c::SolveTimeDepStokes (~ line 1170) for
   // possible structure of time-step loop.
