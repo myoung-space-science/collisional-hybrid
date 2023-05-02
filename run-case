@@ -39,7 +39,6 @@ run_gamg_basic() {
 case_map['gamg-basic']=run_gamg_basic
 run_basic_physics() {
     ./run.sh \
-        -ksp_monitor_short \
         -ksp_type gmres \
         -ksp_max_it 100 \
         -pc_type jacobi \
@@ -48,7 +47,14 @@ run_basic_physics() {
         -nui 3e3 \
         -B0z 2.5e-05 \
         -mi 5e-26 \
-        -E0x 9e-3
+        -E0x 9e-3 \
+        -veTx 5.78e4 \
+        -veTy 5.78e4 \
+        -veTz 5.78e4 \
+        -viTx 247.0 \
+        -viTy 247.0 \
+        -viTz 247.0 \
+        -ksp_monitor_short
 }
 case_map['basic-physics']=run_basic_physics
 
