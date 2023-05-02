@@ -1079,7 +1079,7 @@ int main(int argc, char **args)
   Context     ctx;
   DM          grid, solve;
   KSP         ksp;
-  PetscViewer viewer;
+  PetscViewer outputView;
   Vec         x;
 
   PetscFunctionBeginUser;
@@ -1117,8 +1117,8 @@ int main(int argc, char **args)
 
   // [DEV] View the global grid vector.
   PetscCall(PetscViewerHDF5Open(
-            PETSC_COMM_WORLD, "grid.hdf", FILE_MODE_WRITE, &viewer));
-  PetscCall(WriteHDF5(grid, ctx.global, viewer));
+            PETSC_COMM_WORLD, "grid.hdf", FILE_MODE_WRITE, &outputView));
+  PetscCall(WriteHDF5(grid, ctx.global, outputView));
 
   // Compute initial electric field.
   PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
@@ -1156,7 +1156,7 @@ int main(int argc, char **args)
     // Output current time step
 
   // Free memory.
-  PetscCall(PetscViewerDestroy(&viewer));
+  PetscCall(PetscViewerDestroy(&outputView));
   PetscCall(KSPDestroy(&ksp));
   PetscCall(VecDestroy(&ctx.global));
   PetscCall(DMDestroy(&grid));
