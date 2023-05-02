@@ -50,6 +50,8 @@ typedef struct {
   RealVector kappa; // magnetization components
   RealVector v0;    // drift velocity
   RealVector vT;    // thermal velocity
+  PetscReal  gamma; // thermal coefficient
+  PetscReal  T;     // temperature
 } Species;
 
 typedef struct {
