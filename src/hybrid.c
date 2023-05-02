@@ -1220,6 +1220,8 @@ int main(int argc, char **args)
   PetscCall(KSPSetComputeOperators(ksp, ComputeLHS, &ctx));
   PetscCall(KSPSolve(ksp, NULL, NULL));
   PetscCall(KSPGetSolution(ksp, &x));
+  PetscCall(PetscObjectSetName((PetscObject)x, "potential"));
+  PetscCall(VecView(x, outputView));
 
   // Output initial conditions.
 
