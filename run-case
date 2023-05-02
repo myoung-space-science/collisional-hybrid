@@ -37,6 +37,20 @@ run_gamg_basic() {
         -Nx 16 -Ny 16 -Nz 16 -n 2
 }
 case_map['gamg-basic']=run_gamg_basic
+run_basic_physics() {
+    ./run.sh \
+        -ksp_monitor_short \
+        -ksp_type gmres \
+        -ksp_max_it 100 \
+        -pc_type jacobi \
+        -Nx 16 -Ny 16 -Nz 16 -n 2 \
+        -nue 5e4 \
+        -nui 3e3 \
+        -B0z 2.5e-05 \
+        -mi 5e-26 \
+        -E0x 9e-3
+}
+case_map['basic-physics']=run_basic_physics
 
 # Define a function to print names of registered cases.
 show_cases() {
