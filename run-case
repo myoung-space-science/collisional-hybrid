@@ -47,7 +47,7 @@ run_basic_physics() {
         -nui 3e3 \
         -B0z 2.5e-05 \
         -mi 5e-26 \
-        -E0x 9e-3 \
+        -E0y 9e-3 \
         -veTx 5.78e4 \
         -veTy 5.78e4 \
         -veTz 5.78e4 \
