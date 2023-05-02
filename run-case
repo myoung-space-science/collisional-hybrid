@@ -54,9 +54,12 @@ case_map['basic-physics']=run_basic_physics
 
 # Define a function to print names of registered cases.
 show_cases() {
+    echo
+    echo "The following cases are available:"
     for key in "${!case_map[@]}"; do
-        echo "$key"
+        echo "+ $key"
     done
+    echo
 }
 
 # Define the function that will run a registered case.
