@@ -893,8 +893,6 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   PetscReal    detA;
   // components of magnetization tensor
   PetscScalar  rxx, ryx, rzx, rxy, ryy, rzy, rxz, ryz, rzz;
-  // grid-cell spacing in each dimension
-  PetscReal    dx, dy, dz;
   // the DM of the grid
   DM           grid;
   // the electrostatic-potential DM
@@ -953,11 +951,6 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   rzy = Ky*Kz + Kx;
   rzz = 1 + Kz*Kz;
 
-  // Compute grid-cell spacing.
-  dx = 1.0 / (PetscReal)ctx->grid.N.x;
-  dy = 1.0 / (PetscReal)ctx->grid.N.y;
-  dz = 1.0 / (PetscReal)ctx->grid.N.z;
-
   /* Compute geometric scale factors for stencil values. Note that there is some
   redundancy for the sake of organization.
 
@@ -967,15 +960,15 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   Off-diagonal factors have the form
   - `sij = 2*di*dj*dk / (8*di*dj*|A|) = dk / (4*|A|)`
   */
-  sxx = dy*dz/dx / detA;
-  syx = 0.25*dz  / detA;
-  szx = 0.25*dy  / detA;
-  sxy = 0.25*dz  / detA;
-  syy = dx*dz/dy / detA;
-  szy = 0.25*dx  / detA;
-  sxz = 0.25*dy  / detA;
-  syz = 0.25*dx  / detA;
-  szz = dx*dy/dz / detA;
+  sxx = ctx->grid.d.y * ctx->grid.d.z / ctx->grid.d.x / detA;
+  syx = 0.25*ctx->grid.d.z  / detA;
+  szx = 0.25*ctx->grid.d.y  / detA;
+  sxy = 0.25*ctx->grid.d.z  / detA;
+  syy = ctx->grid.d.x * ctx->grid.d.z / ctx->grid.d.y / detA;
+  szy = 0.25*ctx->grid.d.x  / detA;
+  sxz = 0.25*ctx->grid.d.y  / detA;
+  syz = 0.25*ctx->grid.d.x  / detA;
+  szz = ctx->grid.d.x * ctx->grid.d.y / ctx->grid.d.z / detA;
 
   // Get the grid DM from the context.
   PetscCall(DMSwarmGetCellDM(ctx->swarm, &grid));
