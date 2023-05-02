@@ -778,29 +778,47 @@ WriteHDF5(DM grid, Vec full, PetscViewer viewer)
 
 
 static PetscErrorCode
-BuildRHSFunction(Vec b)
+ComputeInitialPhi(KSP ksp, Vec phi, void *_ctx)
 {
+  // Note that this function requires this signature for use with
+  // `KSPSetComputeInitialGuess`.
+
   PetscFunctionBeginUser;
 
-  PetscCall(VecSetRandom(b, NULL));
+  PetscCall(VecSet(phi, 0.0));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 
 static PetscErrorCode
-BuildLHSOperator(Mat A, DM dm, Context *ctx)
+ComputeRHS(KSP ksp, Vec rhs, void *_ctx)
 {
+  PetscFunctionBeginUser;
+
+  PetscCall(VecSetRandom(rhs, NULL));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+static PetscErrorCode
+ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
+{
+  // the problem context
+  Context      *ctx=(Context *)_ctx;
   // components of magnetization vector
   PetscScalar  Kx, Ky, Kz;
+  // matrix determinant
+  PetscReal    detA;
   // components of magnetization tensor
   PetscScalar  rxx, ryx, rzx, rxy, ryy, rzy, rxz, ryz, rzz;
   // grid-cell spacing in each dimension
   PetscReal    dx, dy, dz;
   // the DM of the grid
   DM           grid;
-  // matrix determinant
-  PetscReal    detA;
+  // the electrostatic-potential DM
+  DM           dm;
   // indices of the lower left corner of the local grid
   PetscInt     i0, j0, k0;
   // number of non-ghost cells in each dimension of the local grid
@@ -887,6 +905,9 @@ BuildLHSOperator(Mat A, DM dm, Context *ctx)
   PetscCall(DMGlobalToLocalBegin(grid, ctx->global, INSERT_VALUES, gridvec));
   PetscCall(DMGlobalToLocalEnd(grid, ctx->global, INSERT_VALUES, gridvec));
   PetscCall(DMDAVecGetArray(grid, gridvec, &array));
+
+  // Get the DM associated with the KSP.
+  PetscCall(KSPGetDM(ksp, &dm));
 
   // Get this processor's indices.
   PetscCall(DMDAGetCorners(dm, &i0, &j0, &k0, &ni, &nj, &nk));
@@ -1053,9 +1074,8 @@ int main(int argc, char **args)
   Context     ctx;
   DM          grid, solve;
   KSP         ksp;
-  Mat         A;
   PetscViewer viewer;
-  Vec         b, x;
+  Vec         x;
 
   PetscFunctionBeginUser;
 
@@ -1091,22 +1111,15 @@ int main(int argc, char **args)
   PetscCall(WriteHDF5(grid, ctx.global, viewer));
 
   // Compute initial electric field.
-  PetscCall(InitializePotentialDM(grid, &solve));
-  PetscCall(DMCreateMatrix(solve, &A));
-  PetscCall(DMCreateGlobalVector(solve, &b));
-  PetscCall(DMCreateGlobalVector(solve, &x));
-  PetscCall(MatZeroEntries(A));
-  PetscCall(VecZeroEntries(b));
-  PetscCall(VecZeroEntries(x));
-  PetscCall(BuildLHSOperator(A, solve, &ctx));
   PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
+  PetscCall(InitializePotentialDM(grid, &solve));
   PetscCall(KSPSetDM(ksp, solve));
-  PetscCall(KSPSetDMActive(ksp, PETSC_FALSE));
-  PetscCall(KSPSetOperators(ksp, A, A));
   PetscCall(KSPSetFromOptions(ksp));
-  PetscCall(KSPSetUp(ksp));
-  PetscCall(BuildRHSFunction(b));
-  PetscCall(KSPSolve(ksp, b, x));
+  PetscCall(KSPSetComputeInitialGuess(ksp, ComputeInitialPhi, &ctx));
+  PetscCall(KSPSetComputeRHS(ksp, ComputeRHS, &ctx));
+  PetscCall(KSPSetComputeOperators(ksp, ComputeLHS, &ctx));
+  PetscCall(KSPSolve(ksp, NULL, NULL));
+  PetscCall(KSPGetSolution(ksp, &x));
 
   // Output initial conditions.
 
@@ -1136,11 +1149,8 @@ int main(int argc, char **args)
   PetscCall(PetscViewerDestroy(&viewer));
   PetscCall(KSPDestroy(&ksp));
   PetscCall(VecDestroy(&ctx.global));
-  PetscCall(VecDestroy(&b));
-  PetscCall(VecDestroy(&x));
   PetscCall(DMDestroy(&grid));
   PetscCall(DMDestroy(&ctx.swarm));
-  PetscCall(MatDestroy(&A));
   PetscCall(DMDestroy(&solve));
 
   // Finalize PETSc and MPI.
