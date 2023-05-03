@@ -536,7 +536,7 @@ InitializeSwarmDM(DM grid, Context *ctx)
 
 
 typedef PetscErrorCode
-(*DensityFunction)(PetscInt i, PetscInt j, PetscInt k,
+(*DensityFunction)(PetscInt x, PetscInt y, PetscInt z,
                    PetscReal *v, Context *ctx);
 
 
@@ -544,25 +544,68 @@ static PetscErrorCode
 Rejection(DensityFunction density, Context *ctx)
 {
   PetscRandom random;
-  PetscInt    ip;
+  PetscRandom rx, ry, rz, rv;
+  PetscReal   xr, yr, zr, vr;
+  PetscInt    np, ip, Np=0;
+  DM          swarm=ctx->swarm;
+  PetscScalar *coords;
+  PetscReal   X, Y, Z;
+  PetscReal   x, y, z;
+  PetscReal   v, V;
 
+  // [DEV]
+  // - This needs to look like InitializeSwarmCoordinates.
+  // - It cannot assume the ctx->plasma.Np is correct.
+  // - It cannot access the swarm 'position' field.
   PetscFunctionBeginUser;
 
-  PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &random));
-  PetscCall(PetscRandomSetSeed(random, (unsigned long)ctx->mpi.rank));
+  // Get a representation of the particle coordinates.
+  PetscCall(DMSwarmGetField(
+            swarm,
+            DMSwarmPICField_coor, NULL, NULL,
+            (void **)&coords));
+
+  // Get the number of particles on this rank.
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+
+  PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &rx));
+  PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &ry));
+  PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &rz));
+  PetscCall(PetscRandomSetSeed(rx, (unsigned long)ctx->mpi.rank));
+  PetscCall(PetscRandomSetSeed(ry, (unsigned long)ctx->mpi.rank));
+  PetscCall(PetscRandomSetSeed(rz, (unsigned long)ctx->mpi.rank));
   // A while loop may be more appropriate. See bottom of EPPIC rejectND.cc
-  for (ip=0; ip<ctx->plasma.Np; ip++) {
-    /* Algorithm (all 'random #' are unique)
-      x = random #
-      y = random #
-      z = random #
-      if density(x, y, z, ...) > random #
-        particle.x = x
-        particle.y = y
-        particle.z = z
-    */
+  for (ip=0; ip<np; ip++) {
+    x = 0.0;
+    y = 0.0;
+    z = 0.0;
+    PetscCall(PetscRandomGetValueReal(rx, &xr));
+    PetscCall(PetscRandomGetValueReal(ry, &yr));
+    PetscCall(PetscRandomGetValueReal(rz, &zr));
+    PetscCall(density(xr, yr, zr, &v, ctx));
+    PetscCall(PetscRandomGetValueReal(rv, &vr));
+    if (v > vr) {
+      x = xr;
+      y = yr;
+      z = zr;
+      Np++;
+    }
+    coords[ip*NDIM + 0] = x;
+    coords[ip*NDIM + 1] = y;
+    coords[ip*NDIM + 2] = z;
   }
 
+  // Restore the coordinates array.
+  PetscCall(DMSwarmRestoreField(
+            swarm,
+            DMSwarmPICField_coor, NULL, NULL,
+            (void **)&coords));
+
+  // Destroy the random-number generator.
+  PetscCall(PetscRandomDestroy(&random));
+
+  // Update the swarm.
+  PetscCall(DMSwarmMigrate(swarm, PETSC_TRUE));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -877,6 +920,7 @@ CollectParticles(Context *ctx)
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
 
   // Compute grid grid spacing.
+  // - TODO: This can use ctx->grid.d.{x,y,z}
   PetscCall(DMDAGetInfo(
             grid, NULL,
             &i0, &j0, &k0,
