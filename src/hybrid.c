@@ -492,6 +492,39 @@ InitializeSwarmDM(DM grid, Context *ctx)
 }
 
 
+typedef PetscErrorCode
+(*DensityFunction)(PetscInt i, PetscInt j, PetscInt k,
+                   PetscReal *v, Context *ctx);
+
+
+static PetscErrorCode
+Rejection(DensityFunction density, Context *ctx)
+{
+  PetscRandom random;
+  PetscInt    ip;
+
+  PetscFunctionBeginUser;
+
+  PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &random));
+  PetscCall(PetscRandomSetSeed(random, (unsigned long)ctx->mpi.rank));
+  // A while loop may be more appropriate. See bottom of EPPIC rejectND.cc
+  for (ip=0; ip<ctx->plasma.Np; ip++) {
+    /* Algorithm (all 'random #' are unique)
+      x = random #
+      y = random #
+      z = random #
+      if density(x, y, z, ...) > random #
+        particle.x = x
+        particle.y = y
+        particle.z = z
+    */
+  }
+
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 static PetscErrorCode
 InitializeSwarmCoordinates(Context *ctx)
 {
