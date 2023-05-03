@@ -1102,7 +1102,6 @@ ComputeSinusoidalRHS(KSP ksp, Vec b, void *_ctx)
   PetscCall(VecView(b, ctx->gridView));
 
   PetscFunctionReturn(PETSC_SUCCESS);
-
 }
 
 
