@@ -1393,6 +1393,201 @@ ComputeIdentityLHS(KSP ksp, Mat J, Mat A, void *_ctx)
 }
 
 
+// Note: This is more complicated than necessary because it arose as a
+// simplification of ComputeFullLHS. It could be further simplified.
+static PetscErrorCode
+ComputeLaplacianLHS(KSP ksp, Mat J, Mat A, void *_ctx)
+{
+  // the problem context
+  Context      *ctx=(Context *)_ctx;
+  // geometric scale factors
+  PetscScalar  sxx, syx, szx, sxy, syy, szy, sxz, syz, szz;
+  // the DM of the KSP
+  DM           dm;
+  // indices of the lower left corner of the local grid
+  PetscInt     i0, j0, k0;
+  // number of non-ghost cells in each dimension of the local grid
+  PetscInt     ni, nj, nk;
+  // grid indices
+  PetscInt     i, j, k;
+  // the density value at the current and neighboring grid points
+  PetscScalar  nijk, npjk, nmjk, nipk, nimk, nijp, nijm;
+  // diagonal coefficient
+  PetscScalar  vijk=1.0;
+  // star-stencil coefficients
+  PetscScalar  vpjk=0.0, vmjk=0.0, vipk=0.0, vimk=0.0, vijp=0.0, vijm=0.0;
+  // x-y corners
+  PetscScalar  vmmk=0.0, vpmk=0.0, vmpk=0.0, vppk=0.0;
+  // x-z corners
+  PetscScalar  vpjp=0.0, vpjm=0.0, vmjp=0.0, vmjm=0.0;
+  // y-z corners
+  PetscScalar  vipp=0.0, vipm=0.0, vimp=0.0, vimm=0.0;
+  // the current value at each active stencil point
+  PetscScalar  val[NVALUES];
+  // the current matrix row
+  MatStencil   row;
+  // the current matrix column of each active stencil point
+  MatStencil   col[NVALUES];
+  // the operator nullspace
+  MatNullSpace nullspace;
+
+  PetscFunctionBeginUser;
+
+  // Compute constant stencil values.
+  sxx = ctx->grid.d.y * ctx->grid.d.z / ctx->grid.d.x;
+  syx = 0.25*ctx->grid.d.z;
+  szx = 0.25*ctx->grid.d.y;
+  sxy = 0.25*ctx->grid.d.z;
+  syy = ctx->grid.d.x * ctx->grid.d.z / ctx->grid.d.y;
+  szy = 0.25*ctx->grid.d.x;
+  sxz = 0.25*ctx->grid.d.y;
+  syz = 0.25*ctx->grid.d.x;
+  szz = ctx->grid.d.x * ctx->grid.d.y / ctx->grid.d.z;
+
+  // Assign the star-stencil coefficients.
+  vpjk =  sxx;
+  vmjk =  sxx;
+  vipk =  syy;
+  vimk =  syy;
+  vijp =  szz;
+  vijm =  szz;
+
+  // Assign the diagonal coefficient.
+  vijk = -(vpjk + vipk + vijp + vmjk + vimk + vijm);
+
+  // Get the DM associated with the KSP.
+  PetscCall(KSPGetDM(ksp, &dm));
+
+  // Get this processor's indices.
+  PetscCall(DMDAGetCorners(dm, &i0, &j0, &k0, &ni, &nj, &nk));
+
+  // Loop over grid points.
+  for (k=k0; k<k0+nk; k++) {
+    for (j=j0; j<j0+nj; j++) {
+      for (i=i0; i<i0+ni; i++) {
+        row.i = i; row.j = j; row.k = k;
+        // Interior node (i+1, j, k)
+        val[0] = vpjk;
+        col[0].i = i+1;
+        col[0].j = j;
+        col[0].k = k;
+        // Interior node (i-1, j, k)
+        val[1] = vmjk;
+        col[1].i = i-1;
+        col[1].j = j;
+        col[1].k = k;
+        // Interior node (i, j+1, k)
+        val[2] = vipk;
+        col[2].i = i;
+        col[2].j = j+1;
+        col[2].k = k;
+        // Interior node (i, j-1, k)
+        val[3] = vimk;
+        col[3].i = i;
+        col[3].j = j-1;
+        col[3].k = k;
+        // Interior node (i, j, k+1)
+        val[4] = vijp;
+        col[4].i = i;
+        col[4].j = j;
+        col[4].k = k+1;
+        // Interior node (i, j, k-1)
+        val[5] = vijm;
+        col[5].i = i;
+        col[5].j = j;
+        col[5].k = k-1;
+        // Interior node (i+1, j+1, k)
+        val[6] = vppk;
+        col[6].i = i+1;
+        col[6].j = j+1;
+        col[6].k = k;
+        // Interior node (i+1, j-1, k)
+        val[7] = vpmk;
+        col[7].i = i+1;
+        col[7].j = j-1;
+        col[7].k = k;
+        // Interior node (i-1, j+1, k)
+        val[8] = vmpk;
+        col[8].i = i-1;
+        col[8].j = j+1;
+        col[8].k = k;
+        // Interior node (i-1, j-1, k)
+        val[9] = vmmk;
+        col[9].i = i-1;
+        col[9].j = j-1;
+        col[9].k = k;
+        // Interior node (i+1, j, k+1)
+        val[10] = vpjp;
+        col[10].i = i+1;
+        col[10].j = j;
+        col[10].k = k+1;
+        // Interior node (i+1, j, k-1)
+        val[11] = vpjm;
+        col[11].i = i+1;
+        col[11].j = j;
+        col[11].k = k-1;
+        // Interior node (i-1, j, k+1)
+        val[12] = vmjp;
+        col[12].i = i-1;
+        col[12].j = j;
+        col[12].k = k+1;
+        // Interior node (i-1, j, k-1)
+        val[13] = vmjm;
+        col[13].i = i-1;
+        col[13].j = j;
+        col[13].k = k-1;
+        // Interior node (i, j+1, k+1)
+        val[14] = vipp;
+        col[14].i = i;
+        col[14].j = j+1;
+        col[14].k = k+1;
+        // Interior node (i, j+1, k-1)
+        val[15] = vipm;
+        col[15].i = i;
+        col[15].j = j+1;
+        col[15].k = k-1;
+        // Interior node (i, j-1, k+1)
+        val[16] = vimp;
+        col[16].i = i;
+        col[16].j = j-1;
+        col[16].k = k+1;
+        // Interior node (i, j-1, k-1)
+        val[17] = vimm;
+        col[17].i = i;
+        col[17].j = j-1;
+        col[17].k = k-1;
+        // Interior node (i, j, k)
+        val[18] = vijk;
+        col[18].i = row.i;
+        col[18].j = row.j;
+        col[18].k = row.k;
+        PetscCall(MatSetValuesStencil(
+                  A, 1, &row, NVALUES, col, val, INSERT_VALUES));
+      }
+    }
+  }
+
+  PetscCall(MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY));
+  PetscCall(MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY));
+
+  PetscCall(MatNullSpaceCreate(
+            PETSC_COMM_WORLD, PETSC_TRUE, 0, NULL, &nullspace));
+  PetscCall(MatSetNullSpace(A, nullspace));
+  PetscCall(MatNullSpaceDestroy(&nullspace));
+
+  if (ctx->viewLHS) {
+    PetscViewer viewer;
+    PetscCall(PetscViewerBinaryOpen(
+              PETSC_COMM_WORLD,
+              "lhs.dat", FILE_MODE_WRITE, &viewer));
+    PetscCall(MatView(A, viewer));
+    PetscCall(PetscViewerDestroy(&viewer));
+  }
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 static PetscErrorCode
 ComputeFullLHS(KSP ksp, Mat J, Mat A, void *_ctx)
 {
@@ -1700,9 +1895,7 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *ctx)
     PetscCall(ComputeIdentityLHS(ksp, J, A, ctx));
     break;
   case LHS_LAPLACIAN:
-    SETERRQ(
-      PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG,
-      "LHS type \"%s\" not implemented\n", LHSTypes[LHS_LAPLACIAN]);
+    PetscCall(ComputeLaplacianLHS(ksp, J, A, ctx));
     break;
   case LHS_FULL:
     PetscCall(ComputeFullLHS(ksp, J, A, ctx));
