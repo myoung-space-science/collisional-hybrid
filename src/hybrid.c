@@ -1027,6 +1027,9 @@ ComputeRHS(KSP ksp, Vec b, void *_ctx)
   Ky = ctx->electrons.kappa.y;
   Kz = ctx->electrons.kappa.z;
 
+  // Compute the value of the matrix determinant.
+  detA = 1 + Kx*Kx + Ky*Ky + Kz*Kz;
+
   // Define components of the magnetization tensor.
   rxx = 1 + Kx*Kx;
   rxy = Ky*Kx - Kz;
@@ -1037,9 +1040,6 @@ ComputeRHS(KSP ksp, Vec b, void *_ctx)
   rzx = Kx*Kz - Ky;
   rzy = Ky*Kz + Kx;
   rzz = 1 + Kz*Kz;
-
-  // Compute the value of the matrix determinant.
-  detA = 1 + Kx*Kx + Ky*Ky + Kz*Kz;
 
   // Get the grid DM from the context.
   PetscCall(DMSwarmGetCellDM(ctx->swarm, &grid));
