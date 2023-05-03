@@ -974,6 +974,96 @@ ComputeInitialPhi(KSP ksp, Vec phi, void *_ctx)
 
 
 static PetscErrorCode
+ComputeSinusoidalRHS(KSP ksp, Vec b, void *_ctx)
+{
+  Context      *ctx=(Context *)_ctx;
+  PetscScalar  Kx, Ky, Kz;
+  PetscReal    detA;
+  PetscReal    dx=ctx->grid.d.x;
+  PetscReal    dy=ctx->grid.d.y;
+  PetscReal    dz=ctx->grid.d.z;
+  DM           grid;
+  Vec          gridvec;
+  GridNode     ***gridarr;
+  DM           dm;
+  PetscScalar  ***rhs;
+  PetscInt     i0, j0, k0;
+  PetscInt     ni, nj, nk;
+  PetscInt     i, j, k;
+  PetscScalar  nijk;
+  PetscScalar  x, y, z;
+  PetscScalar  Cx, Cy, Cz;
+  PetscScalar  val;
+  MatNullSpace nullspace;
+
+  PetscFunctionBeginUser;
+
+  // Extract values of electron magnetization.
+  Kx = ctx->electrons.kappa.x;
+  Ky = ctx->electrons.kappa.y;
+  Kz = ctx->electrons.kappa.z;
+
+  // Compute the value of the matrix determinant.
+  detA = 1 + Kx*Kx + Ky*Ky + Kz*Kz;
+
+  // Get the grid DM from the context.
+  PetscCall(DMSwarmGetCellDM(ctx->swarm, &grid));
+
+  // Extract the density array.
+  PetscCall(DMGetLocalVector(grid, &gridvec));
+  PetscCall(DMGlobalToLocalBegin(grid, ctx->global, INSERT_VALUES, gridvec));
+  PetscCall(DMGlobalToLocalEnd(grid, ctx->global, INSERT_VALUES, gridvec));
+  PetscCall(DMDAVecGetArray(grid, gridvec, &gridarr));
+
+  // Zero the incoming vector.
+  PetscCall(VecZeroEntries(b));
+
+  // Get the DM associated with the KSP.
+  PetscCall(KSPGetDM(ksp, &dm));
+
+  // Get an array equivalent to the RHS Vec.
+  PetscCall(DMDAVecGetArray(dm, b, &rhs));
+
+  // Get this processor's indices.
+  PetscCall(DMDAGetCorners(dm, &i0, &j0, &k0, &ni, &nj, &nk));
+
+  // Loop over grid points.
+  for (k=k0; k<k0+nk; k++) {
+    for (j=j0; j<j0+nj; j++) {
+      for (i=i0; i<i0+ni; i++) {
+        nijk = gridarr[k][j][i].n;
+        x = ((PetscReal)i + 0.5)*dx;
+        y = ((PetscReal)j + 0.5)*dy;
+        z = ((PetscReal)k + 0.5)*dz;
+        Cx = PetscCosScalar(2*PETSC_PI * x);
+        Cy = PetscCosScalar(2*PETSC_PI * y);
+        Cz = PetscCosScalar(2*PETSC_PI * z);
+        val = Cx * Cy * Cz;
+        rhs[k][j][i] = val * (2.0 * dx*dy*dz / detA);
+      }
+    }
+  }
+
+  // Restore the borrowed arrays.
+  PetscCall(DMDAVecRestoreArray(grid, gridvec, &gridarr));
+  PetscCall(DMDAVecRestoreArray(dm, b, &rhs));
+
+  // Make the RHS vector consistent with the LHS operator.
+  PetscCall(MatNullSpaceCreate(
+            PETSC_COMM_WORLD, PETSC_TRUE, 0, NULL, &nullspace));
+  PetscCall(MatNullSpaceRemove(nullspace, b));
+  PetscCall(MatNullSpaceDestroy(&nullspace));
+
+  // Write the RHS vector to HDF5.
+  PetscCall(PetscObjectSetName((PetscObject)b, "rhs"));
+  PetscCall(VecView(b, ctx->gridView));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+
+}
+
+
+static PetscErrorCode
 ComputeRHS(KSP ksp, Vec b, void *_ctx)
 {
   // the problem context
@@ -1454,7 +1544,7 @@ int main(int argc, char **args)
   PetscCall(KSPSetDM(ksp, solve));
   PetscCall(KSPSetFromOptions(ksp));
   PetscCall(KSPSetComputeInitialGuess(ksp, ComputeInitialPhi, &ctx));
-  PetscCall(KSPSetComputeRHS(ksp, ComputeRHS, &ctx));
+  PetscCall(KSPSetComputeRHS(ksp, ComputeSinusoidalRHS, &ctx));
   PetscCall(KSPSetComputeOperators(ksp, ComputeLHS, &ctx));
   PetscCall(KSPSolve(ksp, NULL, NULL));
   PetscCall(KSPGetSolution(ksp, &x));
