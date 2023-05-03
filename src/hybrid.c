@@ -1232,6 +1232,29 @@ ComputeRHS(KSP ksp, Vec b, void *_ctx)
 
 
 static PetscErrorCode
+ComputeIdentityLHS(KSP ksp, Mat J, Mat A, void *_ctx)
+{
+  Context      *ctx=(Context *)_ctx;
+
+  PetscFunctionBeginUser;
+
+  PetscCall(MatZeroEntries(A));
+  PetscCall(MatShift(A, 1.0));
+
+  if (ctx->viewLHS) {
+    PetscViewer viewer;
+    PetscCall(PetscViewerBinaryOpen(
+              PETSC_COMM_WORLD,
+              "lhs.dat", FILE_MODE_WRITE, &viewer));
+    PetscCall(MatView(A, viewer));
+    PetscCall(PetscViewerDestroy(&viewer));
+  }
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+static PetscErrorCode
 ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
 {
   // the problem context
@@ -1609,7 +1632,7 @@ int main(int argc, char **args)
   PetscCall(KSPSetFromOptions(ksp));
   PetscCall(KSPSetComputeInitialGuess(ksp, ComputeInitialPhi, &ctx));
   PetscCall(KSPSetComputeRHS(ksp, ComputeSinusoidalRHS, &ctx));
-  PetscCall(KSPSetComputeOperators(ksp, ComputeLHS, &ctx));
+  PetscCall(KSPSetComputeOperators(ksp, ComputeIdentityLHS, &ctx));
   PetscCall(KSPSolve(ksp, NULL, NULL));
   PetscCall(KSPGetSolution(ksp, &x));
   PetscCall(PetscObjectSetName((PetscObject)x, "potential"));
