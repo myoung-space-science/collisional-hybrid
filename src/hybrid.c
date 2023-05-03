@@ -1074,6 +1074,54 @@ ComputeInitialPhi(KSP ksp, Vec phi, void *_ctx)
 
 
 static PetscErrorCode
+ComputeConstantRHS(KSP ksp, Vec b, void *_ctx)
+{
+  Context      *ctx=(Context *)_ctx;
+  PetscScalar  Kx, Ky, Kz;
+  PetscReal    detA;
+  DM           grid;
+  PetscReal    dx=ctx->grid.d.x;
+  PetscReal    dy=ctx->grid.d.y;
+  PetscReal    dz=ctx->grid.d.z;
+  Vec          density;
+  PetscScalar  mean, val;
+  MatNullSpace nullspace;
+
+  PetscFunctionBeginUser;
+
+  // Extract values of electron magnetization.
+  Kx = ctx->electrons.kappa.x;
+  Ky = ctx->electrons.kappa.y;
+  Kz = ctx->electrons.kappa.z;
+
+  // Compute the value of the matrix determinant.
+  detA = 1 + Kx*Kx + Ky*Ky + Kz*Kz;
+
+  // Get the grid DM from the context.
+  PetscCall(DMSwarmGetCellDM(ctx->swarm, &grid));
+
+  // Extract the density vector.
+  PetscCall(GetFieldVec(grid, ctx->global, "density", &density));
+
+  // Set the RHS vector equal to the global mean density.
+  PetscCall(VecMean(density, &mean));
+  val = mean * (2.0 * dx*dy*dz / detA);
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "mean = %f\n", mean));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "val = %f\n", val));
+  PetscCall(VecSet(b, val));
+
+  // Restore the density vector.
+  PetscCall(RestoreFieldVec(grid, ctx->global, "density", &density));
+
+  // Write the RHS vector to HDF5.
+  PetscCall(PetscObjectSetName((PetscObject)b, "rhs"));
+  PetscCall(VecView(b, ctx->gridView));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+static PetscErrorCode
 ComputeSinusoidalRHS(KSP ksp, Vec b, void *_ctx)
 {
   Context      *ctx=(Context *)_ctx;
@@ -1622,9 +1670,7 @@ ComputeRHS(KSP ksp, Vec b, void *ctx)
 
   switch (user->rhsType) {
   case RHS_CONSTANT:
-    SETERRQ(
-      PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG,
-      "RHS type \"%s\" not implemented\n", RHSTypes[RHS_CONSTANT]);
+    PetscCall(ComputeConstantRHS(ksp, b, ctx));
     break;
   case RHS_SINUSOIDAL:
     PetscCall(ComputeSinusoidalRHS(ksp, b, ctx));
