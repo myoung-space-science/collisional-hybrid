@@ -66,15 +66,15 @@ typedef struct {
 } MPIContext;
 
 typedef struct {
-  Grid       grid;      // grid information
-  Species    electrons; // electron parameter values
-  Species    ions;      // ion parameter values
-  Plasma     plasma;    // plasma information
-  MPIContext mpi;       // MPI information
-  Vec        global;
-  DM         swarm;
-  PetscViewer gridView;   // viewer for arrays of simulated quantities
-  PetscViewer optionsView;  // viewer for parameter values
+  Grid       grid;         // grid information
+  Species    electrons;    // electron parameter values
+  Species    ions;         // ion parameter values
+  Plasma     plasma;       // plasma information
+  MPIContext mpi;          // MPI information
+  Vec        global;       // full vector of all Vlasov quantities
+  DM         swarm;        // PIC-swarm data manager
+  PetscViewer gridView;    // viewer for arrays of simulated quantities
+  PetscViewer optionsView; // viewer for parameter values
 } Context;
 
 typedef struct {
