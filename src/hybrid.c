@@ -75,6 +75,7 @@ typedef struct {
   DM         swarm;        // PIC-swarm data manager
   PetscViewer gridView;    // viewer for arrays of simulated quantities
   PetscViewer optionsView; // viewer for parameter values
+  PetscBool viewLHS;       // option to view LHS operator structure
 } Context;
 
 typedef struct {
@@ -95,6 +96,7 @@ ProcessOptions(Context *ctx)
 
   PetscInt intArg;
   PetscReal realArg;
+  PetscBool boolArg;
   PetscBool found;
 
   // Set fundamental parameter values.
@@ -102,6 +104,12 @@ ProcessOptions(Context *ctx)
   ctx->electrons.m = ME;
 
   // Read optional parameter values from user input.
+  PetscCall(PetscOptionsGetBool(NULL, NULL, "--view-lhs", &boolArg, &found));
+  if (found) {
+    ctx->viewLHS = boolArg;
+  } else {
+    ctx->viewLHS = PETSC_FALSE;
+  }
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-Nx", &intArg, &found));
   if (found) {
     if (intArg < 0) {
@@ -1477,6 +1485,15 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
             PETSC_COMM_WORLD, PETSC_TRUE, 0, NULL, &nullspace));
   PetscCall(MatSetNullSpace(A, nullspace));
   PetscCall(MatNullSpaceDestroy(&nullspace));
+
+  if (ctx->viewLHS) {
+    PetscViewer viewer;
+    PetscCall(PetscViewerBinaryOpen(
+              PETSC_COMM_WORLD,
+              "lhs.dat", FILE_MODE_WRITE, &viewer));
+    PetscCall(MatView(A, viewer));
+    PetscCall(PetscViewerDestroy(&viewer));
+  }
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
