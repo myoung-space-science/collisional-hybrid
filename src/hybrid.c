@@ -1253,15 +1253,15 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   // the density value at the current and neighboring grid points
   PetscScalar  nijk, npjk, nmjk, nipk, nimk, nijp, nijm;
   // diagonal coefficient
-  PetscScalar  vijk;
+  PetscScalar  vijk=1.0;
   // star-stencil coefficients
-  PetscScalar  vpjk, vmjk, vipk, vimk, vijp, vijm;
+  PetscScalar  vpjk=0.0, vmjk=0.0, vipk=0.0, vimk=0.0, vijp=0.0, vijm=0.0;
   // x-y corners
-  PetscScalar  vmmk, vpmk, vmpk, vppk;
+  PetscScalar  vmmk=0.0, vpmk=0.0, vmpk=0.0, vppk=0.0;
   // x-z corners
-  PetscScalar  vpjp, vpjm, vmjp, vmjm;
+  PetscScalar  vpjp=0.0, vpjm=0.0, vmjp=0.0, vmjm=0.0;
   // y-z corners
-  PetscScalar  vipp, vipm, vimp, vimm;
+  PetscScalar  vipp=0.0, vipm=0.0, vimp=0.0, vimm=0.0;
   // the current value at each active stencil point
   PetscScalar  val[NVALUES];
   // the current matrix row
