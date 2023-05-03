@@ -1489,7 +1489,6 @@ int main(int argc, char **args)
   Context     ctx;
   DM          grid, solve;
   KSP         ksp;
-  PetscViewer contextView;
   Vec         x;
 
   PetscFunctionBeginUser;
