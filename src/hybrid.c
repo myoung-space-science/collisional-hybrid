@@ -22,6 +22,24 @@ static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 // equivalent to the standard box stencil with the corners removed.
 #define NVALUES 19
 
+const char *RHSTypes[] = {
+  "constant", "sinusoidal", "full", "RHSType", "RHS_", NULL
+};
+typedef enum {
+  RHS_CONSTANT,
+  RHS_SINUSOIDAL,
+  RHS_FULL,
+} RHSType;
+
+const char *LHSTypes[] = {
+  "identity", "laplacian", "full", "LHSType", "LHS_", NULL
+};
+typedef enum {
+  LHS_IDENTITY,
+  LHS_LAPLACIAN,
+  LHS_FULL,
+} LHSType;
+
 typedef struct {
   PetscInt x; // x component
   PetscInt y; // y component
@@ -76,6 +94,8 @@ typedef struct {
   PetscViewer gridView;    // viewer for arrays of simulated quantities
   PetscViewer optionsView; // viewer for parameter values
   PetscBool viewLHS;       // option to view LHS operator structure
+  RHSType   rhsType;       // type of RHS vector to use
+  LHSType   lhsType;       // type of LHS operator to use
 } Context;
 
 typedef struct {
@@ -97,6 +117,7 @@ ProcessOptions(Context *ctx)
   PetscInt intArg;
   PetscReal realArg;
   PetscBool boolArg;
+  PetscEnum enumArg;
   PetscBool found;
 
   // Set fundamental parameter values.
@@ -109,6 +130,20 @@ ProcessOptions(Context *ctx)
     ctx->viewLHS = boolArg;
   } else {
     ctx->viewLHS = PETSC_FALSE;
+  }
+  PetscCall(PetscOptionsGetEnum(
+            NULL, NULL, "--rhs-type", RHSTypes, &enumArg, &found));
+  if (found) {
+    ctx->rhsType = enumArg;
+  } else {
+    ctx->rhsType = RHS_FULL;
+  }
+  PetscCall(PetscOptionsGetEnum(
+            NULL, NULL, "--lhs-type", LHSTypes, &enumArg, &found));
+  if (found) {
+    ctx->lhsType = enumArg;
+  } else {
+    ctx->lhsType = LHS_FULL;
   }
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-Nx", &intArg, &found));
   if (found) {
@@ -1072,7 +1107,7 @@ ComputeSinusoidalRHS(KSP ksp, Vec b, void *_ctx)
 
 
 static PetscErrorCode
-ComputeRHS(KSP ksp, Vec b, void *_ctx)
+ComputeFullRHS(KSP ksp, Vec b, void *_ctx)
 {
   // the problem context
   Context      *ctx=(Context *)_ctx;
@@ -1255,7 +1290,7 @@ ComputeIdentityLHS(KSP ksp, Mat J, Mat A, void *_ctx)
 
 
 static PetscErrorCode
-ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
+ComputeFullLHS(KSP ksp, Mat J, Mat A, void *_ctx)
 {
   // the problem context
   Context      *ctx=(Context *)_ctx;
@@ -1521,6 +1556,65 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
+
+static PetscErrorCode
+ComputeRHS(KSP ksp, Vec b, void *ctx)
+{
+  Context      *user=(Context *)ctx;
+
+  PetscFunctionBeginUser;
+
+  switch (user->rhsType) {
+  case RHS_CONSTANT:
+    SETERRQ(
+      PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG,
+      "RHS type \"%s\" not implemented\n", RHSTypes[RHS_CONSTANT]);
+    break;
+  case RHS_SINUSOIDAL:
+    PetscCall(ComputeSinusoidalRHS(ksp, b, ctx));
+    break;
+  case RHS_FULL:
+    PetscCall(ComputeFullRHS(ksp, b, ctx));
+    break;
+  default:
+    SETERRQ(
+      PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG,
+      "Unknown RHS type: \"%s\"\n", RHSTypes[user->rhsType]);
+  }
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+static PetscErrorCode
+ComputeLHS(KSP ksp, Mat J, Mat A, void *ctx)
+{
+  Context      *user=(Context *)ctx;
+
+  PetscFunctionBeginUser;
+
+  switch (user->lhsType) {
+  case LHS_IDENTITY:
+    PetscCall(ComputeIdentityLHS(ksp, J, A, ctx));
+    break;
+  case LHS_LAPLACIAN:
+    SETERRQ(
+      PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG,
+      "LHS type \"%s\" not implemented\n", LHSTypes[LHS_LAPLACIAN]);
+    break;
+  case LHS_FULL:
+    PetscCall(ComputeFullLHS(ksp, J, A, ctx));
+    break;
+  default:
+    SETERRQ(
+      PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG,
+      "Unknown LHS type: \"%s\"\n", LHSTypes[user->lhsType]);
+  }
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 /*
 Notes
 -----
@@ -1631,8 +1725,8 @@ int main(int argc, char **args)
   PetscCall(KSPSetDM(ksp, solve));
   PetscCall(KSPSetFromOptions(ksp));
   PetscCall(KSPSetComputeInitialGuess(ksp, ComputeInitialPhi, &ctx));
-  PetscCall(KSPSetComputeRHS(ksp, ComputeSinusoidalRHS, &ctx));
-  PetscCall(KSPSetComputeOperators(ksp, ComputeIdentityLHS, &ctx));
+  PetscCall(KSPSetComputeRHS(ksp, ComputeRHS, &ctx));
+  PetscCall(KSPSetComputeOperators(ksp, ComputeLHS, &ctx));
   PetscCall(KSPSolve(ksp, NULL, NULL));
   PetscCall(KSPGetSolution(ksp, &x));
   PetscCall(PetscObjectSetName((PetscObject)x, "potential"));
