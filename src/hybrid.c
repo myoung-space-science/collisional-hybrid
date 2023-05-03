@@ -1498,6 +1498,54 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
+/*
+Notes
+-----
+* This function is supposed to provide a way to view the basic structure of the
+  LHS operator matrix, even for production-sized runs, without potentially
+  creating a very large binary file.
+* It doesn't currently work because the local N{x,y,z} arguments are not
+  necessarily consistent with their corresponding values in the application
+  context. We could consider defining a new context to pass to this function,
+  but that may require refactoring ComputeLHS.
+*/
+static PetscErrorCode
+ViewReducedLHS(PetscInt Nx, PetscInt Ny, PetscInt Nz, void *ctx)
+{
+  KSP            ksp;
+  DM             dm;
+  DMBoundaryType xBC=DM_BOUNDARY_PERIODIC;
+  DMBoundaryType yBC=DM_BOUNDARY_PERIODIC;
+  DMBoundaryType zBC=DM_BOUNDARY_PERIODIC;
+  Mat            A;
+  PetscViewer    viewer;
+
+  PetscFunctionBeginUser;
+
+  PetscCall(DMDACreate3d(
+            PETSC_COMM_WORLD,
+            xBC, yBC, zBC,
+            DMDA_STENCIL_BOX,
+            Nx, Ny, Nz,
+            PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE,
+            1, 1,
+            NULL, NULL, NULL,
+            &dm));
+  PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
+  PetscCall(KSPSetDM(ksp, dm));
+  PetscCall(KSPSetComputeOperators(ksp, ComputeLHS, &ctx));
+  PetscCall(KSPGetOperators(ksp, &A, NULL));
+  PetscCall(PetscViewerBinaryOpen(
+            PETSC_COMM_WORLD,
+            "lhs.dat", FILE_MODE_WRITE, &viewer));
+  PetscCall(MatView(A, viewer));
+  PetscCall(PetscViewerDestroy(&viewer));
+  PetscCall(DMDestroy(&dm));
+  PetscCall(KSPDestroy(&ksp));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
 
 int main(int argc, char **args)
 {
