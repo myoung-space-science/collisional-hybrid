@@ -910,6 +910,7 @@ CollectParticles(Context *ctx)
   PetscReal   w[NDIM];
 
   PetscFunctionBeginUser;
+  PUSH_FUNC;
 
   // Get the grid DM from the swarm DM.
   PetscCall(DMSwarmGetCellDM(swarm, &grid));
@@ -1039,6 +1040,7 @@ CollectParticles(Context *ctx)
             "velocity", NULL, NULL,
             (void **)&vel));
 
+  POP_FUNC;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
