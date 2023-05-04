@@ -27,10 +27,14 @@ run_default() {
     ./run.sh -Nx 8 -Ny 8 -Nz 8
 }
 case_map['default']=run_default
-run_test_laplacian_sinusoid() {
-    ./run.sh -Nx 8 -Ny 8 -Nz 8 -n 1 --lhs-type laplacian --rhs-type sinusoidal
+run_test_collection() {
+    ./run.sh \
+        -Nx 15 -Ny 10 -Nz 8 \
+        -Np 500 \
+        -n 1 \
+        --lhs-type laplacian --rhs-type sinusoidal
 }
-case_map['laplacian-sinusoid']=run_test_laplacian_sinusoid
+case_map['test-collection']=run_test_collection
 run_gamg_basic() {
     ./run.sh \
         -ksp_monitor_short \
