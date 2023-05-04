@@ -8,6 +8,8 @@ static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 #include <petscdmswarm.h>
 #include <petscviewerhdf5.h>
 
+#define PUSH_FUNC {PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n--> Entering %s(...) <--\n\n", __func__));}
+#define POP_FUNC {PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n--> Exiting %s(...) <--\n\n", __func__));}
 
 #define NDIM 3
 #define Q 1.6022e-19   // fundamental charge in C
