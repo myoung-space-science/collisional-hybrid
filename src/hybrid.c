@@ -1192,7 +1192,6 @@ ComputeConstantRHS(KSP ksp, Vec b, void *_ctx)
   PetscReal    dz=ctx->grid.d.z;
   Vec          density;
   PetscScalar  mean, val;
-  MatNullSpace nullspace;
 
   PetscFunctionBeginUser;
 
@@ -1508,7 +1507,7 @@ ComputeLaplacianLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   // the problem context
   Context      *ctx=(Context *)_ctx;
   // geometric scale factors
-  PetscScalar  sxx, syx, szx, sxy, syy, szy, sxz, syz, szz;
+  PetscScalar  sxx, syy, szz;
   // the DM of the KSP
   DM           dm;
   // indices of the lower left corner of the local grid
@@ -1517,8 +1516,6 @@ ComputeLaplacianLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   PetscInt     ni, nj, nk;
   // grid indices
   PetscInt     i, j, k;
-  // the density value at the current and neighboring grid points
-  PetscScalar  nijk, npjk, nmjk, nipk, nimk, nijp, nijm;
   // diagonal coefficient
   PetscScalar  vijk=1.0;
   // star-stencil coefficients
@@ -1542,13 +1539,7 @@ ComputeLaplacianLHS(KSP ksp, Mat J, Mat A, void *_ctx)
 
   // Compute constant stencil values.
   sxx = ctx->grid.d.y * ctx->grid.d.z / ctx->grid.d.x;
-  syx = 0.25*ctx->grid.d.z;
-  szx = 0.25*ctx->grid.d.y;
-  sxy = 0.25*ctx->grid.d.z;
   syy = ctx->grid.d.x * ctx->grid.d.z / ctx->grid.d.y;
-  szy = 0.25*ctx->grid.d.x;
-  sxz = 0.25*ctx->grid.d.y;
-  syz = 0.25*ctx->grid.d.x;
   szz = ctx->grid.d.x * ctx->grid.d.y / ctx->grid.d.z;
 
   // Assign the star-stencil coefficients.
