@@ -503,6 +503,7 @@ InitializeSwarmDM(DM grid, Context *ctx)
   DM       swarm;
   PetscInt dim;
   PetscInt bufsize=0;
+  PetscInt Np, np;
 
   PetscFunctionBeginUser;
 
@@ -528,8 +529,10 @@ InitializeSwarmDM(DM grid, Context *ctx)
             swarm, "velocity", sizeof(RealVector)));
   PetscCall(DMSwarmFinalizeFieldRegister(swarm));
   // Set the per-processor swarm size and buffer length for efficient resizing.
-  PetscCall(DMSwarmSetLocalSizes(
-            swarm, ctx->plasma.Np / ctx->mpi.size, bufsize));
+  Np = (ctx->plasma.Np > 0) ? ctx->plasma.Np : NPTOTAL;
+  np = (PetscInt)(Np / ctx->mpi.size);
+  bufsize = (PetscInt)(0.25 * np);
+  PetscCall(DMSwarmSetLocalSizes(swarm, np, bufsize));
   // View information about the swarm DM.
   PetscCall(DMView(swarm, PETSC_VIEWER_STDOUT_WORLD));
   // Assign the swarm to the application context.
