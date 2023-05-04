@@ -669,6 +669,7 @@ InitializeSwarmCoordinates(Context *ctx)
   PetscReal   dx, x, dy, y, dz, z;
 
   PetscFunctionBeginUser;
+  PUSH_FUNC;
 
   // Place an equal number of particles in each cell.
   PetscCall(DMSwarmInsertPointsUsingCellDM(
@@ -724,6 +725,7 @@ InitializeSwarmCoordinates(Context *ctx)
   // Update the swarm.
   PetscCall(DMSwarmMigrate(swarm, PETSC_TRUE));
 
+  POP_FUNC;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
