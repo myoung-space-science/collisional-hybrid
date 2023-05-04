@@ -542,6 +542,23 @@ typedef PetscErrorCode
 (*CDF)(PetscReal x, PetscReal y, PetscReal z, PetscReal *v, Context *ctx);
 
 
+static CDF
+SinusoidalDensity(PetscReal x, PetscReal y, PetscReal z,
+                  PetscReal *v, Context *ctx)
+{
+  PetscReal fx, fy, fz;
+
+  PetscFunctionBeginUser;
+
+  fx = PetscSinReal(2*PETSC_PI * x);
+  fy = PetscSinReal(2*PETSC_PI * y);
+  fz = PetscSinReal(2*PETSC_PI * z);
+  *v = 1.0 + 0.25*fx*fy*fz;
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 static PetscErrorCode
 Rejection(CDF density, Context *ctx)
 {
