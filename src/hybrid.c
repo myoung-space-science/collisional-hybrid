@@ -962,6 +962,57 @@ CollectParticles(Context *ctx)
     lhl = wzl*wyh*wxl;
     hll = wzh*wyl*wxl;
     lll = wzl*wyl*wxl;
+    PetscCall(PetscPrintf(
+              PETSC_COMM_WORLD,
+              "Normalized positions: (%3.1f, %3.1f, %3.1f)\n",
+               r.x, r.y, r.z));
+    PetscCall(PetscPrintf(
+              PETSC_COMM_WORLD,
+              "Physical positions:   (%3.1f, %3.1f, %3.1f)\n",
+               x, y, z));
+    PetscCall(PetscPrintf(
+              PETSC_COMM_WORLD,
+              "Lower indices:        (%03d, %03d, %03d)\n",
+               ixl, iyl, izl));
+    PetscCall(PetscPrintf(
+              PETSC_COMM_WORLD,
+              "Upper indices:        (%03d, %03d, %03d)\n",
+               ixh, iyh, izh));
+    PetscCall(PetscPrintf(
+              PETSC_COMM_WORLD,
+              "Weight hhh:           (%03d, %03d, %03d) = %3.1f\n",
+              ixh, iyh, izh, hhh));
+    PetscCall(PetscPrintf(
+              PETSC_COMM_WORLD,
+              "Weight lhh:           (%03d, %03d, %03d) = %3.1f\n",
+              ixh, iyh, izl, lhh));
+    PetscCall(PetscPrintf(
+              PETSC_COMM_WORLD,
+              "Weight hlh:           (%03d, %03d, %03d) = %3.1f\n",
+              ixh, iyl, izh, hlh));
+    PetscCall(PetscPrintf(
+              PETSC_COMM_WORLD,
+              "Weight llh:           (%03d, %03d, %03d) = %3.1f\n",
+              ixh, iyl, izl, llh));
+    PetscCall(PetscPrintf(
+              PETSC_COMM_WORLD,
+              "Weight hhl:           (%03d, %03d, %03d) = %3.1f\n",
+              ixl, iyh, izh, hhl));
+    PetscCall(PetscPrintf(
+              PETSC_COMM_WORLD,
+              "Weight lhl:           (%03d, %03d, %03d) = %3.1f\n",
+              ixl, iyh, izl, lhl));
+    PetscCall(PetscPrintf(
+              PETSC_COMM_WORLD,
+              "Weight hll:           (%03d, %03d, %03d) = %3.1f\n",
+              ixl, iyl, izh, hll));
+    PetscCall(PetscPrintf(
+              PETSC_COMM_WORLD,
+              "Weight lll:           (%03d, %03d, %03d) = %3.1f\n",
+              ixl, iyl, izl, lll));
+    PetscCall(PetscPrintf(
+              PETSC_COMM_WORLD,
+              "\n"));
     // Assign density values (zeroth moment).
     array[izh][iyh][ixh].n += hhh;
     array[izl][iyh][ixh].n += lhh;
