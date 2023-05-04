@@ -644,41 +644,42 @@ Rejection(CDF density, Context *ctx)
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
+#define SOBOL_MAXBIT 30
+#define SOBOL_MAXDIM 6
 
 // Adaptation of sobseq from Numerical Recipes, 3rd edition.
 static PetscErrorCode
 SobolSequenceND(const PetscInt n, PetscReal *x)
 {
-  const PetscInt MAXBIT=30, MAXDIM=6;
   PetscInt j, k, l;
   unsigned long i, im, ipp;
-  static PetscInt mdeg[MAXDIM]={1, 2, 3, 3, 4, 4};
+  static PetscInt mdeg[SOBOL_MAXDIM]={1, 2, 3, 3, 4, 4};
   static unsigned int in;
-  static unsigned int ix[MAXDIM];
+  static unsigned int ix[SOBOL_MAXDIM];
   static unsigned int **iu;
-  static unsigned int ip[MAXDIM]={0, 1, 1, 2, 1, 4};
-  static unsigned int iv[MAXDIM*MAXBIT]={1, 1, 1, 1, 1, 1, 3, 1, 3, 3, 1, 1, 5, 7, 7, 3, 3, 5, 15, 11, 5, 15, 13, 9};
+  static unsigned int ip[SOBOL_MAXDIM]={0, 1, 1, 2, 1, 4};
+  static unsigned int iv[SOBOL_MAXDIM*SOBOL_MAXBIT]={1, 1, 1, 1, 1, 1, 3, 1, 3, 3, 1, 1, 5, 7, 7, 3, 3, 5, 15, 11, 5, 15, 13, 9};
   static PetscReal fac;
 
   PetscFunctionBeginUser;
 
   if (n < 0) {
-    for (k=0; k<MAXDIM; k++) {
+    for (k=0; k<SOBOL_MAXDIM; k++) {
       ix[k] = 0;
     }
     in = 0;
     if (iv[0] != 1) {
-      return;
+      PetscFunctionReturn(PETSC_SUCCESS);
     }
-    fac = 1.0 / (1 << MAXBIT);
-    for (j=0, k=0; j<MAXBIT; j++, k += MAXDIM) {
+    fac = 1.0 / (1 << SOBOL_MAXBIT);
+    for (j=0, k=0; j<SOBOL_MAXBIT; j++, k += SOBOL_MAXDIM) {
       iu[j] = &iv[k];
     }
-    for (k=0; k<MAXDIM; k++) {
+    for (k=0; k<SOBOL_MAXDIM; k++) {
       for (j=0; j<mdeg[k]; j++) {
-        iu[j][k] <<= (MAXBIT-1-j);
+        iu[j][k] <<= (SOBOL_MAXBIT-1-j);
       }
-      for (j=mdeg[k]; j<MAXBIT; j++) {
+      for (j=mdeg[k]; j<SOBOL_MAXBIT; j++) {
         ipp = ip[k];
         i = iu[j-mdeg[k]][k];
         i ^= (i >> mdeg[k]);
@@ -691,15 +692,15 @@ SobolSequenceND(const PetscInt n, PetscReal *x)
     }
   } else {
     im = in++;
-    for (j=0; j<MAXBIT; j++) {
+    for (j=0; j<SOBOL_MAXBIT; j++) {
       if (!(im & 1)) break;
       im >>= 1;
     }
-    if (j >= MAXBIT) {
-      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "MAXBIT too small in %s", __func__);
+    if (j >= SOBOL_MAXBIT) {
+      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "SOBOL_MAXBIT too small in %s", __func__);
     }
-    im = j*MAXDIM;
-    for (k=0; k<PetscMin(n, MAXDIM); k++) {
+    im = j*SOBOL_MAXDIM;
+    for (k=0; k<PetscMin(n, SOBOL_MAXDIM); k++) {
       ix[k] ^= iv[im+k];
       x[k] = ix[k]*fac;
     }
