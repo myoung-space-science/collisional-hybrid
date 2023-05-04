@@ -537,13 +537,13 @@ InitializeSwarmDM(DM grid, Context *ctx)
 }
 
 
+// Type to be used for cumulative distribution functions.
 typedef PetscErrorCode
-(*DensityFunction)(PetscReal x, PetscReal y, PetscReal z,
-                   PetscReal *v, Context *ctx);
+(*CDF)(PetscReal x, PetscReal y, PetscReal z, PetscReal *v, Context *ctx);
 
 
 static PetscErrorCode
-Rejection(DensityFunction density, Context *ctx)
+Rejection(CDF density, Context *ctx)
 {
   PetscRandom random;
   PetscRandom rx, ry, rz, rv;
