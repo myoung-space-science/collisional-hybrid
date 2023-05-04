@@ -547,7 +547,7 @@ typedef PetscErrorCode (*CDF)(PetscReal x, PetscReal y, PetscReal z, PetscReal *
 
 
 PetscErrorCode
-SinusoidalDensity(PetscReal x, PetscReal y, PetscReal z, PetscReal *v, Context *ctx)
+SinusoidalCDF(PetscReal x, PetscReal y, PetscReal z, PetscReal *v, Context *ctx)
 {
   PetscReal fx, fy, fz;
 
@@ -740,7 +740,7 @@ InitializeParticles(Context *ctx)
   PetscFunctionBeginUser;
 
   // Initialize coordinates in the particle DM.
-  PetscCall(Rejection(SinusoidalDensity, ctx));
+  PetscCall(Rejection(SinusoidalCDF, ctx));
 
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
