@@ -566,8 +566,8 @@ static PetscErrorCode
 Rejection(CDF density, Context *ctx)
 {
   PetscRandom random;
-  PetscInt    np, ip=0, Np=0;
   DM          swarm=ctx->swarm;
+  PetscInt    np, ip=0, Np=0;
   PetscScalar *coords;
   PetscReal   Lx=ctx->grid.L.x;
   PetscReal   Ly=ctx->grid.L.y;
@@ -579,10 +579,7 @@ Rejection(CDF density, Context *ctx)
   PUSH_FUNC;
 
   // Get a representation of the particle coordinates.
-  PetscCall(DMSwarmGetField(
-            swarm,
-            DMSwarmPICField_coor, NULL, NULL,
-            (void **)&coords));
+  PetscCall(DMSwarmGetField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
   // Create a random number generator.
   PetscCall(PetscRandomCreate(PETSC_COMM_WORLD, &random));
@@ -612,10 +609,7 @@ Rejection(CDF density, Context *ctx)
   }
 
   // Restore the coordinates array.
-  PetscCall(DMSwarmRestoreField(
-            swarm,
-            DMSwarmPICField_coor, NULL, NULL,
-            (void **)&coords));
+  PetscCall(DMSwarmRestoreField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
   // Destroy the random-number generator.
   PetscCall(PetscRandomDestroy(&random));
