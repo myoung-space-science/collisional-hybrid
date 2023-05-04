@@ -742,7 +742,7 @@ InitializeParticles(Context *ctx)
   PetscFunctionBeginUser;
 
   // Initialize coordinates in the particle DM.
-  PetscCall(InitializeSwarmCoordinates(&(*ctx)));
+  PetscCall(Rejection(SinusoidalDensity, ctx));
 
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
