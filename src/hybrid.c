@@ -546,9 +546,8 @@ InitializeSwarmDM(DM grid, Context *ctx)
 typedef PetscErrorCode (*CDF)(PetscReal x, PetscReal y, PetscReal z, PetscReal *v, Context *ctx);
 
 
-static CDF
-SinusoidalDensity(PetscReal x, PetscReal y, PetscReal z,
-                  PetscReal *v, Context *ctx)
+PetscErrorCode
+SinusoidalDensity(PetscReal x, PetscReal y, PetscReal z, PetscReal *v, Context *ctx)
 {
   PetscReal fx, fy, fz;
 
