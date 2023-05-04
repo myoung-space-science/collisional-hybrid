@@ -927,7 +927,6 @@ CollectParticles(Context *ctx)
   Vec         gridvec;
   GridNode    ***array;
   PetscInt    dim;
-  PetscInt    i0, j0, k0;
   PetscReal   x, y, z, dx, dy, dz;
   RealVector  r, *pos, v, *vel;
   PetscInt    ip, np;
@@ -966,15 +965,10 @@ CollectParticles(Context *ctx)
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
 
-  // Compute grid grid spacing.
-  // - TODO: This can use ctx->grid.d.{x,y,z}
-  PetscCall(DMDAGetInfo(
-            grid, NULL,
-            &i0, &j0, &k0,
-            NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
-  dx = ctx->grid.L.x / (PetscReal)i0;
-  dy = ctx->grid.L.y / (PetscReal)j0;
-  dz = ctx->grid.L.z / (PetscReal)k0;
+  // Assign grid-cell values.
+  dx = ctx->grid.d.x;
+  dy = ctx->grid.d.y;
+  dz = ctx->grid.d.z;
 
   // Loop over particles.
   for (ip=0; ip<np; ip++) {
