@@ -19,6 +19,8 @@ static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 
 // Temporary declaration of number of particles per cell, per dimension.
 #define NPPCELL 1
+// Temporary declaration of total number of particles per distribution.
+#define NPTOTAL 32768
 
 // The number of non-null values in the LHS-operator matrix stencil. This is
 // equivalent to the standard box stencil with the corners removed.
