@@ -567,21 +567,14 @@ SinusoidalDensity(PetscReal x, PetscReal y, PetscReal z,
 static PetscErrorCode
 Rejection(CDF density, Context *ctx)
 {
-  PetscRandom random;
   PetscRandom rx, ry, rz, rv;
-  PetscReal   xr, yr, zr, vr;
-  PetscInt    np, ip, Np=0;
+  PetscInt    np, ip=0, Np=0;
   DM          swarm=ctx->swarm;
   PetscScalar *coords;
-  PetscReal   X, Y, Z;
-  PetscReal   x, y, z;
-  PetscReal   v, V;
+  PetscReal   x, y, z, v, w;
 
-  // [DEV]
-  // - This needs to look like InitializeSwarmCoordinates.
-  // - It cannot assume the ctx->plasma.Np is correct.
-  // - It cannot access the swarm 'position' field.
   PetscFunctionBeginUser;
+  PUSH_FUNC;
 
   // Get a representation of the particle coordinates.
   PetscCall(DMSwarmGetField(
@@ -589,8 +582,20 @@ Rejection(CDF density, Context *ctx)
             DMSwarmPICField_coor, NULL, NULL,
             (void **)&coords));
 
-  // Get the number of particles on this rank.
+  // Create a random number generators.
+  PetscCall(PetscRandomCreate(PETSC_COMM_WORLD, &rx));
+  PetscCall(PetscRandomCreate(PETSC_COMM_WORLD, &ry));
+  PetscCall(PetscRandomCreate(PETSC_COMM_WORLD, &rz));
+  PetscCall(PetscRandomSetInterval(rx, ctx->grid.p0.x, ctx->grid.p1.x));
+  PetscCall(PetscRandomSetInterval(ry, ctx->grid.p0.y, ctx->grid.p1.y));
+  PetscCall(PetscRandomSetInterval(rz, ctx->grid.p0.z, ctx->grid.p1.z));
+  PetscCall(PetscRandomCreate(PETSC_COMM_WORLD, &rv));
+
+  // Get initial local size.
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  PetscCall(PetscPrintf(
+            PETSC_COMM_WORLD,
+            "Local # of particles before rejection loop: %d\n", np));
 
   PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &rx));
   PetscCall(PetscRandomCreate(PETSC_COMM_SELF, &ry));
@@ -626,11 +631,28 @@ Rejection(CDF density, Context *ctx)
             (void **)&coords));
 
   // Destroy the random-number generator.
-  PetscCall(PetscRandomDestroy(&random));
+  PetscCall(PetscRandomDestroy(&rx));
+  PetscCall(PetscRandomDestroy(&ry));
+  PetscCall(PetscRandomDestroy(&rz));
+  PetscCall(PetscRandomDestroy(&rv));
 
   // Update the swarm.
   PetscCall(DMSwarmMigrate(swarm, PETSC_TRUE));
 
+  // Assign the total particle number to the user context.
+  PetscCall(DMSwarmGetSize(swarm, &Np));
+  ctx->plasma.Np = Np;
+
+  // Get final local size.
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  PetscCall(PetscPrintf(
+            PETSC_COMM_WORLD,
+            "Local # of particles after rejection loop: %d\n", np));
+  PetscCall(PetscPrintf(
+            PETSC_COMM_WORLD,
+            "Global # of particles after rejection loop: %d\n", Np));
+
+  POP_FUNC;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
