@@ -1010,19 +1010,6 @@ CollectParticles(Context *ctx)
     array[izl][iyh][ixl].n += lhl;
     array[izh][iyl][ixl].n += hll;
     array[izl][iyl][ixl].n += lll;
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Normalized positions: (%3.1f, %3.1f, %3.1f)\n", r.x, r.y, r.z));
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Physical positions:   (%3.1f, %3.1f, %3.1f)\n", x, y, z));
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Lower indices:        (%03d, %03d, %03d)\n", ixl, iyl, izl));
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Upper indices:        (%03d, %03d, %03d)\n", ixh, iyh, izh));
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "               density(%03d, %03d, %03d) + %3.1f = %3.1f\n", ixh, iyh, izh, hhh, array[izh][iyh][ixh].n));
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "               density(%03d, %03d, %03d) + %3.1f = %3.1f\n", ixh, iyh, izl, lhh, array[izl][iyh][ixh].n));
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "               density(%03d, %03d, %03d) + %3.1f = %3.1f\n", ixh, iyl, izh, hlh, array[izh][iyl][ixh].n));
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "               density(%03d, %03d, %03d) + %3.1f = %3.1f\n", ixh, iyl, izl, llh, array[izl][iyl][ixh].n));
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "               density(%03d, %03d, %03d) + %3.1f = %3.1f\n", ixl, iyh, izh, hhl, array[izh][iyh][ixl].n));
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "               density(%03d, %03d, %03d) + %3.1f = %3.1f\n", ixl, iyh, izl, lhl, array[izl][iyh][ixl].n));
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "               density(%03d, %03d, %03d) + %3.1f = %3.1f\n", ixl, iyl, izh, hll, array[izh][iyl][ixl].n));
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "               density(%03d, %03d, %03d) + %3.1f = %3.1f\n", ixl, iyl, izl, lll, array[izl][iyl][ixl].n));
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n"));
     // Assign flux values (first moments wrt velocity).
     v = vel[ip];
     w[0] = v.x;
