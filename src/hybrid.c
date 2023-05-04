@@ -784,6 +784,71 @@ InitializeSwarmCoordinates(Context *ctx)
 
 
 static PetscErrorCode
+SobolDistribution(Context *ctx)
+{
+  DM          swarm=ctx->swarm;
+  PetscScalar *coords;
+  PetscInt    np, ip=0, Np=0;
+  PetscReal   r[NDIM];
+  PetscReal   L[NDIM]={ctx->grid.L.x, ctx->grid.L.y, ctx->grid.L.z};
+  PetscInt    dim;
+
+  PetscFunctionBeginUser;
+  PUSH_FUNC;
+
+  // Get a representation of the particle coordinates.
+  PetscCall(DMSwarmGetField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
+
+  // Get initial local size.
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\nLocal # of particles before Sobol' loop: %d\n\n", np));
+
+  // Initialize the psuedo-random number generator.
+  PetscCall(SobolSequenceND(-3, NULL));
+
+  // Loop over all particles.
+  for (ip=0; ip<np; ip++) {
+    PetscCall(SobolSequenceND(NDIM, r));
+    for (dim=0; dim<NDIM; dim++) {
+      coords[ip*NDIM + dim] = r[dim]*L[dim];
+    }
+  }
+
+  // Restore the coordinates array.
+  PetscCall(DMSwarmRestoreField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
+
+  // Get the current global size.
+  PetscCall(DMSwarmGetSize(swarm, &Np));
+
+  // Get the current local size.
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+
+  // [DEV] Echo sizes.
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\nLocal # of particles after Sobol' loop: %d\n", np));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Global # of particles after Sobol' loop: %d\n", Np));
+
+  // Update the swarm.
+  PetscCall(DMSwarmMigrate(swarm, PETSC_TRUE));
+
+  // Get the current global size.
+  PetscCall(DMSwarmGetSize(swarm, &Np));
+
+  // Get the current local size.
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+
+  // [DEV] Echo sizes.
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\nLocal # of particles after migration: %d\n", np));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Global # of particles after migration: %d\n\n", Np));
+
+  // Assign the total particle number to the user context.
+  ctx->plasma.Np = Np;
+
+  POP_FUNC;
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+static PetscErrorCode
 InitializeParticles(Context *ctx)
 {
   DM          swarm=ctx->swarm;
