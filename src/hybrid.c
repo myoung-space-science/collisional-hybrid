@@ -647,7 +647,7 @@ Rejection(CDF density, Context *ctx)
 
 // Adaptation of sobseq from Numerical Recipes, 3rd edition.
 static PetscErrorCode
-SobelSequenceND(const PetscInt n, PetscReal *x)
+SobolSequenceND(const PetscInt n, PetscReal *x)
 {
   const PetscInt MAXBIT=30, MAXDIM=6;
   PetscInt j, k, l;
