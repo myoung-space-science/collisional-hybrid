@@ -1237,14 +1237,13 @@ ComputeSinusoidalRHS(KSP ksp, Vec b, void *_ctx)
   PetscReal    dy=ctx->grid.d.y;
   PetscReal    dz=ctx->grid.d.z;
   DM           grid;
-  Vec          gridvec;
-  GridNode     ***gridarr;
+  Vec          density;
+  PetscScalar  n0;
   DM           dm;
   PetscScalar  ***rhs;
   PetscInt     i0, j0, k0;
   PetscInt     ni, nj, nk;
   PetscInt     i, j, k;
-  PetscScalar  nijk;
   PetscScalar  x, y, z;
   PetscScalar  Cx, Cy, Cz;
   PetscScalar  val;
@@ -1263,12 +1262,6 @@ ComputeSinusoidalRHS(KSP ksp, Vec b, void *_ctx)
   // Get the grid DM from the context.
   PetscCall(DMSwarmGetCellDM(ctx->swarm, &grid));
 
-  // Extract the density array.
-  PetscCall(DMGetLocalVector(grid, &gridvec));
-  PetscCall(DMGlobalToLocalBegin(grid, ctx->global, INSERT_VALUES, gridvec));
-  PetscCall(DMGlobalToLocalEnd(grid, ctx->global, INSERT_VALUES, gridvec));
-  PetscCall(DMDAVecGetArray(grid, gridvec, &gridarr));
-
   // Zero the incoming vector.
   PetscCall(VecZeroEntries(b));
 
@@ -1278,6 +1271,10 @@ ComputeSinusoidalRHS(KSP ksp, Vec b, void *_ctx)
   // Get an array equivalent to the RHS Vec.
   PetscCall(DMDAVecGetArray(dm, b, &rhs));
 
+  // Extract the density vector and compute its mean.
+  PetscCall(GetFieldVec(grid, ctx->global, "density", &density));
+  PetscCall(VecMean(density, &n0));
+
   // Get this processor's indices.
   PetscCall(DMDAGetCorners(dm, &i0, &j0, &k0, &ni, &nj, &nk));
 
@@ -1285,7 +1282,6 @@ ComputeSinusoidalRHS(KSP ksp, Vec b, void *_ctx)
   for (k=k0; k<k0+nk; k++) {
     for (j=j0; j<j0+nj; j++) {
       for (i=i0; i<i0+ni; i++) {
-        nijk = gridarr[k][j][i].n;
         x = ((PetscReal)i + 0.5)*dx;
         y = ((PetscReal)j + 0.5)*dy;
         z = ((PetscReal)k + 0.5)*dz;
@@ -1293,13 +1289,15 @@ ComputeSinusoidalRHS(KSP ksp, Vec b, void *_ctx)
         Cy = PetscCosScalar(2*PETSC_PI * y);
         Cz = PetscCosScalar(2*PETSC_PI * z);
         val = Cx * Cy * Cz;
-        rhs[k][j][i] = val * (2.0 * dx*dy*dz / detA);
+        rhs[k][j][i] = n0 * val * (2.0 * dx*dy*dz / detA);
       }
     }
   }
 
+  // Restore the density vector.
+  PetscCall(RestoreFieldVec(grid, ctx->global, "density", &density));
+
   // Restore the borrowed arrays.
-  PetscCall(DMDAVecRestoreArray(grid, gridvec, &gridarr));
   PetscCall(DMDAVecRestoreArray(dm, b, &rhs));
 
   // Make the RHS vector consistent with the LHS operator.
