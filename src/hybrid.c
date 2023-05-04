@@ -543,8 +543,7 @@ InitializeSwarmDM(DM grid, Context *ctx)
 
 
 // Type to be used for cumulative distribution functions.
-typedef PetscErrorCode
-(*CDF)(PetscReal x, PetscReal y, PetscReal z, PetscReal *v, Context *ctx);
+typedef PetscErrorCode (*CDF)(PetscReal x, PetscReal y, PetscReal z, PetscReal *v, Context *ctx);
 
 
 static CDF
