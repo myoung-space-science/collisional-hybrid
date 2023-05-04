@@ -538,7 +538,7 @@ InitializeSwarmDM(DM grid, Context *ctx)
 
 
 typedef PetscErrorCode
-(*DensityFunction)(PetscInt x, PetscInt y, PetscInt z,
+(*DensityFunction)(PetscReal x, PetscReal y, PetscReal z,
                    PetscReal *v, Context *ctx);
 
 
