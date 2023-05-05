@@ -813,9 +813,12 @@ SobolDistribution(Context *ctx)
   // Get a representation of the particle coordinates.
   PetscCall(DMSwarmGetField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
-  // Get initial local size.
+  // [DEV] Echo sizes.
+  PetscCall(DMSwarmGetSize(swarm, &Np));
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
-  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\nLocal # of particles before Sobol' loop: %d\n\n", np));
+  NEWLINE;
+  PRINT_RANKS("[%d] Local # of particles before placement: %d\n", ctx->mpi.rank, np);
+  PRINT_WORLD("   Global # of particles before placement: %d\n", Np);
 
   // Initialize the psuedo-random number generator.
   PetscCall(SobolSequenceND(&seed, r-1));
@@ -831,28 +834,23 @@ SobolDistribution(Context *ctx)
   // Restore the coordinates array.
   PetscCall(DMSwarmRestoreField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
-  // Get the current global size.
-  PetscCall(DMSwarmGetSize(swarm, &Np));
-
-  // Get the current local size.
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
-
   // [DEV] Echo sizes.
-  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\nLocal # of particles after Sobol' loop: %d\n", np));
-  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Global # of particles after Sobol' loop: %d\n", Np));
+  PetscCall(DMSwarmGetSize(swarm, &Np));
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  NEWLINE;
+  PRINT_RANKS("[%d] Local # of particles after placement: %d\n", ctx->mpi.rank, np);
+  PRINT_WORLD("   Global # of particles after placement: %d\n", Np);
 
-  // Update the swarm.
+  // Update the swarm. NOTE: This clears out the edges. Maybe we don't want to
+  // do this here.
   PetscCall(DMSwarmMigrate(swarm, PETSC_TRUE));
 
-  // Get the current global size.
-  PetscCall(DMSwarmGetSize(swarm, &Np));
-
-  // Get the current local size.
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
-
   // [DEV] Echo sizes.
-  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\nLocal # of particles after migration: %d\n", np));
-  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Global # of particles after migration: %d\n\n", Np));
+  PetscCall(DMSwarmGetSize(swarm, &Np));
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  NEWLINE;
+  PRINT_RANKS("[%d] Local # of particles after migration: %d\n", ctx->mpi.rank, np);
+  PRINT_WORLD("   Global # of particles after migration: %d\n", Np);
 
   // Assign the total particle number to the user context.
   ctx->plasma.Np = Np;
