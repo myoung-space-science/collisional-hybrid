@@ -570,12 +570,18 @@ Rejection(DistributionFunction density, Context *ctx)
   PetscRandom random;
   DM          swarm=ctx->swarm;
   PetscInt    np, ip=0, Np=0;
+  DM          grid;
+  PetscInt    i0, ni, i;
+  PetscInt    j0, nj, j;
+  PetscInt    k0, nk, k;
+  PetscReal   localMax=0.0;
   PetscScalar *coords;
   PetscReal   Lx=ctx->grid.L.x;
   PetscReal   Ly=ctx->grid.L.y;
   PetscReal   Lz=ctx->grid.L.z;
   PetscReal   x, y, z, v, w;
   PetscReal   r[NDIM];
+  PetscInt    it=0;
 
   PetscFunctionBeginUser;
   PUSH_FUNC;
@@ -596,24 +602,39 @@ Rejection(DistributionFunction density, Context *ctx)
   PRINT_RANKS("[%d] Local # of particles before placement: %d\n", ctx->mpi.rank, np);
   PRINT_WORLD("   Global # of particles before placement: %d\n", Np);
 
+  // Compute local maximum density.
+  PetscCall(DMSwarmGetCellDM(swarm, &grid));
+  PetscCall(DMDAGetCorners(grid, &i0, &j0, &k0, &ni, &nj, &nk));
+  for (i=i0; i<i0+ni; i++) {
+    for (j=j0; j<j0+nj; j++) {
+      for (k=k0; k<k0+nk; k++) {
+        PetscCall(density(i, j, k, &w, ctx));
+        localMax = PetscMax(localMax, w);
+      }
+    }
+  }
+  PRINT_RANKS("[%d] Local maximum density: %g\n", ctx->mpi.rank, localMax);
+
   // Loop over all local particles.
   while (ip < np) {
     PetscCall(PetscRandomGetValuesReal(random, NDIM, r));
-    x = r[0];
-    y = r[1];
-    z = r[2];
-
+    x = r[0] * Lx;
+    y = r[1] * Ly;
+    z = r[2] * Lz;
     PetscCall(density(x, y, z, &w, ctx));
     PetscCall(PetscRandomGetValueReal(random, &v));
-
-    if (w > v) {
+    if (w > v * localMax) {
       coords[ip*NDIM + 0] = x;
       coords[ip*NDIM + 1] = y;
       coords[ip*NDIM + 2] = z;
       ip++;
     }
-
+    it++;
   }
+
+  // [DEV] Echo rejection efficiency.
+  NEWLINE;
+  PRINT_RANKS("[%d] Rejection efficiency: %f\n", ctx->mpi.rank, (PetscReal)ip/it);
 
   // [DEV] Echo sizes.
   PetscCall(DMSwarmGetSize(swarm, &Np));
