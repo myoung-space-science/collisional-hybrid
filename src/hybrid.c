@@ -801,6 +801,7 @@ SobolDistribution(Context *ctx)
   PetscInt    np, ip=0, Np=0;
   PetscReal   r[NDIM];
   PetscReal   L[NDIM]={ctx->grid.L.x, ctx->grid.L.y, ctx->grid.L.z};
+  PetscReal   d[NDIM]={ctx->grid.d.x, ctx->grid.d.y, ctx->grid.d.z};
   PetscInt    dim;
 
   PetscFunctionBeginUser;
@@ -820,7 +821,7 @@ SobolDistribution(Context *ctx)
   for (ip=0; ip<np; ip++) {
     PetscCall(SobolSequenceND(&ndim, r-1));
     for (dim=0; dim<NDIM; dim++) {
-      coords[ip*NDIM + dim] = r[dim]*L[dim];
+      coords[ip*NDIM + dim] = (r[dim] - 0.5*d[dim])*L[dim];
     }
   }
 
