@@ -553,14 +553,12 @@ typedef PetscErrorCode (*DistributionFunction)(PetscReal x, PetscReal y, PetscRe
 PetscErrorCode
 SinusoidalDistribution(PetscReal x, PetscReal y, PetscReal z, PetscReal *v, Context *ctx)
 {
-  PetscReal fx, fy, fz;
+  PetscReal fx;
 
   PetscFunctionBeginUser;
 
   fx = PetscSinReal(2*PETSC_PI * x);
-  fy = PetscSinReal(2*PETSC_PI * y);
-  fz = PetscSinReal(2*PETSC_PI * z);
-  *v = 1.0 + 0.25*fx*fy*fz;
+  *v = 1.0 + 0.25*fx;
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
