@@ -12,6 +12,7 @@ static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 #define POP_FUNC {PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n--> Exiting %s(...) <--\n\n", __func__));}
 
 #define PRINT_WORLD(...) {PetscCall(PetscPrintf(PETSC_COMM_WORLD, __VA_ARGS__));}
+#define PRINT_RANKS(...) {PetscCall(PetscSynchronizedPrintf(PETSC_COMM_WORLD, __VA_ARGS__)); PetscCall(PetscSynchronizedFlush(PETSC_COMM_WORLD, PETSC_STDOUT));}
 #define NEWLINE {PRINT_WORLD("\n");}
 
 #define NDIM 3
@@ -590,9 +591,12 @@ Rejection(DistributionFunction density, Context *ctx)
   PetscCall(PetscRandomSetSeed(random, ctx->mpi.rank));
   PetscCall(PetscRandomSeed(random));
 
-  // Get initial local size.
+  // [DEV] Echo sizes.
+  PetscCall(DMSwarmGetSize(swarm, &Np));
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
-  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\nLocal # of particles before rejection loop: %d\n\n", np));
+  NEWLINE;
+  PRINT_RANKS("[%d] Local # of particles before placement: %d\n", ctx->mpi.rank, np);
+  PRINT_WORLD("   Global # of particles before placement: %d\n", Np);
 
   // Loop over all local particles.
   while (ip < np) {
@@ -604,12 +608,21 @@ Rejection(DistributionFunction density, Context *ctx)
     PetscCall(density(x, y, z, &w, ctx));
     PetscCall(PetscRandomGetValueReal(random, &v));
 
-    coords[ip*NDIM + 0] = x * Lx;
-    coords[ip*NDIM + 1] = y * Ly;
-    coords[ip*NDIM + 2] = z * Lz;
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "%04d: n(%6.4f, %6.4f, %6.4f)=%6.4f v=%6.4f\n", ip, x, y, z, w, v));
-    ip++;
+    if (w > v) {
+      coords[ip*NDIM + 0] = x;
+      coords[ip*NDIM + 1] = y;
+      coords[ip*NDIM + 2] = z;
+      ip++;
+    }
+
   }
+
+  // [DEV] Echo sizes.
+  PetscCall(DMSwarmGetSize(swarm, &Np));
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  NEWLINE;
+  PRINT_RANKS("[%d] Local # of particles after placement: %d\n", ctx->mpi.rank, np);
+  PRINT_WORLD("   Global # of particles after placement: %d\n", Np);
 
   // Restore the coordinates array.
   PetscCall(DMSwarmRestoreField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
@@ -617,28 +630,15 @@ Rejection(DistributionFunction density, Context *ctx)
   // Destroy the random-number generator.
   PetscCall(PetscRandomDestroy(&random));
 
-  // Get the current global size.
-  PetscCall(DMSwarmGetSize(swarm, &Np));
-
-  // Get the current local size.
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
-
-  // [DEV] Echo sizes.
-  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\nLocal # of particles after rejection loop: %d\n", np));
-  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Global # of particles after rejection loop: %d\n", Np));
-
   // Update the swarm.
   PetscCall(DMSwarmMigrate(swarm, PETSC_TRUE));
 
-  // Get the current global size.
-  PetscCall(DMSwarmGetSize(swarm, &Np));
-
-  // Get the current local size.
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
-
   // [DEV] Echo sizes.
-  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\nLocal # of particles after migration: %d\n", np));
-  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Global # of particles after migration: %d\n\n", Np));
+  PetscCall(DMSwarmGetSize(swarm, &Np));
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  NEWLINE;
+  PRINT_RANKS("[%d] Local # of particles after migration: %d\n", ctx->mpi.rank, np);
+  PRINT_WORLD("   Global # of particles after migration: %d\n", Np);
 
   // Assign the total particle number to the user context.
   ctx->plasma.Np = Np;
@@ -880,6 +880,7 @@ InitializeParticles(Context *ctx)
 
   // Initialize coordinates in the particle DM.
   PetscCall(Rejection(SinusoidalDistribution, ctx));
+  // PetscCall(SobolDistribution(ctx));
 
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
