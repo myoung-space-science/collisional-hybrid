@@ -822,7 +822,6 @@ SobolDistribution(Context *ctx)
     for (dim=0; dim<NDIM; dim++) {
       coords[ip*NDIM + dim] = r[dim]*L[dim];
     }
-    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "%04d: (%6.4f, %6.4f, %6.4f)\n", ip, r[0]*L[0], r[1]*L[1], r[2]*L[2]));
   }
 
   // Restore the coordinates array.
