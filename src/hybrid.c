@@ -8,8 +8,8 @@ static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 #include <petscdmswarm.h>
 #include <petscviewerhdf5.h>
 
-#define PUSH_FUNC {PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n--> Entering %s(...) <--\n\n", __func__));}
-#define POP_FUNC {PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n--> Exiting %s(...) <--\n\n", __func__));}
+#define ECHO_FUNCTION_ENTER {PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n--> Entering %s(...) <--\n\n", __func__));}
+#define ECHO_FUNCTION_EXIT {PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n--> Exiting %s(...) <--\n\n", __func__));}
 
 #define PRINT_WORLD(...) {PetscCall(PetscPrintf(PETSC_COMM_WORLD, __VA_ARGS__));}
 #define PRINT_RANKS(...) {PetscCall(PetscSynchronizedPrintf(PETSC_COMM_WORLD, __VA_ARGS__)); PetscCall(PetscSynchronizedFlush(PETSC_COMM_WORLD, PETSC_STDOUT));}
@@ -604,7 +604,7 @@ Rejection(DistributionFunction density, Context *ctx)
   PetscInt    it=0;
 
   PetscFunctionBeginUser;
-  PUSH_FUNC;
+  ECHO_FUNCTION_ENTER;
 
   // Get a representation of the particle coordinates.
   PetscCall(DMSwarmGetField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
@@ -682,7 +682,7 @@ Rejection(DistributionFunction density, Context *ctx)
   // Assign the total particle number to the user context.
   ctx->plasma.Np = Np;
 
-  POP_FUNC;
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -780,7 +780,7 @@ InitializeSwarmCoordinates(Context *ctx)
   PetscReal   dx, x, dy, y, dz, z;
 
   PetscFunctionBeginUser;
-  PUSH_FUNC;
+  ECHO_FUNCTION_ENTER;
 
   // Place an equal number of particles in each cell.
   PetscCall(DMSwarmInsertPointsUsingCellDM(
@@ -836,7 +836,7 @@ InitializeSwarmCoordinates(Context *ctx)
   // Update the swarm.
   PetscCall(DMSwarmMigrate(swarm, PETSC_TRUE));
 
-  POP_FUNC;
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -850,7 +850,7 @@ UniformDistribution(Context *ctx)
   PetscInt ni, nj, nk;
 
   PetscFunctionBeginUser;
-  PUSH_FUNC;
+  ECHO_FUNCTION_ENTER;
 
   // [DEV] Echo sizes.
   PetscCall(DMSwarmGetSize(swarm, &Np));
@@ -885,7 +885,7 @@ UniformDistribution(Context *ctx)
   // Assign the total particle number to the user context.
   ctx->plasma.Np = Np;
 
-  POP_FUNC;
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -903,7 +903,7 @@ SobolDistribution(Context *ctx)
   PetscInt    dim;
 
   PetscFunctionBeginUser;
-  PUSH_FUNC;
+  ECHO_FUNCTION_ENTER;
 
   // Get a representation of the particle coordinates.
   PetscCall(DMSwarmGetField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
@@ -950,7 +950,7 @@ SobolDistribution(Context *ctx)
   // Assign the total particle number to the user context.
   ctx->plasma.Np = Np;
 
-  POP_FUNC;
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -1184,7 +1184,7 @@ CollectParticles(Context *ctx)
   PetscReal   w[NDIM];
 
   PetscFunctionBeginUser;
-  PUSH_FUNC;
+  ECHO_FUNCTION_ENTER;
 
   // Get the grid DM from the swarm DM.
   PetscCall(DMSwarmGetCellDM(swarm, &grid));
@@ -1296,7 +1296,7 @@ CollectParticles(Context *ctx)
             "velocity", NULL, NULL,
             (void **)&vel));
 
-  POP_FUNC;
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
