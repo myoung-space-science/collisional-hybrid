@@ -647,7 +647,18 @@ Rejection(CDF density, Context *ctx)
 #define SOBOL_MAXBIT 30
 #define SOBOL_MAXDIM 6
 
-// Adaptation of sobseq from Numerical Recipes, 2nd edition.
+/* Adaptation of sobseq from Numerical Recipes, 2nd edition.
+
+This version differs as follows:
+- The iv array is uninitialized and there is a new ic array in place of the
+  original iv array
+- The (*n < 0) block initializes iv from ic.
+
+These changes are based on the sobseq function written by Bernie Vasquez
+(adapted from NR 2nd ed.), in the hybrid electromagnetic PIC code developed by
+Bernie Vasquez, Harald Kucharek, and Matt Young at UNH circa 2019. The note
+there reads "iv is initialized properly on each *n<0 call".
+*/
 static PetscErrorCode
 SobolSequenceND(PetscInt *n, PetscReal x[])
 {
@@ -658,20 +669,16 @@ SobolSequenceND(PetscInt *n, PetscReal x[])
   static unsigned long *iu[SOBOL_MAXBIT+1];
   static unsigned long mdeg[SOBOL_MAXDIM+1]={0, 1, 2, 3, 3, 4, 4};
   static unsigned long ip[SOBOL_MAXDIM+1]={0, 0, 1, 1, 2, 1, 4};
-  static unsigned long iv[SOBOL_MAXDIM*SOBOL_MAXBIT+1]={0, 1, 1, 1, 1, 1, 1, 3, 1, 3, 3, 1, 1, 5, 7, 7, 3, 3, 5, 15, 11, 5, 15, 13, 9};
+  static unsigned long iv[SOBOL_MAXDIM*SOBOL_MAXBIT+1];
+  static unsigned long ic[SOBOL_MAXDIM*SOBOL_MAXBIT+1]={0, 1, 1, 1, 1, 1, 1, 3, 1, 3, 3, 1, 1, 5, 7, 7, 3, 3, 5, 15, 11, 5, 15, 13, 9};
   static PetscReal fac;
 
   PetscFunctionBeginUser;
 
   if (*n < 0) {
-    for (k=1; k<=SOBOL_MAXDIM; k++) {
-      ix[k] = 0;
+    for (j=1; j<=SOBOL_MAXDIM*SOBOL_MAXBIT+1; j++) {
+      iv[j] = ic[j];
     }
-    in = 0;
-    if (iv[1] != 1) {
-      PetscFunctionReturn(PETSC_SUCCESS);
-    }
-    fac = 1.0 / ((long)1 << SOBOL_MAXBIT);
     for (j=1, k=0; j<=SOBOL_MAXBIT; j++, k += SOBOL_MAXDIM) {
       iu[j] = &iv[k];
     }
@@ -690,6 +697,8 @@ SobolSequenceND(PetscInt *n, PetscReal x[])
         iu[j][k] = i;
       }
     }
+    fac = 1.0 / ((long)1 << SOBOL_MAXBIT);
+    in = 0;
   } else {
     im = in++;
     for (j=1; j<=SOBOL_MAXBIT; j++) {
