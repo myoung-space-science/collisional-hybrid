@@ -917,8 +917,23 @@ InitializeParticles(Context *ctx)
   PetscFunctionBeginUser;
 
   // Initialize coordinates in the particle DM.
-  PetscCall(Rejection(SinusoidalDistribution, ctx));
-  // PetscCall(SobolDistribution(ctx));
+  switch(ctx->densityType) {
+    case DENSITY_FLAT_NORMAL:
+      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Not implemented: %s", DensityTypes[DENSITY_FLAT_NORMAL]);
+      break;
+    case DENSITY_FLAT_REVERSE:
+      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Not implemented: %s", DensityTypes[DENSITY_FLAT_REVERSE]);
+      break;
+    case DENSITY_FLAT_SOBOL:
+      PetscCall(SobolDistribution(ctx));
+      break;
+    case DENSITY_SINUSOIDAL:
+      PetscCall(Rejection(SinusoidalDistribution, ctx));
+      break;
+    case DENSITY_GAUSSIAN:
+      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Not implemented: %s", DensityTypes[DENSITY_GAUSSIAN]);
+      break;
+  }
 
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
