@@ -661,6 +661,13 @@ These changes are based on the sobseq function written by Bernie Vasquez
 (adapted from NR 2nd ed.), in the hybrid electromagnetic PIC code developed by
 Bernie Vasquez, Harald Kucharek, and Matt Young at UNH circa 2019. The note
 there reads "iv is initialized properly on each *n<0 call".
+
+We may consider registering this via PetscRandomRegister, then using it via
+PetscRandomSetType. See
+https://petsc.org/release/manualpages/Sys/PetscRandomRegister/ for example
+usage. See /home/matthew/petsc/src/sys/classes/random/interface/randreg.c and
+/home/matthew/petsc/src/sys/classes/random/impls/rand/rand.c for suggestions on
+how to wrap this function in order to register it.
 */
 static PetscErrorCode
 SobolSequenceND(PetscInt *n, PetscReal x[])
