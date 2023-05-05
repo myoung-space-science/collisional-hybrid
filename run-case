@@ -27,14 +27,22 @@ run_default() {
     ./run.sh -Nx 8 -Ny 8 -Nz 8
 }
 case_map['default']=run_default
-run_test_collection() {
+run_test_collection_asymmetric() {
     ./run.sh \
         -Nx 15 -Ny 10 -Nz 8 \
-        -Np 500 \
+        -Np 1200 \
         -n 1 \
         --lhs-type laplacian --rhs-type sinusoidal
 }
-case_map['test-collection']=run_test_collection
+case_map['test-collection-asymmetric']=run_test_collection_asymmetric
+run_test_collection_32cubed() {
+    ./run.sh \
+        -Nx 32 -Ny 32 -Nz 32 \
+        -Np 262144 \
+        -n 1 \
+        --lhs-type laplacian --rhs-type sinusoidal
+}
+case_map['test-collection-32cubed']=run_test_collection_32cubed
 run_gamg_basic() {
     ./run.sh \
         -ksp_monitor_short \
