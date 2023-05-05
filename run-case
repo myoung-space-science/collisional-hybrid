@@ -43,6 +43,15 @@ run_test_collection_32cubed() {
         --lhs-type laplacian --rhs-type sinusoidal
 }
 case_map['test-collection-32cubed']=run_test_collection_32cubed
+run_test_collection_long_x() {
+    ./run.sh \
+        -Nx 32 -Ny 8 -Nz 8 \
+        -Lx 4.0 -Ly 1.0 -Lz 1.0 \
+        -Np 1000000 \
+        -n 1 \
+        --lhs-type laplacian --rhs-type sinusoidal
+}
+case_map['test-collection-long-x']=run_test_collection_long_x
 run_gamg_basic() {
     ./run.sh \
         -ksp_monitor_short \
