@@ -2305,51 +2305,46 @@ int main(int argc, char **args)
 
   PetscFunctionBeginUser;
 
-  // Initialize PETSc and MPI.
+  /* Initialize PETSc and MPI. */
   PetscCall(PetscInitialize(&argc, &args, (char *)0, help));
   PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &mpi.rank));
   PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &mpi.size));
   if (mpi.rank == 0) {
     time(&startTime);
   }
-  PetscCall(PetscPrintf(
-            PETSC_COMM_WORLD,
-            "\n**************** START *****************\n\n"));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n**************** START *****************\n\n"));
 
-  // Assign parameter values from user arguments or defaults.
+  /* Assign parameter values from user arguments or defaults. */
   PetscCall(ProcessOptions(&ctx));
 
-  // Set up the viewer for simulated quantities.
-  PetscCall(PetscViewerHDF5Open(
-            PETSC_COMM_WORLD, "grid.hdf", FILE_MODE_WRITE,
-            &ctx.gridView));
+  /* Set up the viewer for simulated quantities. */
+  PetscCall(PetscViewerHDF5Open(PETSC_COMM_WORLD, "grid.hdf", FILE_MODE_WRITE, &ctx.gridView));
 
-  // Store MPI information in the application context.
+  /* Store MPI information in the application context. */
   ctx.mpi = mpi;
 
-  // Set up discrete grid.
+  /* Set up discrete grid. */
   PetscCall(InitializeGridDM(&grid, &ctx));
   PetscCall(DMCreateGlobalVector(grid, &ctx.global));
   PetscCall(VecZeroEntries(ctx.global));
 
-  // Set up particle swarm.
+  /* Set up particle swarm. */
   PetscCall(InitializeSwarmDM(grid, &ctx));
 
-  // Set initial particle positions and velocities.
+  /* Set initial particle positions and velocities. */
   PetscCall(InitializeParticles(&ctx));
 
-  // Echo the initial state.
-  PetscCall(PetscViewerASCIIOpen(
-            PETSC_COMM_WORLD, "options.txt", &ctx.optionsView));
+  /* Echo the initial state. */
+  PetscCall(PetscViewerASCIIOpen(PETSC_COMM_WORLD, "options.txt", &ctx.optionsView));
   if (mpi.rank == 0) {
     PetscCall(EchoSetup(ctx));
   }
   PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
 
-  // Compute initial density and flux.
+  /* Compute initial density and flux. */
   PetscCall(CollectParticles(&ctx));
 
-  // Compute initial electric field.
+  /* Compute initial electrostatic potential. */
   PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
   PetscCall(InitializePotentialDM(grid, &solve));
   PetscCall(KSPSetDM(ksp, solve));
@@ -2361,33 +2356,45 @@ int main(int argc, char **args)
   PetscCall(KSPGetSolution(ksp, &x));
   PetscCall(PetscObjectSetName((PetscObject)x, "potential"));
 
-  // Output initial conditions.
+  /* Output initial conditions. */
   PetscCall(VecViewComposite(grid, ctx.global, ctx.gridView));
   PetscCall(VecView(x, ctx.gridView));
 
-  // Main time-step loop. See KSP ex70.c::SolveTimeDepStokes (~ line 1170) for
-  // possible structure of time-step loop.
+  /* Begin main time-step loop. */
+  /* Notes
+  - See KSP ex70.c::SolveTimeDepStokes (~ line 1170) for possible structure of
+    time-step loop.
+  - This could use a second-order leapfrog scheme similar to EPPIC.
+  */
 
-    // Compute density and flux from particle positions.
+    /* Update velocities */
+    /* Notes
+    - $\frac{d\vec{v}}{dt} = \frac{e\vec{E}}{m_i}$.
+    - See SNES ex63.c::main (~ line 469) for possible structure.
+    */
 
-    // Compute potential from density
+      /* Compute temporary electric field: $\vec{E} = -\nabla\phi$ */
 
-    // Compute electric field from potential
+      /* Interpolate electric field to particles. */
 
-    // Update velocities: $\frac{d\vec{v}}{dt} = \frac{e\vec{E}}{m_i}$. See SNES
-    // ex63.c::main (~ line 469) for possible structure.
+      /* Apply the 3-D Boris mover. */
+      /* Notes
+      - EPPIC vpushBB_domain probably has the algorithm we need.
+      */
 
-      // Apply Boris mover
+      /* Apply collisions. */
 
-      // Apply collisions
+    /* Update positions: $\frac{d\vec{r}}{dt} = \vec{v}$. */
 
-    // Update positions: $\frac{d\vec{r}}{dt} = \vec{v}$
+    /* Compute density and flux from particle positions. */
 
-    // Apply boundary conditions
+    /* Compute potential from density. */
 
-    // Output current time step
+    /* Apply boundary conditions. */
 
-  // Free memory.
+    /* Output current time step. */
+
+  /* Free memory. */
   PetscCall(PetscViewerDestroy(&ctx.optionsView));
   PetscCall(PetscViewerDestroy(&ctx.gridView));
   PetscCall(KSPDestroy(&ksp));
@@ -2396,27 +2403,17 @@ int main(int argc, char **args)
   PetscCall(DMDestroy(&ctx.swarm));
   PetscCall(DMDestroy(&solve));
 
-  // Write time information
+  /* Write time information. */
   if (mpi.rank == 0) {
     time(&endTime);
   }
-  PetscCall(PetscPrintf(
-            PETSC_COMM_WORLD,
-            "\n----------------------------------------\n"));
-  PetscCall(PetscPrintf(
-            PETSC_COMM_WORLD,
-            "Start time: %s", asctime(localtime(&startTime))));
-  PetscCall(PetscPrintf(
-            PETSC_COMM_WORLD,
-            "End time:   %s", asctime(localtime(&endTime))));
-  PetscCall(PetscPrintf(
-            PETSC_COMM_WORLD,
-            "----------------------------------------\n"));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n----------------------------------------\n"));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Start time: %s", asctime(localtime(&startTime))));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "End time:   %s", asctime(localtime(&endTime))));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "----------------------------------------\n"));
 
-  // Finalize PETSc and MPI.
-  PetscCall(PetscPrintf(
-            PETSC_COMM_WORLD,
-            "\n***************** END ******************\n"));
+  /* Finalize PETSc and MPI. */
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n***************** END ******************\n"));
   PetscCall(PetscFinalize());
 
   return 0;
