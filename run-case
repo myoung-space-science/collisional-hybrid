@@ -27,6 +27,15 @@ run_default() {
     ./run.sh -Nx 8 -Ny 8 -Nz 8
 }
 case_map['default']=run_default
+run_test_collection_8cubed() {
+    ./run.sh \
+        -Nx 8 -Ny 8 -Nz 8 \
+        -Np 512 \
+        -n 1 \
+        -x1 0.8 -y1 0.8 -z1 0.8 \
+        --lhs-type laplacian --rhs-type sinusoidal
+}
+case_map['test-collection-8cubed']=run_test_collection_8cubed
 run_test_collection_asymmetric() {
     ./run.sh \
         -Nx 15 -Ny 10 -Nz 8 \
