@@ -165,6 +165,13 @@ ProcessOptions(Context *ctx)
   } else {
     ctx->lhsType = LHS_FULL;
   }
+  PetscCall(PetscOptionsGetEnum(
+            NULL, NULL, "--density-type", DensityTypes, &enumArg, &found));
+  if (found) {
+    ctx->densityType = enumArg;
+  } else {
+    ctx->densityType = DENSITY_FLAT_SOBOL;
+  }
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-Nx", &intArg, &found));
   if (found) {
     if (intArg < 0) {
