@@ -55,9 +55,10 @@ case_map['test-collection-32cubed']=run_test_collection_32cubed
 run_test_collection_long_x() {
     ./run.sh \
         -Nx 32 -Ny 8 -Nz 8 \
-        -Lx 4.0 -Ly 1.0 -Lz 1.0 \
+        -x1 4.0 -y1 1.0 -z1 1.0 \
         -Np 1000000 \
         -n 1 \
+        --density-type sinusoidal \
         --lhs-type laplacian --rhs-type sinusoidal
 }
 case_map['test-collection-long-x']=run_test_collection_long_x
