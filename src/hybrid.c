@@ -545,12 +545,12 @@ InitializeSwarmDM(DM grid, Context *ctx)
 }
 
 
-// Type to be used for cumulative distribution functions.
-typedef PetscErrorCode (*CDF)(PetscReal x, PetscReal y, PetscReal z, PetscReal *v, Context *ctx);
+// Type to be used for particle distribution functions.
+typedef PetscErrorCode (*DistributionFunction)(PetscReal x, PetscReal y, PetscReal z, PetscReal *v, Context *ctx);
 
 
 PetscErrorCode
-SinusoidalCDF(PetscReal x, PetscReal y, PetscReal z, PetscReal *v, Context *ctx)
+SinusoidalDistribution(PetscReal x, PetscReal y, PetscReal z, PetscReal *v, Context *ctx)
 {
   PetscReal fx, fy, fz;
 
@@ -566,7 +566,7 @@ SinusoidalCDF(PetscReal x, PetscReal y, PetscReal z, PetscReal *v, Context *ctx)
 
 
 static PetscErrorCode
-Rejection(CDF density, Context *ctx)
+Rejection(DistributionFunction density, Context *ctx)
 {
   PetscRandom random;
   DM          swarm=ctx->swarm;
@@ -872,7 +872,7 @@ InitializeParticles(Context *ctx)
   PetscFunctionBeginUser;
 
   // Initialize coordinates in the particle DM.
-  PetscCall(Rejection(SinusoidalCDF, ctx));
+  PetscCall(Rejection(SinusoidalDistribution, ctx));
 
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
