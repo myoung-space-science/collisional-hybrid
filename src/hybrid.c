@@ -969,10 +969,10 @@ InitializeParticles(Context *ctx)
   // Initialize coordinates in the particle DM.
   switch(ctx->densityType) {
     case DENSITY_FLAT_NORMAL:
-      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Not implemented: %s", DensityTypes[DENSITY_FLAT_NORMAL]);
+      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Not implemented: %s density", DensityTypes[DENSITY_FLAT_NORMAL]);
       break;
     case DENSITY_FLAT_REVERSE:
-      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Not implemented: %s", DensityTypes[DENSITY_FLAT_REVERSE]);
+      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Not implemented: %s density", DensityTypes[DENSITY_FLAT_REVERSE]);
       break;
     case DENSITY_FLAT_SOBOL:
       PetscCall(SobolDistribution(ctx));
@@ -986,7 +986,7 @@ InitializeParticles(Context *ctx)
       PetscCall(Rejection(SinusoidalDistribution, ctx));
       break;
     case DENSITY_GAUSSIAN:
-      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Not implemented: %s", DensityTypes[DENSITY_GAUSSIAN]);
+      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Not implemented: %s density", DensityTypes[DENSITY_GAUSSIAN]);
       break;
   }
 
