@@ -787,6 +787,7 @@ static PetscErrorCode
 SobolDistribution(Context *ctx)
 {
   DM          swarm=ctx->swarm;
+  PetscInt    seed=-1, ndim=NDIM;
   PetscScalar *coords;
   PetscInt    np, ip=0, Np=0;
   PetscReal   r[NDIM];
@@ -804,14 +805,15 @@ SobolDistribution(Context *ctx)
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\nLocal # of particles before Sobol' loop: %d\n\n", np));
 
   // Initialize the psuedo-random number generator.
-  PetscCall(SobolSequenceND(-3, NULL));
+  PetscCall(SobolSequenceND(&seed, r-1));
 
   // Loop over all particles.
   for (ip=0; ip<np; ip++) {
-    PetscCall(SobolSequenceND(NDIM, r));
+    PetscCall(SobolSequenceND(&ndim, r-1));
     for (dim=0; dim<NDIM; dim++) {
       coords[ip*NDIM + dim] = r[dim]*L[dim];
     }
+    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "%04d: (%6.4f, %6.4f, %6.4f)\n", ip, r[0]*L[0], r[1]*L[1], r[2]*L[2]));
   }
 
   // Restore the coordinates array.
