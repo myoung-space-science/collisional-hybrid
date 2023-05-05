@@ -48,6 +48,17 @@ typedef enum {
   LHS_FULL,
 } LHSType;
 
+const char *DensityTypes[] ={
+  "flat-sobol", "flat-reverse", "flat-normal", "sinusoidal", "gaussian", "DensityType", "DENSITY_", NULL
+};
+typedef enum {
+  DENSITY_FLAT_SOBOL,
+  DENSITY_FLAT_REVERSE,
+  DENSITY_FLAT_NORMAL,
+  DENSITY_SINUSOIDAL,
+  DENSITY_GAUSSIAN,
+} DensityType;
+
 typedef struct {
   PetscInt x; // x component
   PetscInt y; // y component
@@ -104,6 +115,7 @@ typedef struct {
   PetscBool viewLHS;       // option to view LHS operator structure
   RHSType   rhsType;       // type of RHS vector to use
   LHSType   lhsType;       // type of LHS operator to use
+  DensityType densityType; // type of initial density profile to use
 } Context;
 
 typedef struct {
