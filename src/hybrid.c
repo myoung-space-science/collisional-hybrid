@@ -49,12 +49,13 @@ typedef enum {
 } LHSType;
 
 const char *DensityTypes[] ={
-  "flat-sobol", "flat-reverse", "flat-normal", "sinusoidal", "gaussian", "DensityType", "DENSITY_", NULL
+  "flat-sobol", "flat-reverse", "flat-normal", "uniform", "sinusoidal", "gaussian", "DensityType", "DENSITY_", NULL
 };
 typedef enum {
   DENSITY_FLAT_SOBOL,
   DENSITY_FLAT_REVERSE,
   DENSITY_FLAT_NORMAL,
+  DENSITY_UNIFORM,
   DENSITY_SINUSOIDAL,
   DENSITY_GAUSSIAN,
 } DensityType;
@@ -841,6 +842,55 @@ InitializeSwarmCoordinates(Context *ctx)
 
 
 static PetscErrorCode
+UniformDistribution(Context *ctx)
+{
+  DM       swarm=ctx->swarm;
+  PetscInt Np, np, np_cell;
+  DM       grid;
+  PetscInt ni, nj, nk;
+
+  PetscFunctionBeginUser;
+  PUSH_FUNC;
+
+  // [DEV] Echo sizes.
+  PetscCall(DMSwarmGetSize(swarm, &Np));
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  NEWLINE;
+  PRINT_RANKS("[%d] Local # of particles before placement: %d\n", ctx->mpi.rank, np);
+  PRINT_WORLD("   Global # of particles before placement: %d\n", Np);
+
+  // Place an equal number of particles in each cell.
+  PetscCall(DMSwarmGetCellDM(swarm, &grid));
+  PetscCall(DMDAGetCorners(grid, NULL, NULL, NULL, &ni, &nj, &nk));
+  np_cell = (PetscInt)(np / (ni*nj*nk));
+  PetscCall(DMSwarmInsertPointsUsingCellDM(swarm, DMSWARMPIC_LAYOUT_REGULAR, np_cell));
+
+  // [DEV] Echo sizes.
+  PetscCall(DMSwarmGetSize(swarm, &Np));
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  NEWLINE;
+  PRINT_RANKS("[%d] Local # of particles after placement: %d\n", ctx->mpi.rank, np);
+  PRINT_WORLD("   Global # of particles after placement: %d\n", Np);
+
+  // Update the swarm.
+  PetscCall(DMSwarmMigrate(swarm, PETSC_TRUE));
+
+  // [DEV] Echo sizes.
+  PetscCall(DMSwarmGetSize(swarm, &Np));
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  NEWLINE;
+  PRINT_RANKS("[%d] Local # of particles after migration: %d\n", ctx->mpi.rank, np);
+  PRINT_WORLD("   Global # of particles after migration: %d\n", Np);
+
+  // Assign the total particle number to the user context.
+  ctx->plasma.Np = Np;
+
+  POP_FUNC;
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+static PetscErrorCode
 SobolDistribution(Context *ctx)
 {
   DM          swarm=ctx->swarm;
@@ -926,6 +976,11 @@ InitializeParticles(Context *ctx)
       break;
     case DENSITY_FLAT_SOBOL:
       PetscCall(SobolDistribution(ctx));
+      break;
+    case DENSITY_UNIFORM:
+      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Not implemented: %s density", DensityTypes[DENSITY_UNIFORM]);
+      // I'm not exactly sure what DMSwarmInsertPointsUsingCellDM is doing.
+      PetscCall(UniformDistribution(ctx));
       break;
     case DENSITY_SINUSOIDAL:
       PetscCall(Rejection(SinusoidalDistribution, ctx));
