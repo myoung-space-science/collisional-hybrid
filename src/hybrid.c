@@ -455,9 +455,9 @@ InitializeGridDM(DM *grid, Context *ctx)
   PetscInt       Nx=(ctx->grid.N.x > 0 ? ctx->grid.N.x : 7);
   PetscInt       Ny=(ctx->grid.N.y > 0 ? ctx->grid.N.y : 7);
   PetscInt       Nz=(ctx->grid.N.z > 0 ? ctx->grid.N.z : 7);
-  DMBoundaryType xBC=DM_BOUNDARY_PERIODIC;
-  DMBoundaryType yBC=DM_BOUNDARY_PERIODIC;
-  DMBoundaryType zBC=DM_BOUNDARY_PERIODIC;
+  DMBoundaryType xBC=DM_BOUNDARY_GHOSTED;
+  DMBoundaryType yBC=DM_BOUNDARY_GHOSTED;
+  DMBoundaryType zBC=DM_BOUNDARY_GHOSTED;
   PetscInt       dof=4;
   PetscInt       width=1;
 
