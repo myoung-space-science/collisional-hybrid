@@ -1006,22 +1006,13 @@ InitializeParticles(Context *ctx)
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
 
   // Get an array representation of the swarm coordinates.
-  PetscCall(DMSwarmGetField(
-            swarm,
-            DMSwarmPICField_coor, NULL, NULL,
-            (void **)&coords));
+  PetscCall(DMSwarmGetField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
   // Get an array representation of the particle positions.
-  PetscCall(DMSwarmGetField(
-            swarm,
-            "position", NULL, NULL,
-            (void **)&pos));
+  PetscCall(DMSwarmGetField(swarm, "position", NULL, NULL, (void **)&pos));
 
   // Get an array representation of the particle velocities.
-  PetscCall(DMSwarmGetField(
-            swarm,
-            "velocity", NULL, NULL,
-            (void **)&vel));
+  PetscCall(DMSwarmGetField(swarm, "velocity", NULL, NULL, (void **)&vel));
 
   // Loop over particles and assign parameter values.
   for (ip=0; ip<np; ip++) {
@@ -1034,22 +1025,13 @@ InitializeParticles(Context *ctx)
   }
 
   // Restore the particle-positions array.
-  PetscCall(DMSwarmRestoreField(
-            swarm,
-            "position", NULL, NULL,
-            (void **)&pos));
+  PetscCall(DMSwarmRestoreField(swarm, "position", NULL, NULL, (void **)&pos));
 
   // Restore the particle-velocities array.
-  PetscCall(DMSwarmRestoreField(
-            swarm,
-            "velocity", NULL, NULL,
-            (void **)&vel));
+  PetscCall(DMSwarmRestoreField(swarm, "velocity", NULL, NULL, (void **)&vel));
 
   // Restore the swarm-coordinates array.
-  PetscCall(DMSwarmRestoreField(
-            swarm,
-            DMSwarmPICField_coor, NULL, NULL,
-            (void **)&coords));
+  PetscCall(DMSwarmRestoreField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
   // Display information about the particle DM.
   PetscCall(DMView(swarm, PETSC_VIEWER_STDOUT_WORLD));
