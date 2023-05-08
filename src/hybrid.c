@@ -1147,15 +1147,16 @@ CollectParticles(Context *ctx)
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
 
-  // Assign grid-cell values.
+  // Extract cell widths.
   dx = ctx->grid.d.x;
   dy = ctx->grid.d.y;
   dz = ctx->grid.d.z;
 
   // Loop over particles.
   for (ip=0; ip<np; ip++) {
-    // Get the current particle's parameters.
+    // Get the current particle's coordinates.
     r = pos[ip];
+    // Normalize each coordinate to a fractional number of grid cells.
     x = r.x / dx;
     y = r.y / dy;
     z = r.z / dz;
