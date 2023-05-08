@@ -1139,16 +1139,10 @@ CollectParticles(Context *ctx)
   PetscCall(DMDAVecGetArray(grid, gridvec, &array));
 
   // Get an array representation of the particle positions.
-  PetscCall(DMSwarmGetField(
-            swarm,
-            "position", NULL, NULL,
-            (void **)&pos));
+  PetscCall(DMSwarmGetField(swarm, "position", NULL, NULL, (void **)&pos));
 
   // Get an array representation of the particle velocities.
-  PetscCall(DMSwarmGetField(
-            swarm,
-            "velocity", NULL, NULL,
-            (void **)&vel));
+  PetscCall(DMSwarmGetField(swarm, "velocity", NULL, NULL, (void **)&vel));
 
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
@@ -1225,16 +1219,10 @@ CollectParticles(Context *ctx)
   PetscCall(DMRestoreLocalVector(grid, &gridvec));
 
   // Restore the particle-positions array.
-  PetscCall(DMSwarmRestoreField(
-            swarm,
-            "position", NULL, NULL,
-            (void **)&pos));
+  PetscCall(DMSwarmRestoreField(swarm, "position", NULL, NULL, (void **)&pos));
 
   // Restore the particle-velocities array.
-  PetscCall(DMSwarmRestoreField(
-            swarm,
-            "velocity", NULL, NULL,
-            (void **)&vel));
+  PetscCall(DMSwarmRestoreField(swarm, "velocity", NULL, NULL, (void **)&vel));
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
