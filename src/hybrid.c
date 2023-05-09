@@ -458,6 +458,7 @@ InitializeGridDM(DM *grid, Context *ctx)
   DMBoundaryType xBC=DM_BOUNDARY_GHOSTED;
   DMBoundaryType yBC=DM_BOUNDARY_GHOSTED;
   DMBoundaryType zBC=DM_BOUNDARY_GHOSTED;
+  PetscReal      dx, dy, dz;
   PetscInt       dof=4;
   PetscInt       width=1;
 
@@ -472,7 +473,6 @@ InitializeGridDM(DM *grid, Context *ctx)
   // Synchronize values of Nx, Ny, and Nz passed via -n{x,y,z} or
   // -da_grid_{x,y,z}. Note that this gives precedence to the latter.
   PetscCall(DMDAGetInfo(*grid, NULL, &Nx, &Ny, &Nz, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
-  // Update the grid context where necessary.
   if (ctx->grid.N.x == -1) {
     ctx->grid.N.x = Nx;
   }
@@ -488,11 +488,14 @@ InitializeGridDM(DM *grid, Context *ctx)
     ctx->plasma.Np = ctx->grid.N.x * ctx->grid.N.y * ctx->grid.N.z;
   }
   // Define the physical grid-cell spacing.
-  ctx->grid.d.x = 1.0 / (PetscReal)ctx->grid.N.x;
-  ctx->grid.d.y = 1.0 / (PetscReal)ctx->grid.N.y;
-  ctx->grid.d.z = 1.0 / (PetscReal)ctx->grid.N.z;
+  dx = ctx->grid.L.x / (PetscReal)ctx->grid.N.x;
+  dy = ctx->grid.L.y / (PetscReal)ctx->grid.N.y;
+  dz = ctx->grid.L.z / (PetscReal)ctx->grid.N.z;
+  ctx->grid.d.x = dx;
+  ctx->grid.d.y = dy;
+  ctx->grid.d.z = dz;
   // Set uniform coordinates on the grid DM.
-  PetscCall(DMDASetUniformCoordinates(*grid, ctx->grid.p0.x, ctx->grid.p1.x, ctx->grid.p0.y, ctx->grid.p1.y, ctx->grid.p0.z, ctx->grid.p1.z));
+  PetscCall(DMDASetUniformCoordinates(*grid, ctx->grid.p0.x, ctx->grid.p1.x+dx, ctx->grid.p0.y, ctx->grid.p1.y+dy, ctx->grid.p0.z, ctx->grid.p1.z+dz));
   // Declare grid-quantity names.
   PetscCall(DMDASetFieldName(*grid, 0, "density"));
   PetscCall(DMDASetFieldName(*grid, 1, "x flux"));
