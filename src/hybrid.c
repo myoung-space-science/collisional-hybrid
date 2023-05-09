@@ -2149,7 +2149,7 @@ scalar function F(x, y, z) at (x0, y0, z0). It assumes that F contains ghost
 nodes.
 */
 static PetscErrorCode
-VectorDifference(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid grid, PetscReal *f[])
+DifferenceVector(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid grid, PetscReal *f[])
 {
   PetscInt    Nx=grid.N.x, Ny=grid.N.y, Nz=grid.N.z;
   PetscInt    ixl, ixh, iyl, iyh, izl, izh;
@@ -2293,7 +2293,7 @@ BorisMover(Context *ctx)
     z = r.z / dz;
 
     // Compute the electric field due to this particle.
-    PetscCall(VectorDifference(phi, x, y, z, ctx->grid, &E));
+    PetscCall(DifferenceVector(phi, x, y, z, ctx->grid, &E));
 
     // Compute the velocity advance.
 
