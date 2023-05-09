@@ -2148,7 +2148,7 @@ int main(int argc, char **args)
   Context     ctx;
   DM          grid, solve;
   KSP         ksp;
-  Vec         x;
+  Vec         phi;
 
   PetscFunctionBeginUser;
 
@@ -2200,12 +2200,12 @@ int main(int argc, char **args)
   PetscCall(KSPSetComputeRHS(ksp, ComputeRHS, &ctx));
   PetscCall(KSPSetComputeOperators(ksp, ComputeLHS, &ctx));
   PetscCall(KSPSolve(ksp, NULL, NULL));
-  PetscCall(KSPGetSolution(ksp, &x));
-  PetscCall(PetscObjectSetName((PetscObject)x, "potential"));
+  PetscCall(KSPGetSolution(ksp, &phi));
+  PetscCall(PetscObjectSetName((PetscObject)phi, "potential"));
 
   /* Output initial conditions. */
   PetscCall(VecViewComposite(grid, ctx.global, ctx.gridView));
-  PetscCall(VecView(x, ctx.gridView));
+  PetscCall(VecView(phi, ctx.gridView));
 
   /* Begin main time-step loop. */
   /* Notes
