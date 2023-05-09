@@ -2144,7 +2144,7 @@ ViewReducedLHS(PetscInt Nx, PetscInt Ny, PetscInt Nz, void *ctx)
 
 /* The central difference of V at (x, y, z).
 
-Note that this currently assumes periodic boundary conditions.
+This function assumes that V contains ghost nodes.
 */
 static PetscErrorCode
 VectorDifference(PetscReal ***V, PetscReal x, PetscReal y, PetscReal z, Grid grid, PetscReal *v[])
@@ -2160,19 +2160,16 @@ VectorDifference(PetscReal ***V, PetscReal x, PetscReal y, PetscReal z, Grid gri
   // Compute the x-dimension neighbors and corresponding weights.
   ixl = (PetscInt)x;
   ixh = ixl+1;
-  if (ixh > Nx-1) {ixh = 0;} // [DEV] assumes periodic BC
   wxh = x - (PetscReal)ixl;
   wxl = 1.0 - wxh;
   // Compute the y-dimension neighbors and corresponding weights.
   iyl = (PetscInt)y;
   iyh = iyl+1;
-  if (iyh > Ny-1) {iyh = 0;} // [DEV] assumes periodic BC
   wyh = y - (PetscReal)iyl;
   wyl = 1.0 - wyh;
   // Compute the z-dimension neighbors and corresponding weights.
   izl = (PetscInt)z;
   izh = izl+1;
-  if (izh > Nz-1) {izh = 0;} // [DEV] assumes periodic BC
   wzh = z - (PetscReal)izl;
   wzl = 1.0 - wzh;
   // Compute the central difference in x at each grid point.
