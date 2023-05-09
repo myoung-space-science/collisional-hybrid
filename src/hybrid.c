@@ -121,7 +121,7 @@ typedef struct {
   Species     ions;         // ion parameter values
   Plasma      plasma;       // plasma information
   MPIContext  mpi;          // MPI information
-  Vec         global;       // full vector of all Vlasov quantities
+  Vec         vlasov;       // full vector of all Vlasov quantities
   DM          swarm;        // PIC-swarm data manager
   Vec         phi;          // electrostatic potential
   PetscViewer gridView;     // viewer for arrays of simulated quantities
@@ -1145,7 +1145,7 @@ CollectParticles(Context *ctx)
   PetscCall(DMDAVecRestoreArray(grid, gridvec, &array));
 
   // Communicate local information to the persistent global grid vector.
-  PetscCall(DMLocalToGlobal(grid, gridvec, ADD_VALUES, ctx->global));
+  PetscCall(DMLocalToGlobal(grid, gridvec, ADD_VALUES, ctx->vlasov));
 
   // Restore the local grid vector.
   PetscCall(DMRestoreLocalVector(grid, &gridvec));
@@ -1294,7 +1294,7 @@ ComputeConstantRHS(KSP ksp, Vec b, void *_ctx)
   PetscCall(DMSwarmGetCellDM(ctx->swarm, &grid));
 
   // Extract the density vector.
-  PetscCall(GetFieldVec(grid, ctx->global, "density", &density));
+  PetscCall(GetFieldVec(grid, ctx->vlasov, "density", &density));
 
   // Set the RHS vector equal to the global mean density.
   PetscCall(VecMean(density, &mean));
@@ -1304,7 +1304,7 @@ ComputeConstantRHS(KSP ksp, Vec b, void *_ctx)
   PetscCall(VecSet(b, val));
 
   // Restore the density vector.
-  PetscCall(RestoreFieldVec(grid, ctx->global, "density", &density));
+  PetscCall(RestoreFieldVec(grid, ctx->vlasov, "density", &density));
 
   // Write the RHS vector to HDF5.
   PetscCall(PetscObjectSetName((PetscObject)b, "rhs"));
@@ -1359,7 +1359,7 @@ ComputeSinusoidalRHS(KSP ksp, Vec b, void *_ctx)
   PetscCall(DMDAVecGetArray(dm, b, &rhs));
 
   // Extract the density vector and compute its mean.
-  PetscCall(GetFieldVec(grid, ctx->global, "density", &density));
+  PetscCall(GetFieldVec(grid, ctx->vlasov, "density", &density));
   PetscCall(VecMean(density, &n0));
 
   // Get this processor's indices.
@@ -1382,7 +1382,7 @@ ComputeSinusoidalRHS(KSP ksp, Vec b, void *_ctx)
   }
 
   // Restore the density vector.
-  PetscCall(RestoreFieldVec(grid, ctx->global, "density", &density));
+  PetscCall(RestoreFieldVec(grid, ctx->vlasov, "density", &density));
 
   // Restore the borrowed arrays.
   PetscCall(DMDAVecRestoreArray(dm, b, &rhs));
@@ -1474,8 +1474,8 @@ ComputeFullRHS(KSP ksp, Vec b, void *_ctx)
 
   // Extract the density array.
   PetscCall(DMGetLocalVector(grid, &gridvec));
-  PetscCall(DMGlobalToLocalBegin(grid, ctx->global, INSERT_VALUES, gridvec));
-  PetscCall(DMGlobalToLocalEnd(grid, ctx->global, INSERT_VALUES, gridvec));
+  PetscCall(DMGlobalToLocalBegin(grid, ctx->vlasov, INSERT_VALUES, gridvec));
+  PetscCall(DMGlobalToLocalEnd(grid, ctx->vlasov, INSERT_VALUES, gridvec));
   PetscCall(DMDAVecGetArray(grid, gridvec, &gridarr));
 
   // Zero the incoming vector.
@@ -1864,8 +1864,8 @@ ComputeFullLHS(KSP ksp, Mat J, Mat A, void *_ctx)
 
   // Extract the density array.
   PetscCall(DMGetLocalVector(grid, &gridvec));
-  PetscCall(DMGlobalToLocalBegin(grid, ctx->global, INSERT_VALUES, gridvec));
-  PetscCall(DMGlobalToLocalEnd(grid, ctx->global, INSERT_VALUES, gridvec));
+  PetscCall(DMGlobalToLocalBegin(grid, ctx->vlasov, INSERT_VALUES, gridvec));
+  PetscCall(DMGlobalToLocalEnd(grid, ctx->vlasov, INSERT_VALUES, gridvec));
   PetscCall(DMDAVecGetArray(grid, gridvec, &array));
 
   // Get the DM associated with the KSP.
@@ -2173,8 +2173,8 @@ int main(int argc, char **args)
 
   /* Set up discrete grid. */
   PetscCall(InitializeGridDM(&grid, &ctx));
-  PetscCall(DMCreateGlobalVector(grid, &ctx.global));
-  PetscCall(VecZeroEntries(ctx.global));
+  PetscCall(DMCreateGlobalVector(grid, &ctx.vlasov));
+  PetscCall(VecZeroEntries(ctx.vlasov));
 
   /* Set up particle swarm. */
   PetscCall(InitializeSwarmDM(grid, &ctx));
@@ -2206,7 +2206,7 @@ int main(int argc, char **args)
   ctx.phi = phi;
 
   /* Output initial conditions. */
-  PetscCall(VecViewComposite(grid, ctx.global, ctx.gridView));
+  PetscCall(VecViewComposite(grid, ctx.vlasov, ctx.gridView));
   PetscCall(VecView(phi, ctx.gridView));
 
   /* Begin main time-step loop. */
@@ -2247,7 +2247,7 @@ int main(int argc, char **args)
   PetscCall(PetscViewerDestroy(&ctx.optionsView));
   PetscCall(PetscViewerDestroy(&ctx.gridView));
   PetscCall(KSPDestroy(&ksp));
-  PetscCall(VecDestroy(&ctx.global));
+  PetscCall(VecDestroy(&ctx.vlasov));
   PetscCall(DMDestroy(&grid));
   PetscCall(DMDestroy(&ctx.swarm));
   PetscCall(DMDestroy(&solve));
