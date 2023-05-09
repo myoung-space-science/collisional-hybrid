@@ -681,7 +681,7 @@ UniformDistribution(Context *ctx)
   PetscInt    np, np_cell, ip;
   DM          grid;
   PetscInt    i0, j0, k0;
-  PetscInt    ni, nj, nk;
+  PetscInt    ni, nj, nk, nc;
   PetscInt    i, j, k, idx;
   PetscReal   dx, dy, dz;
 
@@ -695,10 +695,15 @@ UniformDistribution(Context *ctx)
   // Get the local number of particles.
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
 
-  // Compute the number of particles per cell. Note that np_cell*ni*nj*nk will
-  // not in general be equal to the input value of -Np, if given. Should we
-  // reset the local swarm sizes here?
-  np_cell = (PetscInt)(np / (ni*nj*nk));
+  // Compute the number of particles per cell. Note that np_cell*nc will
+  // not in general be equal to the input value of -Np, if given.
+  nc = ni*nj*nk;
+  np_cell = (PetscInt)(np / nc);
+
+  // Reset the local swarm size to avoid a seg fault when accessing the
+  // coordinates array. Passing a negative value for the buffer forces the swarm
+  // to use its existing buffer size.
+  PetscCall(DMSwarmSetLocalSizes(swarm, np_cell*nc, -1));
 
   // Extract the cell widths.
   dx = ctx->grid.d.x;
@@ -713,10 +718,10 @@ UniformDistribution(Context *ctx)
     for (i=i0; i<i0+ni; i++) {
       for (j=j0; j<j0+nj; j++) {
         for (k=k0; k<k0+nk; k++) {
-          idx = k + j*nk + i*nk*nj;
-          coords[ip*np + idx*NDIM + 0] = dx*((PetscReal)i + 0.5);
-          coords[ip*np + idx*NDIM + 1] = dy*((PetscReal)j + 0.5);
-          coords[ip*np + idx*NDIM + 2] = dz*((PetscReal)k + 0.5);
+          idx = (ip*nc + k + j*nk + i*nk*nj)*NDIM;
+          coords[idx + 0] = dx*((PetscReal)i + 0.5);
+          coords[idx + 1] = dy*((PetscReal)j + 0.5);
+          coords[idx + 2] = dz*((PetscReal)k + 0.5);
         }
       }
     }
