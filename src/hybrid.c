@@ -724,7 +724,7 @@ UniformDistribution(Context *ctx)
 {
   DM          swarm=ctx->swarm;
   PetscScalar *coords;
-  PetscInt    Np, np, np_cell, ip;
+  PetscInt    np, np_cell, ip;
   DM          grid;
   PetscInt    i0, j0, k0;
   PetscInt    ni, nj, nk;
@@ -734,16 +734,12 @@ UniformDistribution(Context *ctx)
   PetscFunctionBeginUser;
   ECHO_FUNCTION_ENTER;
 
-  // [DEV] Echo sizes.
-  PetscCall(DMSwarmGetSize(swarm, &Np));
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
-  NEWLINE;
-  PRINT_RANKS("[%d] Local # of particles before placement: %d\n", ctx->mpi.rank, np);
-  PRINT_WORLD("   Global # of particles before placement: %d\n", Np);
-
   // Get information about the grid.
   PetscCall(DMSwarmGetCellDM(swarm, &grid));
   PetscCall(DMDAGetCorners(grid, &i0, &j0, &k0, &ni, &nj, &nk));
+
+  // Get the local number of particles.
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
 
   // Compute the number of particles per cell. Note that np_cell*ni*nj*nk will
   // not in general be equal to the input value of -Np, if given. Should we
@@ -775,23 +771,6 @@ UniformDistribution(Context *ctx)
   // Restore the coordinates array.
   PetscCall(DMSwarmRestoreField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
-  // [DEV] Echo sizes.
-  PetscCall(DMSwarmGetSize(swarm, &Np));
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
-  NEWLINE;
-  PRINT_RANKS("[%d] Local # of particles after placement: %d\n", ctx->mpi.rank, np);
-  PRINT_WORLD("   Global # of particles after placement: %d\n", Np);
-
-  // Update the swarm.
-  PetscCall(DMSwarmMigrate(swarm, PETSC_TRUE));
-
-  // [DEV] Echo sizes.
-  PetscCall(DMSwarmGetSize(swarm, &Np));
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
-  NEWLINE;
-  PRINT_RANKS("[%d] Local # of particles after migration: %d\n", ctx->mpi.rank, np);
-  PRINT_WORLD("   Global # of particles after migration: %d\n", Np);
-
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -803,10 +782,9 @@ SobolDistribution(Context *ctx)
   DM          swarm=ctx->swarm;
   PetscInt    seed=-1, ndim=NDIM;
   PetscScalar *coords;
-  PetscInt    np, ip=0, Np=0;
+  PetscInt    np, ip;
   PetscReal   r[NDIM];
   PetscReal   L[NDIM]={ctx->grid.L.x, ctx->grid.L.y, ctx->grid.L.z};
-  PetscReal   d[NDIM]={ctx->grid.d.x, ctx->grid.d.y, ctx->grid.d.z};
   PetscInt    dim;
 
   PetscFunctionBeginUser;
@@ -815,15 +793,11 @@ SobolDistribution(Context *ctx)
   // Get a representation of the particle coordinates.
   PetscCall(DMSwarmGetField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
-  // [DEV] Echo sizes.
-  PetscCall(DMSwarmGetSize(swarm, &Np));
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
-  NEWLINE;
-  PRINT_RANKS("[%d] Local # of particles before placement: %d\n", ctx->mpi.rank, np);
-  PRINT_WORLD("   Global # of particles before placement: %d\n", Np);
-
   // Initialize the psuedo-random number generator.
   PetscCall(SobolSequenceND(&seed, r-1));
+
+  // Get the local number of particles.
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
 
   // Loop over all particles.
   for (ip=0; ip<np; ip++) {
@@ -835,24 +809,6 @@ SobolDistribution(Context *ctx)
 
   // Restore the coordinates array.
   PetscCall(DMSwarmRestoreField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
-
-  // [DEV] Echo sizes.
-  PetscCall(DMSwarmGetSize(swarm, &Np));
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
-  NEWLINE;
-  PRINT_RANKS("[%d] Local # of particles after placement: %d\n", ctx->mpi.rank, np);
-  PRINT_WORLD("   Global # of particles after placement: %d\n", Np);
-
-  // Update the swarm. NOTE: This clears out the edges. Maybe we don't want to
-  // do this here.
-  PetscCall(DMSwarmMigrate(swarm, PETSC_TRUE));
-
-  // [DEV] Echo sizes.
-  PetscCall(DMSwarmGetSize(swarm, &Np));
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
-  NEWLINE;
-  PRINT_RANKS("[%d] Local # of particles after migration: %d\n", ctx->mpi.rank, np);
-  PRINT_WORLD("   Global # of particles after migration: %d\n", Np);
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -882,7 +838,7 @@ Rejection(DistributionFunction density, Context *ctx)
 {
   PetscRandom random;
   DM          swarm=ctx->swarm;
-  PetscInt    np, ip=0, Np=0;
+  PetscInt    np, ip;
   DM          grid;
   PetscInt    i0, ni, i;
   PetscInt    j0, nj, j;
@@ -908,13 +864,6 @@ Rejection(DistributionFunction density, Context *ctx)
   PetscCall(PetscRandomSetSeed(random, ctx->mpi.rank));
   PetscCall(PetscRandomSeed(random));
 
-  // [DEV] Echo sizes.
-  PetscCall(DMSwarmGetSize(swarm, &Np));
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
-  NEWLINE;
-  PRINT_RANKS("[%d] Local # of particles before placement: %d\n", ctx->mpi.rank, np);
-  PRINT_WORLD("   Global # of particles before placement: %d\n", Np);
-
   // Compute local maximum density.
   PetscCall(DMSwarmGetCellDM(swarm, &grid));
   PetscCall(DMDAGetCorners(grid, &i0, &j0, &k0, &ni, &nj, &nk));
@@ -928,7 +877,11 @@ Rejection(DistributionFunction density, Context *ctx)
   }
   PRINT_RANKS("[%d] Local maximum density: %g\n", ctx->mpi.rank, localMax);
 
+  // Get the local number of particles.
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+
   // Loop over all local particles.
+  ip = 0;
   while (ip < np) {
     PetscCall(PetscRandomGetValuesReal(random, NDIM, r));
     x = r[0] * Lx;
@@ -945,32 +898,15 @@ Rejection(DistributionFunction density, Context *ctx)
     it++;
   }
 
-  // [DEV] Echo rejection efficiency.
+  // Echo rejection efficiency.
   NEWLINE;
   PRINT_RANKS("[%d] Rejection efficiency: %f\n", ctx->mpi.rank, (PetscReal)ip/it);
-
-  // [DEV] Echo sizes.
-  PetscCall(DMSwarmGetSize(swarm, &Np));
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
-  NEWLINE;
-  PRINT_RANKS("[%d] Local # of particles after placement: %d\n", ctx->mpi.rank, np);
-  PRINT_WORLD("   Global # of particles after placement: %d\n", Np);
 
   // Restore the coordinates array.
   PetscCall(DMSwarmRestoreField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
   // Destroy the random-number generator.
   PetscCall(PetscRandomDestroy(&random));
-
-  // Update the swarm.
-  PetscCall(DMSwarmMigrate(swarm, PETSC_TRUE));
-
-  // [DEV] Echo sizes.
-  PetscCall(DMSwarmGetSize(swarm, &Np));
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
-  NEWLINE;
-  PRINT_RANKS("[%d] Local # of particles after migration: %d\n", ctx->mpi.rank, np);
-  PRINT_WORLD("   Global # of particles after migration: %d\n", Np);
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -981,13 +917,20 @@ static PetscErrorCode
 InitializeParticles(Context *ctx)
 {
   DM          swarm=ctx->swarm;
-  PetscInt    np;
+  PetscInt    np, Np;
   PetscScalar *coords;
   RealVector  *pos, *vel;
   PetscInt    ip;
 
   PetscFunctionBeginUser;
   ECHO_FUNCTION_ENTER;
+
+  // Echo sizes.
+  PetscCall(DMSwarmGetSize(swarm, &Np));
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  NEWLINE;
+  PRINT_RANKS("[%d] Local # of particles before placement: %d\n", ctx->mpi.rank, np);
+  PRINT_WORLD("   Global # of particles before placement: %d\n", Np);
 
   // Initialize coordinates in the particle DM.
   switch(ctx->densityType) {
@@ -1010,6 +953,23 @@ InitializeParticles(Context *ctx)
       SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Not implemented: %s density", DensityTypes[DENSITY_GAUSSIAN]);
       break;
   }
+
+  // Echo sizes.
+  PetscCall(DMSwarmGetSize(swarm, &Np));
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  NEWLINE;
+  PRINT_RANKS("[%d] Local # of particles after placement: %d\n", ctx->mpi.rank, np);
+  PRINT_WORLD("   Global # of particles after placement: %d\n", Np);
+
+  // Migrate particles between ranks.
+  PetscCall(DMSwarmMigrate(swarm, PETSC_TRUE));
+
+  // Echo sizes.
+  PetscCall(DMSwarmGetSize(swarm, &Np));
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  NEWLINE;
+  PRINT_RANKS("[%d] Local # of particles after migration: %d\n", ctx->mpi.rank, np);
+  PRINT_WORLD("   Global # of particles after migration: %d\n", Np);
 
   // Get the number of particles on this rank.
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
@@ -1043,6 +1003,7 @@ InitializeParticles(Context *ctx)
   PetscCall(DMSwarmRestoreField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
   // Display information about the particle DM.
+  NEWLINE;
   PetscCall(DMView(swarm, PETSC_VIEWER_STDOUT_WORLD));
 
   // Update the parameter context.
