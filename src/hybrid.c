@@ -647,6 +647,33 @@ SobolSequenceND(PetscInt *n, PetscReal x[])
 
 
 static PetscErrorCode
+UniformDistribution_FromSwarm(Context *ctx)
+{
+  DM          swarm=ctx->swarm;
+  PetscReal   min[NDIM], max[NDIM];
+  PetscInt    npoints[NDIM];
+
+  PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
+
+  min[0] = ctx->grid.p0.x;
+  min[1] = ctx->grid.p0.y;
+  min[2] = ctx->grid.p0.z;
+  max[0] = ctx->grid.p1.x - ctx->grid.d.x;
+  max[1] = ctx->grid.p1.y - ctx->grid.d.y;
+  max[2] = ctx->grid.p1.z - ctx->grid.d.z;
+  npoints[0] = 4 * ctx->grid.N.x;
+  npoints[1] = 4 * ctx->grid.N.y;
+  npoints[2] = 4 * ctx->grid.N.z;
+
+  PetscCall(DMSwarmSetPointsUniformCoordinates(swarm, min, max, npoints, INSERT_VALUES));
+
+  ECHO_FUNCTION_EXIT;
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+static PetscErrorCode
 UniformDistribution(Context *ctx)
 {
   DM          swarm=ctx->swarm;
