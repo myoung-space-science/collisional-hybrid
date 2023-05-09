@@ -977,6 +977,7 @@ InitializeParticles(Context *ctx)
   PetscInt    ip;
 
   PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
 
   // Initialize coordinates in the particle DM.
   switch(ctx->densityType) {
@@ -1039,6 +1040,7 @@ InitializeParticles(Context *ctx)
   // Update the parameter context.
   PetscCall(DMSwarmGetSize(swarm, &ctx->plasma.Np));
 
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
