@@ -558,11 +558,9 @@ InitializeSwarmDM(DM grid, Context *ctx)
   // Register fields that each particle will have.
   PetscCall(DMSwarmInitializeFieldRegister(swarm));
   // --> (x, y, z) position components
-  PetscCall(DMSwarmRegisterUserStructField(
-            swarm, "position", sizeof(RealVector)));
+  PetscCall(DMSwarmRegisterUserStructField(swarm, "position", sizeof(RealVector)));
   // --> (x, y, z) velocity components
-  PetscCall(DMSwarmRegisterUserStructField(
-            swarm, "velocity", sizeof(RealVector)));
+  PetscCall(DMSwarmRegisterUserStructField(swarm, "velocity", sizeof(RealVector)));
   PetscCall(DMSwarmFinalizeFieldRegister(swarm));
   // Set the per-processor swarm size and buffer length for efficient resizing.
   Np = (ctx->plasma.Np > 0) ? ctx->plasma.Np : NPTOTAL;
