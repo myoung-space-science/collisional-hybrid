@@ -2142,6 +2142,184 @@ ViewReducedLHS(PetscInt Nx, PetscInt Ny, PetscInt Nz, void *ctx)
 }
 
 
+/* The central difference of V at (x, y, z).
+
+Note that this currently assumes periodic boundary conditions.
+*/
+static PetscErrorCode
+VectorDifference(PetscReal ***V, PetscReal x, PetscReal y, PetscReal z, Grid grid, PetscReal *v[])
+{
+  PetscInt    Nx=grid.N.x, Ny=grid.N.y, Nz=grid.N.z;
+  PetscInt    ixl, ixh, iyl, iyh, izl, izh;
+  PetscReal   wxl, wxh, wyl, wyh, wzl, wzh;
+  PetscReal   hhh, lhh, hlh, llh, hhl, lhl, hll, lll;
+  PetscReal   whh, whl, wlh, wll, Ewh, Ewl;
+
+  PetscFunctionBeginUser;
+
+  // Compute the x-dimension neighbors and corresponding weights.
+  ixl = (PetscInt)x;
+  ixh = ixl+1;
+  if (ixh > Nx-1) {ixh = 0;} // [DEV] assumes periodic BC
+  wxh = x - (PetscReal)ixl;
+  wxl = 1.0 - wxh;
+  // Compute the y-dimension neighbors and corresponding weights.
+  iyl = (PetscInt)y;
+  iyh = iyl+1;
+  if (iyh > Ny-1) {iyh = 0;} // [DEV] assumes periodic BC
+  wyh = y - (PetscReal)iyl;
+  wyl = 1.0 - wyh;
+  // Compute the z-dimension neighbors and corresponding weights.
+  izl = (PetscInt)z;
+  izh = izl+1;
+  if (izh > Nz-1) {izh = 0;} // [DEV] assumes periodic BC
+  wzh = z - (PetscReal)izl;
+  wzl = 1.0 - wzh;
+  // Compute the central difference in x at each grid point.
+  hhh = V[izh][iyh][ixh+1] - V[izh][iyh][ixh-1];
+  lhh = V[izl][iyh][ixh+1] - V[izl][iyh][ixh-1];
+  hlh = V[izh][iyl][ixh+1] - V[izh][iyl][ixh-1];
+  llh = V[izl][iyl][ixh+1] - V[izl][iyl][ixh-1];
+  hhl = V[izh][iyh][ixl+1] - V[izh][iyh][ixl-1];
+  lhl = V[izl][iyh][ixl+1] - V[izl][iyh][ixl-1];
+  hll = V[izh][iyl][ixl+1] - V[izh][iyl][ixl-1];
+  lll = V[izl][iyl][ixl+1] - V[izl][iyl][ixl-1];
+  whh = hlh + wyh*(hhh - hlh);
+  whl = hll + wyh*(hhl - hll);
+  wlh = llh + wyh*(lhh - llh);
+  wll = lll + wyh*(lhl - lll);
+  Ewh = wlh + wxh*(whh - wlh);
+  Ewl = wll + wxh*(whl - wll);
+  *v[0] = Ewl + wzh*(Ewh - Ewh);
+  // Compute the central difference in y at each grid point.
+  hhh = V[izh][iyh+1][ixh] - V[izh][iyh-1][ixh];
+  lhh = V[izl][iyh+1][ixh] - V[izl][iyh-1][ixh];
+  hlh = V[izh][iyl+1][ixh] - V[izh][iyl-1][ixh];
+  llh = V[izl][iyl+1][ixh] - V[izl][iyl-1][ixh];
+  hhl = V[izh][iyh+1][ixl] - V[izh][iyh-1][ixl];
+  lhl = V[izl][iyh+1][ixl] - V[izl][iyh-1][ixl];
+  hll = V[izh][iyl+1][ixl] - V[izh][iyl-1][ixl];
+  lll = V[izl][iyl+1][ixl] - V[izl][iyl-1][ixl];
+  whh = hlh + wyh*(hhh - hlh);
+  whl = hll + wyh*(hhl - hll);
+  wlh = llh + wyh*(lhh - llh);
+  wll = lll + wyh*(lhl - lll);
+  Ewh = wlh + wxh*(whh - wlh);
+  Ewl = wll + wxh*(whl - wll);
+  *v[1] = Ewl + wzh*(Ewh - Ewh);
+  // Compute the central difference in z at each grid point.
+  hhh = V[izh+1][iyh][ixh] - V[izh-1][iyh][ixh];
+  lhh = V[izl+1][iyh][ixh] - V[izl-1][iyh][ixh];
+  hlh = V[izh+1][iyl][ixh] - V[izh-1][iyl][ixh];
+  llh = V[izl+1][iyl][ixh] - V[izl-1][iyl][ixh];
+  hhl = V[izh+1][iyh][ixl] - V[izh-1][iyh][ixl];
+  lhl = V[izl+1][iyh][ixl] - V[izl-1][iyh][ixl];
+  hll = V[izh+1][iyl][ixl] - V[izh-1][iyl][ixl];
+  lll = V[izl+1][iyl][ixl] - V[izl-1][iyl][ixl];
+  whh = hlh + wyh*(hhh - hlh);
+  whl = hll + wyh*(hhl - hll);
+  wlh = llh + wyh*(lhh - llh);
+  wll = lll + wyh*(lhl - lll);
+  Ewh = wlh + wxh*(whh - wlh);
+  Ewl = wll + wxh*(whl - wll);
+  *v[2] = Ewl + wzh*(Ewh - Ewh);
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+static PetscErrorCode
+BorisMover(Context *ctx)
+{
+  PetscReal   q=ctx->ions.q;
+  PetscReal   m=ctx->ions.m;
+  PetscReal   B[NDIM]={ctx->plasma.B0.x, ctx->plasma.B0.y, ctx->plasma.B0.z};
+  PetscReal   dt=ctx->dt;
+  PetscInt    dim;
+  PetscReal   t[NDIM], s[NDIM];
+  PetscReal   tscale;
+  DM          swarm=ctx->swarm;
+  DM          grid;
+  Vec         phivec;
+  PetscReal   ***phi;
+  PetscInt    np, ip;
+  RealVector  r, *pos, v, *vel;
+  PetscReal   x, y, z;
+  PetscReal   dx=ctx->grid.d.x, dy=ctx->grid.d.y, dz=ctx->grid.d.z;
+  PetscReal   *E[NDIM];
+
+  PetscFunctionBeginUser;
+
+  /* TODO
+  - combine t and s loops
+  */
+
+  // \vec{t} = \frac{q\vec{B}}{m}\frac{\Delta t}{2}
+  tscale = 0.5 * (q/m) * dt;
+  for (dim=0; dim<NDIM; dim++) {
+    t[dim] = tscale * B[dim];
+  }
+
+  // \vec{s} = \frac{2\vec{t}}{1 + \vec{t}\cdot\vec{t}}
+  for (dim=0; dim<NDIM; dim++) {
+    s[dim] = 2.0 * t[dim] / (1 + t[dim]*t[dim]);
+  }
+
+  // Get the grid DM from the swarm DM;
+  PetscCall(DMSwarmGetCellDM(swarm, &grid));
+
+  // Get a local copy of phi with ghost cells.
+  PetscCall(DMGetLocalVector(grid, &phivec));
+  PetscCall(DMGlobalToLocal(grid, ctx->phi, INSERT_VALUES, phivec));
+
+  // Get a temporary array representing the electrostatic potential.
+  PetscCall(DMDAVecGetArray(grid, phivec, &phi));
+
+  // Get the number of local particles.
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+
+  // Get an array representation of the particle positions.
+  PetscCall(DMSwarmGetField(swarm, "position", NULL, NULL, (void **)&pos));
+
+  // Get an array representation of the particle velocities.
+  PetscCall(DMSwarmGetField(swarm, "velocity", NULL, NULL, (void **)&vel));
+
+  // Loop over particles and interpolate E to grid points.
+  for (ip=0; ip<np; ip++) {
+    // Get the current particle's coordinates.
+    r = pos[ip];
+    // Normalize each coordinate to a fractional number of grid cells.
+    x = r.x / dx;
+    y = r.y / dy;
+    z = r.z / dz;
+
+    // Compute the electric field due to this particle.
+    PetscCall(VectorDifference(phi, x, y, z, ctx->grid, &E));
+
+    // Compute the velocity advance.
+
+      // \vec{v}^\prime = \vec{v}^- + \vec{v}^- \times \vec{t}
+
+      // \vec{v}^+ = \vec{v}^- + \vec{v}^\prime \times \vec{s}
+
+  }
+
+  // Restore the particle-positions array.
+  PetscCall(DMSwarmRestoreField(swarm, "position", NULL, NULL, (void **)&pos));
+
+  // Restore the particle-velocities array.
+  PetscCall(DMSwarmRestoreField(swarm, "velocity", NULL, NULL, (void **)&vel));
+
+  // Restore the borrowed potential array.
+  PetscCall(DMDAVecRestoreArray(grid, phivec, &phi));
+
+  // Restore the borrowed local phi vector.
+  PetscCall(DMRestoreLocalVector(grid, &phivec));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 int main(int argc, char **args)
 {
   MPIContext  mpi;
