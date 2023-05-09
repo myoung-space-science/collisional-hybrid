@@ -920,7 +920,7 @@ SobolDistribution(Context *ctx)
   for (ip=0; ip<np; ip++) {
     PetscCall(SobolSequenceND(&ndim, r-1));
     for (dim=0; dim<NDIM; dim++) {
-      coords[ip*NDIM + dim] = (r[dim] - 0.5*d[dim])*L[dim];
+      coords[ip*NDIM + dim] = r[dim]*L[dim];
     }
   }
 
