@@ -187,7 +187,7 @@ ProcessOptions(Context *ctx)
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-Nx", &intArg, &found));
   if (found) {
     if (intArg < 0) {
-      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Warning: Ignoring negative value for Nx: %d\n", intArg));
+      PRINT_WORLD("Warning: Ignoring negative value for Nx: %d\n", intArg);
     } else {
       ctx->grid.N.x = intArg;
     }
@@ -197,7 +197,7 @@ ProcessOptions(Context *ctx)
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-Ny", &intArg, &found));
   if (found) {
     if (intArg < 0) {
-      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Warning: Ignoring negative value for Ny: %d\n", intArg));
+      PRINT_WORLD("Warning: Ignoring negative value for Ny: %d\n", intArg);
     } else {
       ctx->grid.N.y = intArg;
     }
@@ -207,7 +207,7 @@ ProcessOptions(Context *ctx)
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-Nz", &intArg, &found));
   if (found) {
     if (intArg < 0) {
-      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Warning: Ignoring negative value for Nz: %d\n", intArg));
+      PRINT_WORLD("Warning: Ignoring negative value for Nz: %d\n", intArg);
     } else {
       ctx->grid.N.z = intArg;
     }
@@ -239,7 +239,7 @@ ProcessOptions(Context *ctx)
     ctx->grid.p1.x = 1.0;
   }
   if (ctx->grid.p1.x == ctx->grid.p0.x) {
-      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Warning: zero-width x dimension\n"));
+      PRINT_WORLD("Warning: zero-width x dimension\n");
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-y1", &realArg, &found));
   if (found) {
@@ -248,7 +248,7 @@ ProcessOptions(Context *ctx)
     ctx->grid.p1.y = 1.0;
   }
   if (ctx->grid.p1.y == ctx->grid.p0.y) {
-      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Warning: zero-width y dimension\n"));
+      PRINT_WORLD("Warning: zero-width y dimension\n");
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-z1", &realArg, &found));
   if (found) {
@@ -257,7 +257,7 @@ ProcessOptions(Context *ctx)
     ctx->grid.p1.z = 1.0;
   }
   if (ctx->grid.p1.z == ctx->grid.p0.z) {
-      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Warning: zero-width z dimension\n"));
+      PRINT_WORLD("Warning: zero-width z dimension\n");
   }
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-Np", &intArg, &found));
   if (found) {
