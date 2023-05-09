@@ -408,7 +408,7 @@ ProcessOptions(Context *ctx)
   if (found) {
     ctx->dt = realArg;
   } else {
-    PRINT_WORLD("Warning: Setting dt = 1 / nui");
+    PRINT_WORLD("Warning: Setting dt = 1 / nui\n");
     ctx->dt = 1.0 / ctx->ions.nu;
   }
 
