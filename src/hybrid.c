@@ -2227,6 +2227,18 @@ DifferenceVector(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid 
 }
 
 
+/* Compute \vec{c} = \vec{a} \times \vec{b}. */
+static PetscErrorCode
+CrossProduct(PetscReal a[NDIM], PetscReal b[NDIM], PetscReal *c[NDIM])
+{
+  PetscFunctionBeginUser;
+  *c[0] = a[1]*b[2] - b[2]*a[1];
+  *c[1] = a[2]*b[0] - b[0]*a[2];
+  *c[2] = a[0]*b[1] - b[1]*a[0];
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 static PetscErrorCode
 BorisMover(Context *ctx)
 {
