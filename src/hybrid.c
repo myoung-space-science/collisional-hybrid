@@ -2142,12 +2142,14 @@ ViewReducedLHS(PetscInt Nx, PetscInt Ny, PetscInt Nz, void *ctx)
 }
 
 
-/* The central difference of V at (x, y, z).
+/* Compute a vector of central differences from F.
 
-This function assumes that V contains ghost nodes.
+This function was designed as the first step in computing the gradient of the
+scalar function F(x, y, z) at (x0, y0, z0). It assumes that F contains ghost
+nodes.
 */
 static PetscErrorCode
-VectorDifference(PetscReal ***V, PetscReal x, PetscReal y, PetscReal z, Grid grid, PetscReal *v[])
+VectorDifference(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid grid, PetscReal *f[])
 {
   PetscInt    Nx=grid.N.x, Ny=grid.N.y, Nz=grid.N.z;
   PetscInt    ixl, ixh, iyl, iyh, izl, izh;
@@ -2158,68 +2160,68 @@ VectorDifference(PetscReal ***V, PetscReal x, PetscReal y, PetscReal z, Grid gri
   PetscFunctionBeginUser;
 
   // Compute the x-dimension neighbors and corresponding weights.
-  ixl = (PetscInt)x;
+  ixl = (PetscInt)x0;
   ixh = ixl+1;
-  wxh = x - (PetscReal)ixl;
+  wxh = x0 - (PetscReal)ixl;
   wxl = 1.0 - wxh;
   // Compute the y-dimension neighbors and corresponding weights.
-  iyl = (PetscInt)y;
+  iyl = (PetscInt)y0;
   iyh = iyl+1;
-  wyh = y - (PetscReal)iyl;
+  wyh = y0 - (PetscReal)iyl;
   wyl = 1.0 - wyh;
   // Compute the z-dimension neighbors and corresponding weights.
-  izl = (PetscInt)z;
+  izl = (PetscInt)z0;
   izh = izl+1;
-  wzh = z - (PetscReal)izl;
+  wzh = z0 - (PetscReal)izl;
   wzl = 1.0 - wzh;
   // Compute the central difference in x at each grid point.
-  hhh = V[izh][iyh][ixh+1] - V[izh][iyh][ixh-1];
-  lhh = V[izl][iyh][ixh+1] - V[izl][iyh][ixh-1];
-  hlh = V[izh][iyl][ixh+1] - V[izh][iyl][ixh-1];
-  llh = V[izl][iyl][ixh+1] - V[izl][iyl][ixh-1];
-  hhl = V[izh][iyh][ixl+1] - V[izh][iyh][ixl-1];
-  lhl = V[izl][iyh][ixl+1] - V[izl][iyh][ixl-1];
-  hll = V[izh][iyl][ixl+1] - V[izh][iyl][ixl-1];
-  lll = V[izl][iyl][ixl+1] - V[izl][iyl][ixl-1];
+  hhh = F[izh][iyh][ixh+1] - F[izh][iyh][ixh-1];
+  lhh = F[izl][iyh][ixh+1] - F[izl][iyh][ixh-1];
+  hlh = F[izh][iyl][ixh+1] - F[izh][iyl][ixh-1];
+  llh = F[izl][iyl][ixh+1] - F[izl][iyl][ixh-1];
+  hhl = F[izh][iyh][ixl+1] - F[izh][iyh][ixl-1];
+  lhl = F[izl][iyh][ixl+1] - F[izl][iyh][ixl-1];
+  hll = F[izh][iyl][ixl+1] - F[izh][iyl][ixl-1];
+  lll = F[izl][iyl][ixl+1] - F[izl][iyl][ixl-1];
   whh = hlh + wyh*(hhh - hlh);
   whl = hll + wyh*(hhl - hll);
   wlh = llh + wyh*(lhh - llh);
   wll = lll + wyh*(lhl - lll);
   Ewh = wlh + wxh*(whh - wlh);
   Ewl = wll + wxh*(whl - wll);
-  *v[0] = Ewl + wzh*(Ewh - Ewh);
+  *f[0] = Ewl + wzh*(Ewh - Ewh);
   // Compute the central difference in y at each grid point.
-  hhh = V[izh][iyh+1][ixh] - V[izh][iyh-1][ixh];
-  lhh = V[izl][iyh+1][ixh] - V[izl][iyh-1][ixh];
-  hlh = V[izh][iyl+1][ixh] - V[izh][iyl-1][ixh];
-  llh = V[izl][iyl+1][ixh] - V[izl][iyl-1][ixh];
-  hhl = V[izh][iyh+1][ixl] - V[izh][iyh-1][ixl];
-  lhl = V[izl][iyh+1][ixl] - V[izl][iyh-1][ixl];
-  hll = V[izh][iyl+1][ixl] - V[izh][iyl-1][ixl];
-  lll = V[izl][iyl+1][ixl] - V[izl][iyl-1][ixl];
+  hhh = F[izh][iyh+1][ixh] - F[izh][iyh-1][ixh];
+  lhh = F[izl][iyh+1][ixh] - F[izl][iyh-1][ixh];
+  hlh = F[izh][iyl+1][ixh] - F[izh][iyl-1][ixh];
+  llh = F[izl][iyl+1][ixh] - F[izl][iyl-1][ixh];
+  hhl = F[izh][iyh+1][ixl] - F[izh][iyh-1][ixl];
+  lhl = F[izl][iyh+1][ixl] - F[izl][iyh-1][ixl];
+  hll = F[izh][iyl+1][ixl] - F[izh][iyl-1][ixl];
+  lll = F[izl][iyl+1][ixl] - F[izl][iyl-1][ixl];
   whh = hlh + wyh*(hhh - hlh);
   whl = hll + wyh*(hhl - hll);
   wlh = llh + wyh*(lhh - llh);
   wll = lll + wyh*(lhl - lll);
   Ewh = wlh + wxh*(whh - wlh);
   Ewl = wll + wxh*(whl - wll);
-  *v[1] = Ewl + wzh*(Ewh - Ewh);
+  *f[1] = Ewl + wzh*(Ewh - Ewh);
   // Compute the central difference in z at each grid point.
-  hhh = V[izh+1][iyh][ixh] - V[izh-1][iyh][ixh];
-  lhh = V[izl+1][iyh][ixh] - V[izl-1][iyh][ixh];
-  hlh = V[izh+1][iyl][ixh] - V[izh-1][iyl][ixh];
-  llh = V[izl+1][iyl][ixh] - V[izl-1][iyl][ixh];
-  hhl = V[izh+1][iyh][ixl] - V[izh-1][iyh][ixl];
-  lhl = V[izl+1][iyh][ixl] - V[izl-1][iyh][ixl];
-  hll = V[izh+1][iyl][ixl] - V[izh-1][iyl][ixl];
-  lll = V[izl+1][iyl][ixl] - V[izl-1][iyl][ixl];
+  hhh = F[izh+1][iyh][ixh] - F[izh-1][iyh][ixh];
+  lhh = F[izl+1][iyh][ixh] - F[izl-1][iyh][ixh];
+  hlh = F[izh+1][iyl][ixh] - F[izh-1][iyl][ixh];
+  llh = F[izl+1][iyl][ixh] - F[izl-1][iyl][ixh];
+  hhl = F[izh+1][iyh][ixl] - F[izh-1][iyh][ixl];
+  lhl = F[izl+1][iyh][ixl] - F[izl-1][iyh][ixl];
+  hll = F[izh+1][iyl][ixl] - F[izh-1][iyl][ixl];
+  lll = F[izl+1][iyl][ixl] - F[izl-1][iyl][ixl];
   whh = hlh + wyh*(hhh - hlh);
   whl = hll + wyh*(hhl - hll);
   wlh = llh + wyh*(lhh - llh);
   wll = lll + wyh*(lhl - lll);
   Ewh = wlh + wxh*(whh - wlh);
   Ewl = wll + wxh*(whl - wll);
-  *v[2] = Ewl + wzh*(Ewh - Ewh);
+  *f[2] = Ewl + wzh*(Ewh - Ewh);
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
