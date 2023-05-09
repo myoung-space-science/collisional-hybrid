@@ -1107,6 +1107,7 @@ CollectParticles(Context *ctx)
   RealVector  r, *pos, v, *vel;
   PetscInt    ip, np;
   PetscInt    ixl, ixh, iyl, iyh, izl, izh;
+  PetscInt    Nx, Ny, Nz;
   PetscReal   wxl, wxh, wyl, wyh, wzl, wzh;
   PetscReal   hhh, lhh, hlh, llh, hhl, lhl, hll, lll;
   PetscReal   w[NDIM];
@@ -1123,7 +1124,8 @@ CollectParticles(Context *ctx)
   // Make sure the local grid vector has zeroes everywhere.
   PetscCall(VecZeroEntries(gridvec));
 
-  // Get a 4-D array corresponding to the local grid quantities.
+  // Get an array corresponding to the local grid quantities. Creating this
+  // array from the local vector causes it to have room for the ghost points.
   PetscCall(DMDAVecGetArray(grid, gridvec, &array));
 
   // Get an array representation of the particle positions.
@@ -1140,6 +1142,11 @@ CollectParticles(Context *ctx)
   dy = ctx->grid.d.y;
   dz = ctx->grid.d.z;
 
+  // Extract number of cells.
+  Nx = ctx->grid.N.x;
+  Ny = ctx->grid.N.y;
+  Nz = ctx->grid.N.z;
+
   // Loop over particles.
   for (ip=0; ip<np; ip++) {
     // Get the current particle's coordinates.
@@ -1151,17 +1158,20 @@ CollectParticles(Context *ctx)
     // Compute the x-dimension neighbors and corresponding weights.
     ixl = (PetscInt)x;
     ixh = ixl+1;
-    wxh = x - ixl;
+    if (ixh > Nx-1) {ixh = 0;} // [DEV] assumes periodic BC
+    wxh = x - (PetscReal)ixl;
     wxl = 1.0 - wxh;
     // Compute the y-dimension neighbors and corresponding weights.
     iyl = (PetscInt)y;
     iyh = iyl+1;
-    wyh = y - iyl;
+    if (iyh > Ny-1) {iyh = 0;} // [DEV] assumes periodic BC
+    wyh = y - (PetscReal)iyl;
     wyl = 1.0 - wyh;
     // Compute the z-dimension neighbors and corresponding weights.
     izl = (PetscInt)z;
     izh = izl+1;
-    wzh = z - izl;
+    if (izh > Nz-1) {izh = 0;} // [DEV] assumes periodic BC
+    wzh = z - (PetscReal)izl;
     wzl = 1.0 - wzh;
     // Compute the weight of each nearby grid point.
     hhh = wzh*wyh*wxh;
