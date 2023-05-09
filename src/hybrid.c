@@ -116,19 +116,19 @@ typedef struct {
 } MPIContext;
 
 typedef struct {
-  Grid       grid;         // grid information
-  Species    electrons;    // electron parameter values
-  Species    ions;         // ion parameter values
-  Plasma     plasma;       // plasma information
-  MPIContext mpi;          // MPI information
-  Vec        global;       // full vector of all Vlasov quantities
-  DM         swarm;        // PIC-swarm data manager
-  PetscViewer gridView;    // viewer for arrays of simulated quantities
-  PetscViewer optionsView; // viewer for parameter values
-  PetscBool viewLHS;       // option to view LHS operator structure
-  RHSType   rhsType;       // type of RHS vector to use
-  LHSType   lhsType;       // type of LHS operator to use
-  DensityType densityType; // type of initial density profile to use
+  Grid        grid;         // grid information
+  Species     electrons;    // electron parameter values
+  Species     ions;         // ion parameter values
+  Plasma      plasma;       // plasma information
+  MPIContext  mpi;          // MPI information
+  Vec         global;       // full vector of all Vlasov quantities
+  DM          swarm;        // PIC-swarm data manager
+  PetscViewer gridView;     // viewer for arrays of simulated quantities
+  PetscViewer optionsView;  // viewer for parameter values
+  PetscBool   viewLHS;      // option to view LHS operator structure
+  RHSType     rhsType;      // type of RHS vector to use
+  LHSType     lhsType;      // type of LHS operator to use
+  DensityType densityType;  // type of initial density profile to use
 } Context;
 
 typedef struct {
