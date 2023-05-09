@@ -123,6 +123,7 @@ typedef struct {
   MPIContext  mpi;          // MPI information
   Vec         global;       // full vector of all Vlasov quantities
   DM          swarm;        // PIC-swarm data manager
+  Vec         phi;          // electrostatic potential
   PetscViewer gridView;     // viewer for arrays of simulated quantities
   PetscViewer optionsView;  // viewer for parameter values
   PetscBool   viewLHS;      // option to view LHS operator structure
@@ -2202,6 +2203,7 @@ int main(int argc, char **args)
   PetscCall(KSPSolve(ksp, NULL, NULL));
   PetscCall(KSPGetSolution(ksp, &phi));
   PetscCall(PetscObjectSetName((PetscObject)phi, "potential"));
+  ctx.phi = phi;
 
   /* Output initial conditions. */
   PetscCall(VecViewComposite(grid, ctx.global, ctx.gridView));
