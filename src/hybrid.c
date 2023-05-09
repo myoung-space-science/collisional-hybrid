@@ -2149,7 +2149,7 @@ scalar function F(x, y, z) at (x0, y0, z0). It assumes that F contains ghost
 nodes.
 */
 static PetscErrorCode
-DifferenceVector(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid grid, PetscReal *f[])
+DifferenceVector(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid grid, PetscReal f[NDIM])
 {
   PetscInt    Nx=grid.N.x, Ny=grid.N.y, Nz=grid.N.z;
   PetscInt    ixl, ixh, iyl, iyh, izl, izh;
@@ -2189,7 +2189,7 @@ DifferenceVector(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid 
   wll = lll + wyh*(lhl - lll);
   Ewh = wlh + wxh*(whh - wlh);
   Ewl = wll + wxh*(whl - wll);
-  *f[0] = Ewl + wzh*(Ewh - Ewh);
+  f[0] = Ewl + wzh*(Ewh - Ewh);
   // Compute the central difference in y at each grid point.
   hhh = F[izh][iyh+1][ixh] - F[izh][iyh-1][ixh];
   lhh = F[izl][iyh+1][ixh] - F[izl][iyh-1][ixh];
@@ -2205,7 +2205,7 @@ DifferenceVector(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid 
   wll = lll + wyh*(lhl - lll);
   Ewh = wlh + wxh*(whh - wlh);
   Ewl = wll + wxh*(whl - wll);
-  *f[1] = Ewl + wzh*(Ewh - Ewh);
+  f[1] = Ewl + wzh*(Ewh - Ewh);
   // Compute the central difference in z at each grid point.
   hhh = F[izh+1][iyh][ixh] - F[izh-1][iyh][ixh];
   lhh = F[izl+1][iyh][ixh] - F[izl-1][iyh][ixh];
@@ -2221,98 +2221,135 @@ DifferenceVector(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid 
   wll = lll + wyh*(lhl - lll);
   Ewh = wlh + wxh*(whh - wlh);
   Ewl = wll + wxh*(whl - wll);
-  *f[2] = Ewl + wzh*(Ewh - Ewh);
+  f[2] = Ewl + wzh*(Ewh - Ewh);
 
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+/* Compute \vec{c} = \vec{a} \cdot \vec{b}. */
+static PetscErrorCode
+DotProduct(PetscReal a[NDIM], PetscReal b[NDIM], PetscReal *c)
+{
+  PetscFunctionBeginUser;
+  *c = a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 
 /* Compute \vec{c} = \vec{a} \times \vec{b}. */
 static PetscErrorCode
-CrossProduct(PetscReal a[NDIM], PetscReal b[NDIM], PetscReal *c[NDIM])
+CrossProduct(PetscReal a[NDIM], PetscReal b[NDIM], PetscReal c[NDIM])
 {
   PetscFunctionBeginUser;
-  *c[0] = a[1]*b[2] - b[2]*a[1];
-  *c[1] = a[2]*b[0] - b[0]*a[2];
-  *c[2] = a[0]*b[1] - b[1]*a[0];
+  c[0] = a[1]*b[2] - b[2]*a[1];
+  c[1] = a[2]*b[0] - b[0]*a[2];
+  c[2] = a[0]*b[1] - b[1]*a[0];
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 
 static PetscErrorCode
-BorisMover(Context *ctx)
+BorisMover(KSP ksp, Context *ctx)
 {
   PetscReal   q=ctx->ions.q;
   PetscReal   m=ctx->ions.m;
   PetscReal   B[NDIM]={ctx->plasma.B0.x, ctx->plasma.B0.y, ctx->plasma.B0.z};
   PetscReal   dt=ctx->dt;
   PetscInt    dim;
-  PetscReal   t[NDIM], s[NDIM];
-  PetscReal   tscale;
+  PetscReal   dx=ctx->grid.d.x, dy=ctx->grid.d.y, dz=ctx->grid.d.z;
+  PetscReal   h[NDIM]={1.0/dx, 1.0/dy, 1.0/dz};
+  PetscReal   t[NDIM], s[NDIM], t_dot_t;
+  PetscReal   tscale, Escale[NDIM];
   DM          swarm=ctx->swarm;
-  DM          grid;
-  Vec         phivec;
+  DM          phiDM;
+  Vec         phiGlobal, phiLocal;
   PetscReal   ***phi;
   PetscInt    np, ip;
   RealVector  r, *pos, v, *vel;
   PetscReal   x, y, z;
-  PetscReal   dx=ctx->grid.d.x, dy=ctx->grid.d.y, dz=ctx->grid.d.z;
-  PetscReal   *E[NDIM];
+  PetscReal   E[NDIM];
+  PetscReal   vold[NDIM];
+  PetscReal   vminus[NDIM], vprime[NDIM], vplus[NDIM];
+  PetscReal   vminus_cross_t[NDIM], vprime_cross_s[NDIM];
 
   PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
 
-  /* TODO
-  - combine t and s loops
-  */
-
-  // \vec{t} = \frac{q\vec{B}}{m}\frac{\Delta t}{2}
+  /* Compute \vec{t} = \frac{q\vec{B}}{m}\frac{\Delta t}{2}. */
   tscale = 0.5 * (q/m) * dt;
   for (dim=0; dim<NDIM; dim++) {
     t[dim] = tscale * B[dim];
   }
 
-  // \vec{s} = \frac{2\vec{t}}{1 + \vec{t}\cdot\vec{t}}
+  /* Compute \vec{s} = \frac{2\vec{t}}{1 + \vec{t}\cdot\vec{t}}. */
+  PetscCall(DotProduct(t, t, &t_dot_t));
   for (dim=0; dim<NDIM; dim++) {
-    s[dim] = 2.0 * t[dim] / (1 + t[dim]*t[dim]);
+    s[dim] = 2.0 * t[dim] / (1 + t_dot_t);
   }
 
-  // Get the grid DM from the swarm DM;
-  PetscCall(DMSwarmGetCellDM(swarm, &grid));
+  /* Compute the electric-field scale factors.
 
-  // Get a local copy of phi with ghost cells.
-  PetscCall(DMGetLocalVector(grid, &phivec));
-  PetscCall(DMGlobalToLocal(grid, ctx->phi, INSERT_VALUES, phivec));
+  These account for the species constants as well as the central-difference
+  gradient scale factors.
+  */
+  for (dim=0; dim<NDIM; dim++) {
+    Escale[dim] = -0.5 * h[dim] * tscale;
+  }
 
-  // Get a temporary array representing the electrostatic potential.
-  PetscCall(DMDAVecGetArray(grid, phivec, &phi));
+  /* Get a local copy of phi with ghost cells. */
+  PetscCall(KSPGetSolution(ksp, &phiGlobal));
+  PetscCall(KSPGetDM(ksp, &phiDM));
+  PetscCall(DMGetLocalVector(phiDM, &phiLocal));
+  PetscCall(DMGlobalToLocal(phiDM, phiGlobal, INSERT_VALUES, phiLocal));
 
-  // Get the number of local particles.
+  /* Get a temporary array representing the local electrostatic potential. */
+  PetscCall(DMDAVecGetArray(phiDM, phiLocal, &phi));
+
+  /* Get the number of local particles. */
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
 
-  // Get an array representation of the particle positions.
+  /* Get an array representation of the particle positions. */
   PetscCall(DMSwarmGetField(swarm, "position", NULL, NULL, (void **)&pos));
 
-  // Get an array representation of the particle velocities.
+  /* Get an array representation of the particle velocities. */
   PetscCall(DMSwarmGetField(swarm, "velocity", NULL, NULL, (void **)&vel));
 
-  // Loop over particles and interpolate E to grid points.
+  /* Loop over particles and interpolate E to grid points. */
   for (ip=0; ip<np; ip++) {
-    // Get the current particle's coordinates.
+    /* Get the current particle's coordinates. */
     r = pos[ip];
-    // Normalize each coordinate to a fractional number of grid cells.
+    v = vel[ip];
+    /* Normalize each coordinate to a fractional number of grid cells. */
     x = r.x / dx;
     y = r.y / dy;
     z = r.z / dz;
-
-    // Compute the electric field due to this particle.
+    /* Compute the electric field due to this particle: \vec{E} = -\nabla\phi. */
     PetscCall(DifferenceVector(phi, x, y, z, ctx->grid, &E));
-
-    // Compute the velocity advance.
-
-      // \vec{v}^\prime = \vec{v}^- + \vec{v}^- \times \vec{t}
-
-      // \vec{v}^+ = \vec{v}^- + \vec{v}^\prime \times \vec{s}
-
+    /* Compute \vec{v}^-. */
+    vold[0] = v.x;
+    vold[1] = v.y;
+    vold[2] = v.z;
+    for (dim=0; dim<NDIM; dim++) {
+      vminus[0] = vold[dim] + Escale[dim];
+    }
+    /* Compute \vec{v}^- \times \vec{t}. */
+    PetscCall(CrossProduct(vminus, t, &vminus_cross_t));
+    /* Compute \vec{v}^\prime = \vec{v}^- + \vec{v}^- \times \vec{t}. */
+    for (dim=0; dim<NDIM; dim++) {
+      vprime[dim] = vminus[dim] + vminus_cross_t[dim];
+    }
+    /* Compute \vec{v}^\prime \times \vec{s}. */
+    PetscCall(CrossProduct(vprime, s, &vprime_cross_s));
+    /* Compute \vec{v}^+ = \vec{v}^- + \vec{v}^\prime \times \vec{s}. */
+    for (dim=0; dim<NDIM; dim++) {
+      vplus[dim] = vminus[dim] + vprime_cross_s[dim];
+    }
+    /* Assign new particle velocities. */
+    v.x = vplus[0] + Escale[0];
+    v.y = vplus[1] + Escale[1];
+    v.z = vplus[2] + Escale[2];
+    vel[ip] = v;
   }
 
   // Restore the particle-positions array.
@@ -2322,11 +2359,12 @@ BorisMover(Context *ctx)
   PetscCall(DMSwarmRestoreField(swarm, "velocity", NULL, NULL, (void **)&vel));
 
   // Restore the borrowed potential array.
-  PetscCall(DMDAVecRestoreArray(grid, phivec, &phi));
+  PetscCall(DMDAVecRestoreArray(phiDM, phiLocal, &phi));
 
   // Restore the borrowed local phi vector.
-  PetscCall(DMRestoreLocalVector(grid, &phivec));
+  PetscCall(DMRestoreLocalVector(phiDM, &phiLocal));
 
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -2411,14 +2449,8 @@ int main(int argc, char **args)
     - See SNES ex63.c::main (~ line 469) for possible structure.
     */
 
-      /* Compute temporary electric field: $\vec{E} = -\nabla\phi$ */
-
-      /* Interpolate electric field to particles. */
-
       /* Apply the 3-D Boris mover. */
-      /* Notes
-      - EPPIC vpushBB_domain probably has the algorithm we need.
-      */
+      PetscCall(BorisMover(ksp, &ctx));
 
       /* Apply collisions. */
 
