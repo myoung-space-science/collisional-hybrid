@@ -129,6 +129,8 @@ typedef struct {
   RHSType     rhsType;      // type of RHS vector to use
   LHSType     lhsType;      // type of LHS operator to use
   DensityType densityType;  // type of initial density profile to use
+  PetscReal   Nt;           // number of time steps
+  PetscReal   dt;           // time-step width
 } Context;
 
 typedef struct {
