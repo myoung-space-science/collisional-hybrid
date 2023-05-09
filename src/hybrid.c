@@ -464,25 +464,14 @@ InitializeGridDM(DM *grid, Context *ctx)
   PetscFunctionBeginUser;
 
   // Create the grid DM.
-  PetscCall(DMDACreate3d(
-            PETSC_COMM_WORLD,
-            xBC, yBC, zBC,
-            DMDA_STENCIL_BOX,
-            Nx, Ny, Nz,
-            PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE,
-            dof, width,
-            NULL, NULL, NULL,
-            grid));
+  PetscCall(DMDACreate3d(PETSC_COMM_WORLD, xBC, yBC, zBC, DMDA_STENCIL_BOX, Nx, Ny, Nz, PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE, dof, width, NULL, NULL, NULL, grid));
   // Perform basic setup.
   PetscCall(DMDASetElementType(*grid, DMDA_ELEMENT_Q1));
   PetscCall(DMSetFromOptions(*grid));
   PetscCall(DMSetUp(*grid));
   // Synchronize values of Nx, Ny, and Nz passed via -n{x,y,z} or
   // -da_grid_{x,y,z}. Note that this gives precedence to the latter.
-  PetscCall(DMDAGetInfo(
-            *grid, NULL,
-            &Nx, &Ny, &Nz,
-            NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
+  PetscCall(DMDAGetInfo(*grid, NULL, &Nx, &Ny, &Nz, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
   // Update the grid context where necessary.
   if (ctx->grid.N.x == -1) {
     ctx->grid.N.x = Nx;
@@ -503,11 +492,7 @@ InitializeGridDM(DM *grid, Context *ctx)
   ctx->grid.d.y = 1.0 / (PetscReal)ctx->grid.N.y;
   ctx->grid.d.z = 1.0 / (PetscReal)ctx->grid.N.z;
   // Set uniform coordinates on the grid DM.
-  PetscCall(DMDASetUniformCoordinates(
-            *grid,
-            ctx->grid.p0.x, ctx->grid.p1.x,
-            ctx->grid.p0.y, ctx->grid.p1.y,
-            ctx->grid.p0.z, ctx->grid.p1.z));
+  PetscCall(DMDASetUniformCoordinates(*grid, ctx->grid.p0.x, ctx->grid.p1.x, ctx->grid.p0.y, ctx->grid.p1.y, ctx->grid.p0.z, ctx->grid.p1.z));
   // Declare grid-quantity names.
   PetscCall(DMDASetFieldName(*grid, 0, "density"));
   PetscCall(DMDASetFieldName(*grid, 1, "x flux"));
