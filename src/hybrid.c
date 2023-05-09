@@ -842,10 +842,14 @@ InitializeSwarmCoordinates(Context *ctx)
 static PetscErrorCode
 UniformDistribution(Context *ctx)
 {
-  DM       swarm=ctx->swarm;
-  PetscInt Np, np, np_cell;
-  DM       grid;
-  PetscInt ni, nj, nk;
+  DM          swarm=ctx->swarm;
+  PetscScalar *coords;
+  PetscInt    Np, np, np_cell, ip;
+  DM          grid;
+  PetscInt    i0, j0, k0;
+  PetscInt    ni, nj, nk;
+  PetscInt    i, j, k, idx;
+  PetscReal   dx, dy, dz;
 
   PetscFunctionBeginUser;
   ECHO_FUNCTION_ENTER;
@@ -857,11 +861,39 @@ UniformDistribution(Context *ctx)
   PRINT_RANKS("[%d] Local # of particles before placement: %d\n", ctx->mpi.rank, np);
   PRINT_WORLD("   Global # of particles before placement: %d\n", Np);
 
-  // Place an equal number of particles in each cell.
+  // Get information about the grid.
   PetscCall(DMSwarmGetCellDM(swarm, &grid));
-  PetscCall(DMDAGetCorners(grid, NULL, NULL, NULL, &ni, &nj, &nk));
+  PetscCall(DMDAGetCorners(grid, &i0, &j0, &k0, &ni, &nj, &nk));
+
+  // Compute the number of particles per cell. Note that np_cell*ni*nj*nk will
+  // not in general be equal to the input value of -Np, if given. Should we
+  // reset the local swarm sizes here?
   np_cell = (PetscInt)(np / (ni*nj*nk));
-  PetscCall(DMSwarmInsertPointsUsingCellDM(swarm, DMSWARMPIC_LAYOUT_REGULAR, np_cell));
+
+  // Extract the cell widths.
+  dx = ctx->grid.d.x;
+  dy = ctx->grid.d.y;
+  dz = ctx->grid.d.z;
+
+  // Get a representation of the particle coordinates.
+  PetscCall(DMSwarmGetField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
+
+  // Loop over cells; place an equal number of particles at the center of each.
+  for (ip=0; ip<np_cell; ip++) {
+    for (i=i0; i<i0+ni; i++) {
+      for (j=j0; j<j0+nj; j++) {
+        for (k=k0; k<k0+nk; k++) {
+          idx = k + j*nk + i*nk*nj;
+          coords[ip*np + idx*NDIM + 0] = dx*((PetscReal)i + 0.5);
+          coords[ip*np + idx*NDIM + 1] = dy*((PetscReal)j + 0.5);
+          coords[ip*np + idx*NDIM + 2] = dz*((PetscReal)k + 0.5);
+        }
+      }
+    }
+  }
+
+  // Restore the coordinates array.
+  PetscCall(DMSwarmRestoreField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
   // [DEV] Echo sizes.
   PetscCall(DMSwarmGetSize(swarm, &Np));
@@ -977,8 +1009,6 @@ InitializeParticles(Context *ctx)
       PetscCall(SobolDistribution(ctx));
       break;
     case DENSITY_UNIFORM:
-      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Not implemented: %s density", DensityTypes[DENSITY_UNIFORM]);
-      // I'm not exactly sure what DMSwarmInsertPointsUsingCellDM is doing.
       PetscCall(UniformDistribution(ctx));
       break;
     case DENSITY_SINUSOIDAL:
