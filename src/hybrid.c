@@ -397,6 +397,19 @@ ProcessOptions(Context *ctx)
   } else {
     ctx->plasma.E0.z = 0.0;
   }
+  PetscCall(PetscOptionsGetInt(NULL, NULL, "-Nt", &intArg, &found));
+  if (found) {
+    ctx->Nt = intArg;
+  } else {
+    ctx->Nt = 1;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-dt", &realArg, &found));
+  if (found) {
+    ctx->dt = realArg;
+  } else {
+    PRINT_WORLD("Warning: Setting dt = 1 / nui");
+    ctx->dt = 1.0 / ctx->ions.nu;
+  }
 
   // Set grid lengths from lower and upper bounds.
   ctx->grid.L.x = ctx->grid.p1.x - ctx->grid.p0.x;
