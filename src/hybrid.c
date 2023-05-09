@@ -166,22 +166,19 @@ ProcessOptions(Context *ctx)
   } else {
     ctx->viewLHS = PETSC_FALSE;
   }
-  PetscCall(PetscOptionsGetEnum(
-            NULL, NULL, "--rhs-type", RHSTypes, &enumArg, &found));
+  PetscCall(PetscOptionsGetEnum(NULL, NULL, "--rhs-type", RHSTypes, &enumArg, &found));
   if (found) {
     ctx->rhsType = enumArg;
   } else {
     ctx->rhsType = RHS_FULL;
   }
-  PetscCall(PetscOptionsGetEnum(
-            NULL, NULL, "--lhs-type", LHSTypes, &enumArg, &found));
+  PetscCall(PetscOptionsGetEnum(NULL, NULL, "--lhs-type", LHSTypes, &enumArg, &found));
   if (found) {
     ctx->lhsType = enumArg;
   } else {
     ctx->lhsType = LHS_FULL;
   }
-  PetscCall(PetscOptionsGetEnum(
-            NULL, NULL, "--density-type", DensityTypes, &enumArg, &found));
+  PetscCall(PetscOptionsGetEnum(NULL, NULL, "--density-type", DensityTypes, &enumArg, &found));
   if (found) {
     ctx->densityType = enumArg;
   } else {
@@ -190,9 +187,7 @@ ProcessOptions(Context *ctx)
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-Nx", &intArg, &found));
   if (found) {
     if (intArg < 0) {
-      PetscCall(PetscPrintf(
-                PETSC_COMM_WORLD,
-                "Warning: Ignoring negative value for Nx: %d\n", intArg));
+      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Warning: Ignoring negative value for Nx: %d\n", intArg));
     } else {
       ctx->grid.N.x = intArg;
     }
@@ -202,9 +197,7 @@ ProcessOptions(Context *ctx)
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-Ny", &intArg, &found));
   if (found) {
     if (intArg < 0) {
-      PetscCall(PetscPrintf(
-                PETSC_COMM_WORLD,
-                "Warning: Ignoring negative value for Ny: %d\n", intArg));
+      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Warning: Ignoring negative value for Ny: %d\n", intArg));
     } else {
       ctx->grid.N.y = intArg;
     }
@@ -214,9 +207,7 @@ ProcessOptions(Context *ctx)
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-Nz", &intArg, &found));
   if (found) {
     if (intArg < 0) {
-      PetscCall(PetscPrintf(
-                PETSC_COMM_WORLD,
-                "Warning: Ignoring negative value for Nz: %d\n", intArg));
+      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Warning: Ignoring negative value for Nz: %d\n", intArg));
     } else {
       ctx->grid.N.z = intArg;
     }
@@ -248,9 +239,7 @@ ProcessOptions(Context *ctx)
     ctx->grid.p1.x = 1.0;
   }
   if (ctx->grid.p1.x == ctx->grid.p0.x) {
-      PetscCall(PetscPrintf(
-                PETSC_COMM_WORLD,
-                "Warning: zero-width x dimension\n"));
+      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Warning: zero-width x dimension\n"));
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-y1", &realArg, &found));
   if (found) {
@@ -259,9 +248,7 @@ ProcessOptions(Context *ctx)
     ctx->grid.p1.y = 1.0;
   }
   if (ctx->grid.p1.y == ctx->grid.p0.y) {
-      PetscCall(PetscPrintf(
-                PETSC_COMM_WORLD,
-                "Warning: zero-width y dimension\n"));
+      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Warning: zero-width y dimension\n"));
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-z1", &realArg, &found));
   if (found) {
@@ -270,9 +257,7 @@ ProcessOptions(Context *ctx)
     ctx->grid.p1.z = 1.0;
   }
   if (ctx->grid.p1.z == ctx->grid.p0.z) {
-      PetscCall(PetscPrintf(
-                PETSC_COMM_WORLD,
-                "Warning: zero-width z dimension\n"));
+      PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Warning: zero-width z dimension\n"));
   }
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-Np", &intArg, &found));
   if (found) {
@@ -418,18 +403,12 @@ ProcessOptions(Context *ctx)
   ctx->grid.L.y = ctx->grid.p1.y - ctx->grid.p0.y;
   ctx->grid.L.z = ctx->grid.p1.z - ctx->grid.p0.z;
   // Set species gyrofrequency from q, B0, and m.
-  ctx->electrons.Omega.x = 
-    PetscAbsReal(ctx->electrons.q * ctx->plasma.B0.x / ctx->electrons.m);
-  ctx->electrons.Omega.y = 
-    PetscAbsReal(ctx->electrons.q * ctx->plasma.B0.y / ctx->electrons.m);
-  ctx->electrons.Omega.z = 
-    PetscAbsReal(ctx->electrons.q * ctx->plasma.B0.z / ctx->electrons.m);
-  ctx->ions.Omega.x = 
-    PetscAbsReal(ctx->ions.q * ctx->plasma.B0.x / ctx->ions.m);
-  ctx->ions.Omega.y = 
-    PetscAbsReal(ctx->ions.q * ctx->plasma.B0.y / ctx->ions.m);
-  ctx->ions.Omega.z = 
-    PetscAbsReal(ctx->ions.q * ctx->plasma.B0.z / ctx->ions.m);
+  ctx->electrons.Omega.x = PetscAbsReal(ctx->electrons.q * ctx->plasma.B0.x / ctx->electrons.m);
+  ctx->electrons.Omega.y = PetscAbsReal(ctx->electrons.q * ctx->plasma.B0.y / ctx->electrons.m);
+  ctx->electrons.Omega.z = PetscAbsReal(ctx->electrons.q * ctx->plasma.B0.z / ctx->electrons.m);
+  ctx->ions.Omega.x = PetscAbsReal(ctx->ions.q * ctx->plasma.B0.x / ctx->ions.m);
+  ctx->ions.Omega.y = PetscAbsReal(ctx->ions.q * ctx->plasma.B0.y / ctx->ions.m);
+  ctx->ions.Omega.z = PetscAbsReal(ctx->ions.q * ctx->plasma.B0.z / ctx->ions.m);
   // Set species magnetization from Omega and nu.
   ctx->electrons.kappa.x = ctx->electrons.Omega.x / ctx->electrons.nu;
   ctx->electrons.kappa.y = ctx->electrons.Omega.y / ctx->electrons.nu;
@@ -438,14 +417,8 @@ ProcessOptions(Context *ctx)
   ctx->ions.kappa.y = ctx->ions.Omega.y / ctx->ions.nu;
   ctx->ions.kappa.z = ctx->ions.Omega.z / ctx->ions.nu;
   // Set species temperature from fluid velocities.
-  ctx->electrons.T = (0.5 * ctx->electrons.m / KB)
-    * ( PetscSqr(ctx->electrons.vT.x)
-      + PetscSqr(ctx->electrons.vT.y)
-      + PetscSqr(ctx->electrons.vT.z));
-  ctx->ions.T = (0.5 * ctx->ions.m / KB)
-    * ( PetscSqr(ctx->ions.vT.x)
-      + PetscSqr(ctx->ions.vT.y)
-      + PetscSqr(ctx->ions.vT.z));
+  ctx->electrons.T = (0.5 * ctx->electrons.m / KB) * (PetscSqr(ctx->electrons.vT.x) + PetscSqr(ctx->electrons.vT.y) + PetscSqr(ctx->electrons.vT.z));
+  ctx->ions.T = (0.5 * ctx->ions.m / KB) * (PetscSqr(ctx->ions.vT.x) + PetscSqr(ctx->ions.vT.y) + PetscSqr(ctx->ions.vT.z));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
