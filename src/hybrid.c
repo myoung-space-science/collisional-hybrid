@@ -969,6 +969,8 @@ EchoSetup(Context ctx)
   PetscCall(PetscOptionsView(NULL, ctx.optionsView));
   PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "\nParameter Values\n"));
   PetscCall(PetscViewerASCIIPrintf(ctx.optionsView,   "----------------\n"));
+  PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "Nt = %d\n", ctx.Nt));
+  PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "dt = %f [s]\n", ctx.dt));
   PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "Nx = %d\n", ctx.grid.N.x));
   PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "Ny = %d\n", ctx.grid.N.y));
   PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "Nz = %d\n", ctx.grid.N.z));
