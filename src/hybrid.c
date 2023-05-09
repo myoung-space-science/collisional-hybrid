@@ -677,9 +677,6 @@ Rejection(DistributionFunction density, Context *ctx)
   PRINT_RANKS("[%d] Local # of particles after migration: %d\n", ctx->mpi.rank, np);
   PRINT_WORLD("   Global # of particles after migration: %d\n", Np);
 
-  // Assign the total particle number to the user context.
-  ctx->plasma.Np = Np;
-
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -912,9 +909,6 @@ UniformDistribution(Context *ctx)
   PRINT_RANKS("[%d] Local # of particles after migration: %d\n", ctx->mpi.rank, np);
   PRINT_WORLD("   Global # of particles after migration: %d\n", Np);
 
-  // Assign the total particle number to the user context.
-  ctx->plasma.Np = Np;
-
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -976,9 +970,6 @@ SobolDistribution(Context *ctx)
   NEWLINE;
   PRINT_RANKS("[%d] Local # of particles after migration: %d\n", ctx->mpi.rank, np);
   PRINT_WORLD("   Global # of particles after migration: %d\n", Np);
-
-  // Assign the total particle number to the user context.
-  ctx->plasma.Np = Np;
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
