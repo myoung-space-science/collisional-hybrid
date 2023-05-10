@@ -1028,6 +1028,48 @@ Ran3(long *idum, PetscReal *result)
 }
 
 
+/* Adaptation of gasdev from Numerical Recipes, 2nd edition.
+
+This implementation differs (aside from formatting) in that it stores its result
+in a user-provided variable, rather than return it. The motivation for doing so
+is to allow this function to leverage the PETSc error-checking machinery.
+Furthermore, this implementation, like the implementation in EPPIC, uses the
+ran3 (rather than ran1) numerical recipe to generate uniform deviates.
+*/
+static PetscErrorCode
+GasDev(long *idum, PetscReal *result)
+{
+  static int   iset=0;
+  static float gset;
+  PetscReal    r1, r2;
+  float        fac, rsq, v1, v2;
+
+  PetscFunctionBeginUser;
+
+  if (*idum < 0) {
+    iset = 0;
+  }
+  if (iset == 0) {
+    do {
+      PetscCall(Ran3(idum, &r1));
+      v1 = 2.0*r1 - 1.0;
+      PetscCall(Ran3(idum, &r2));
+      v2 = 2.0*r2 - 1.0;
+      rsq = v1*v1 + v2*v2;
+    } while (rsq >= 1.0 || rsq == 0.0);
+    fac = sqrt(-2.0*log(rsq) / rsq);
+    gset = v1*fac;
+    iset = 1;
+    *result = v2*fac;
+  } else {
+    iset = 0;
+    *result = gset;
+  }
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 static PetscErrorCode
 EchoSetup(Context ctx)
 {
