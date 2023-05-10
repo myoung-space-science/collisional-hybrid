@@ -2456,12 +2456,15 @@ int main(int argc, char **args)
     - See SNES ex63.c::main (~ line 469) for possible structure.
     */
 
-      /* Apply the 3-D Boris mover. */
-      PetscCall(BorisMover(ksp, &ctx));
+    /* --> Apply the 3-D Boris mover. */
+    PetscCall(BorisMover(ksp, &ctx));
 
-      /* Apply collisions. */
+    /* --> Apply collisions. */
 
     /* Update positions: $\frac{d\vec{r}}{dt} = \vec{v}$. */
+
+    /* Update the swarm. */
+    PetscCall(DMSwarmMigrate(ctx.swarm, PETSC_TRUE));
 
     /* Compute density and flux from particle positions. */
 
