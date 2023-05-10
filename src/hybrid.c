@@ -2275,7 +2275,7 @@ BorisMover(KSP ksp, Context *ctx)
   PetscInt    np, ip;
   RealVector  r, *pos, v, *vel;
   PetscReal   x, y, z;
-  PetscReal   E[NDIM];
+  PetscReal   E[NDIM]={0.0, 0.0, 0.0};
   PetscReal   vold[NDIM];
   PetscReal   vminus[NDIM], vprime[NDIM], vplus[NDIM];
   PetscReal   vminus_cross_t[NDIM], vprime_cross_s[NDIM];
@@ -2338,7 +2338,7 @@ BorisMover(KSP ksp, Context *ctx)
     vold[1] = v.y;
     vold[2] = v.z;
     for (dim=0; dim<NDIM; dim++) {
-      vminus[0] = vold[dim] + Escale[dim];
+      vminus[0] = vold[dim] + Escale[dim]*E[dim];
     }
     /* Compute \vec{v}^- \times \vec{t}. */
     PetscCall(CrossProduct(vminus, t, &vminus_cross_t));
@@ -2353,9 +2353,9 @@ BorisMover(KSP ksp, Context *ctx)
       vplus[dim] = vminus[dim] + vprime_cross_s[dim];
     }
     /* Assign new particle velocities. */
-    v.x = vplus[0] + Escale[0];
-    v.y = vplus[1] + Escale[1];
-    v.z = vplus[2] + Escale[2];
+    v.x = vplus[0] + Escale[0]*E[0];
+    v.y = vplus[1] + Escale[1]*E[1];
+    v.z = vplus[2] + Escale[2]*E[2];
     vel[ip] = v;
   }
 
