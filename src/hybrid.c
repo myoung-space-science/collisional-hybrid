@@ -996,8 +996,8 @@ Ran3(long *idum, PetscReal *result)
       mk = mj-mk;
       if (mk < RAN3_MZ) {
         mk += RAN3_MBIG;
-        mj = ma[ii];
       }
+      mj = ma[ii];
       for (k=1; k<=4; k++) {
         for (i=1; i<=55; i++) {
           ma[i] -= ma[1+(i+30) % 55];
@@ -1014,7 +1014,7 @@ Ran3(long *idum, PetscReal *result)
       inext = 1;
     }
     if (++inextp == 56) {
-      inextp == 1;
+      inextp = 1;
     }
     mj = ma[inext]-ma[inextp];
     if (mj < RAN3_MZ) {
