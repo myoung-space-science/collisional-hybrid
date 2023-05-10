@@ -2159,19 +2159,26 @@ DifferenceVector(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid 
 
   PetscFunctionBeginUser;
 
+
+  // NOTE: This requires either a 2-point stencil or prescribed values beyond
+  // the current 1-point stencil.
+
   // Compute the x-dimension neighbors and corresponding weights.
   ixl = (PetscInt)x0;
   ixh = ixl+1;
+  if (ixh > Nx-1) {ixh = 0;} // [DEV] assumes periodic BC
   wxh = x0 - (PetscReal)ixl;
   wxl = 1.0 - wxh;
   // Compute the y-dimension neighbors and corresponding weights.
   iyl = (PetscInt)y0;
   iyh = iyl+1;
+  if (iyh > Ny-1) {iyh = 0;} // [DEV] assumes periodic BC
   wyh = y0 - (PetscReal)iyl;
   wyl = 1.0 - wyh;
   // Compute the z-dimension neighbors and corresponding weights.
   izl = (PetscInt)z0;
   izh = izl+1;
+  if (izh > Nz-1) {izh = 0;} // [DEV] assumes periodic BC
   wzh = z0 - (PetscReal)izl;
   wzl = 1.0 - wzh;
   // Compute the central difference in x at each grid point.
