@@ -962,6 +962,72 @@ InitializeParticles(Context *ctx)
 }
 
 
+#define RAN3_MBIG 1000000000
+#define RAN3_MSEED 161803398
+#define RAN3_MZ 0
+#define RAN3_FAC (1.0 / RAN3_MBIG)
+
+/* Adaptation of ran3 from Numerical Recipes, 2nd edition.
+
+This implementation differs (aside from formatting) in that it stores its result
+in a user-provided variable, rather than return it. The motivation for doing so
+is to allow this function to leverage the PETSc error-checking machinery.
+*/
+static PetscErrorCode
+Ran3(long *idum, PetscReal *result)
+{
+  static int  inext, inextp;
+  static long ma[56];
+  static int  iff=0;
+  long        mj, mk;
+  int         i, ii, k;
+
+  PetscFunctionBeginUser;
+
+  if (*idum < 0 || iff == 0) {
+    iff = 1;
+    mj = labs(RAN3_MSEED - labs(*idum));
+    mj %= RAN3_MBIG;
+    ma[55] = mj;
+    mk = 1;
+    for (i=1; i<=54; i++) {
+      ii = (21*i) % 55;
+      ma[ii] = mk;
+      mk = mj-mk;
+      if (mk < RAN3_MZ) {
+        mk += RAN3_MBIG;
+        mj = ma[ii];
+      }
+      for (k=1; k<=4; k++) {
+        for (i=1; i<=55; i++) {
+          ma[i] -= ma[1+(i+30) % 55];
+          if (ma[i] < RAN3_MZ) {
+            ma[i] += RAN3_MBIG;
+          }
+        }
+      }
+      inext = 0;
+      inextp = 31;
+      *idum = 1;
+    }
+    if (++inext == 56) {
+      inext = 1;
+    }
+    if (++inextp == 56) {
+      inextp == 1;
+    }
+    mj = ma[inext]-ma[inextp];
+    if (mj < RAN3_MZ) {
+      mj += RAN3_MBIG;
+      ma[inext] = mj;
+      *result = mj*RAN3_FAC;
+    }
+  }
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 static PetscErrorCode
 EchoSetup(Context ctx)
 {
