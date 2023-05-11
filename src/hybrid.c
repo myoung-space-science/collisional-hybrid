@@ -862,13 +862,12 @@ Rejection(DistributionFunction density, Context *ctx)
 
 
 static PetscErrorCode
-InitializeParticles(Context *ctx)
+InitializePositions(Context *ctx)
 {
   DM          swarm=ctx->swarm;
-  PetscInt    np, Np;
+  PetscInt    np, Np, ip;
   PetscScalar *coords;
-  RealVector  *pos, *vel;
-  PetscInt    ip;
+  RealVector  *pos;
 
   PetscFunctionBeginUser;
   ECHO_FUNCTION_ENTER;
@@ -928,24 +927,15 @@ InitializeParticles(Context *ctx)
   // Get an array representation of the particle positions.
   PetscCall(DMSwarmGetField(swarm, "position", NULL, NULL, (void **)&pos));
 
-  // Get an array representation of the particle velocities.
-  PetscCall(DMSwarmGetField(swarm, "velocity", NULL, NULL, (void **)&vel));
-
   // Loop over particles and assign parameter values.
   for (ip=0; ip<np; ip++) {
     pos[ip].x = coords[ip*NDIM + 0];
     pos[ip].y = coords[ip*NDIM + 1];
     pos[ip].z = coords[ip*NDIM + 2];
-    vel[ip].x = ctx->ions.v0.x;
-    vel[ip].y = ctx->ions.v0.y;
-    vel[ip].z = ctx->ions.v0.z;
   }
 
   // Restore the particle-positions array.
   PetscCall(DMSwarmRestoreField(swarm, "position", NULL, NULL, (void **)&pos));
-
-  // Restore the particle-velocities array.
-  PetscCall(DMSwarmRestoreField(swarm, "velocity", NULL, NULL, (void **)&vel));
 
   // Restore the swarm-coordinates array.
   PetscCall(DMSwarmRestoreField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
@@ -1066,6 +1056,49 @@ GasDev(long *idum, PetscReal *result)
     *result = gset;
   }
 
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+static PetscErrorCode
+InitializeVelocities(Context *ctx)
+{
+  DM          swarm=ctx->swarm;
+  PetscInt    np, ip;
+  RealVector  *vel;
+  PetscReal   dvx, dvy, dvz;
+  PetscInt    seed=-ctx->mpi.rank*12345;
+  PetscRandom  random;
+
+  PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
+
+  // Get the number of local particles.
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+
+  // Get an array representation of the particle velocities.
+  PetscCall(DMSwarmGetField(swarm, "velocity", NULL, NULL, (void **)&vel));
+
+  // Set up a random-number generator.
+  PetscCall(PetscRandomCreate(PETSC_COMM_WORLD, &random));
+  PetscCall(PetscRandomSetSeed(random, seed));
+  PetscCall(PetscRandomSeed(random));
+  PetscCall(PetscRandomSetInterval(random, -1.0, +1.0));
+
+  // Loop over particles and assign parameter values.
+  for (ip=0; ip<np; ip++) {
+    PetscCall(PetscRandomGetValue(random, &dvx));
+    PetscCall(PetscRandomGetValue(random, &dvy));
+    PetscCall(PetscRandomGetValue(random, &dvz));
+    vel[ip].x = ctx->ions.vT.x*dvx + ctx->ions.v0.x;
+    vel[ip].y = ctx->ions.vT.y*dvy + ctx->ions.v0.y;
+    vel[ip].z = ctx->ions.vT.z*dvz + ctx->ions.v0.z;
+  }
+
+  // Restore the particle-velocities array.
+  PetscCall(DMSwarmRestoreField(swarm, "velocity", NULL, NULL, (void **)&vel));
+
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -2521,8 +2554,11 @@ int main(int argc, char **args)
   /* Set up particle swarm. */
   PetscCall(InitializeSwarmDM(grid, &ctx));
 
-  /* Set initial particle positions and velocities. */
-  PetscCall(InitializeParticles(&ctx));
+  /* Set initial particle positions. */
+  PetscCall(InitializePositions(&ctx));
+
+  /* Set initial particle velocities. */
+  PetscCall(InitializeVelocities(&ctx));
 
   /* Echo the initial state. */
   PetscCall(PetscViewerASCIIOpen(PETSC_COMM_WORLD, "options.txt", &ctx.optionsView));
