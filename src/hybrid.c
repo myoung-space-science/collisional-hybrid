@@ -2567,6 +2567,17 @@ BorisMover(KSP ksp, Context *ctx)
 
 
 static PetscErrorCode
+CollideParticles(Context *ctx)
+{
+  PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
+
+  ECHO_FUNCTION_EXIT;
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+static PetscErrorCode
 UpdateVelocities(KSP ksp, Context *ctx)
 {
   PetscFunctionBeginUser;
@@ -2576,7 +2587,7 @@ UpdateVelocities(KSP ksp, Context *ctx)
   PetscCall(BorisMover(ksp, ctx));
 
   // Apply the appropriate collision algorithm.
-
+  PetscCall(CollideParticles(ctx));
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
