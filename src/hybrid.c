@@ -2583,6 +2583,9 @@ int main(int argc, char **args)
   DM          grid, solve;
   KSP         ksp;
   Vec         phi;
+  PetscInt    it;
+  char        itstr[256]="", itfmt[5];
+  PetscInt    itwidth;
 
   PetscFunctionBeginUser;
 
@@ -2645,12 +2648,22 @@ int main(int argc, char **args)
   PetscCall(VecViewComposite(grid, ctx.vlasov, ctx.gridView));
   PetscCall(VecView(phi, ctx.gridView));
 
+  /* Create a string to display time step with the appropriate width. */
+  PetscCall(PetscStrcat(itstr, "Time step "));
+  itwidth = 1+PetscLog10Real(ctx.Nt);
+  sprintf(itfmt, "%%0%dd", itwidth);
+  PetscCall(PetscStrcat(itstr, itfmt));
+  PetscCall(PetscStrcat(itstr, "\n"));
+
+  PRINT_WORLD("\n*** Main time-step loop ***\n\n");
   /* Begin main time-step loop. */
   /* Notes
   - See KSP ex70.c::SolveTimeDepStokes (~ line 1170) for possible structure of
     time-step loop.
   - This could use a second-order leapfrog scheme similar to EPPIC.
   */
+  for (it=0; it<ctx.Nt; it++) {
+    PRINT_WORLD(itstr, it);
 
     /* Update velocities */
     /* Notes
@@ -2675,6 +2688,8 @@ int main(int argc, char **args)
     /* Apply boundary conditions. */
 
     /* Output current time step. */
+
+  }
 
   /* Free memory. */
   PetscCall(PetscViewerDestroy(&ctx.optionsView));
