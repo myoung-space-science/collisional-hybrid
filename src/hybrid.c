@@ -1203,6 +1203,9 @@ EchoSetup(Context ctx)
   PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "kappa_ix = %g\n", ctx.ions.kappa.x));
   PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "kappa_iy = %g\n", ctx.ions.kappa.y));
   PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "kappa_iz = %g\n", ctx.ions.kappa.z));
+  PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "Tn = %f\n", ctx.neutrals.T));
+  PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "vnT = %f\n", ctx.neutrals.vT));
+  PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "vn0 = %f\n", ctx.neutrals.v0));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
