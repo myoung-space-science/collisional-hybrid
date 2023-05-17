@@ -2522,7 +2522,7 @@ BorisMover(KSP ksp, Context *ctx)
     y = r.y / dy;
     z = r.z / dz;
     /* Compute the electric field due to this particle: \vec{E} = -\nabla\phi. */
-    PetscCall(DifferenceVector(phi, x, y, z, ctx->grid, &E));
+    PetscCall(DifferenceVector(phi, x, y, z, ctx->grid, E));
     /* Compute \vec{v}^-. */
     vold[0] = v.x;
     vold[1] = v.y;
@@ -2531,13 +2531,13 @@ BorisMover(KSP ksp, Context *ctx)
       vminus[0] = vold[dim] + Escale[dim]*E[dim];
     }
     /* Compute \vec{v}^- \times \vec{t}. */
-    PetscCall(CrossProduct(vminus, t, &vminus_cross_t));
+    PetscCall(CrossProduct(vminus, t, vminus_cross_t));
     /* Compute \vec{v}^\prime = \vec{v}^- + \vec{v}^- \times \vec{t}. */
     for (dim=0; dim<NDIM; dim++) {
       vprime[dim] = vminus[dim] + vminus_cross_t[dim];
     }
     /* Compute \vec{v}^\prime \times \vec{s}. */
-    PetscCall(CrossProduct(vprime, s, &vprime_cross_s));
+    PetscCall(CrossProduct(vprime, s, vprime_cross_s));
     /* Compute \vec{v}^+ = \vec{v}^- + \vec{v}^\prime \times \vec{s}. */
     for (dim=0; dim<NDIM; dim++) {
       vplus[dim] = vminus[dim] + vprime_cross_s[dim];
