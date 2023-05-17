@@ -2295,7 +2295,7 @@ DifferenceVector(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid 
 {
   PetscInt    Nx=grid.N.x, Ny=grid.N.y, Nz=grid.N.z;
   PetscInt    ixl, ixh, iyl, iyh, izl, izh;
-  PetscReal   wxl, wxh, wyl, wyh, wzl, wzh;
+  PetscReal   wxh, wyh, wzh;
   PetscReal   hhh, lhh, hlh, llh, hhl, lhl, hll, lll;
   PetscReal   whh, whl, wlh, wll, Ewh, Ewl;
 
@@ -2309,17 +2309,14 @@ DifferenceVector(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid 
   ixl = (PetscInt)x0;
   ixh = ixl+1;
   wxh = x0 - (PetscReal)ixl;
-  wxl = 1.0 - wxh;
   // Compute the y-dimension neighbors and corresponding weights.
   iyl = (PetscInt)y0;
   iyh = iyl+1;
   wyh = y0 - (PetscReal)iyl;
-  wyl = 1.0 - wyh;
   // Compute the z-dimension neighbors and corresponding weights.
   izl = (PetscInt)z0;
   izh = izl+1;
   wzh = z0 - (PetscReal)izl;
-  wzl = 1.0 - wzh;
   // Compute the central difference in x at each grid point.
   if (ixl >= 0) {
     // 2nd-order central difference at ixl
