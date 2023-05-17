@@ -82,6 +82,7 @@ typedef struct {
   PetscReal x; // x component
   PetscReal y; // y component
   PetscReal z; // z component
+  PetscReal r; // magnitude
 } RealVector;
 
 typedef struct {
