@@ -105,10 +105,15 @@ typedef struct {
 } Charged;
 
 typedef struct {
+  PetscReal v0; // drift velocity
+  PetscReal vT; // thermal velocity
+  PetscReal T;  // temperature
+} Neutral;
+
+typedef struct {
   RealVector B0; // constant magnetic-field amplitude
   RealVector E0; // constant electric-field amplitude
   PetscInt   Np; // number of charged particles
-  PetscReal  Tn; // temperature of neutral species
 } Plasma;
 
 typedef struct {
@@ -120,6 +125,7 @@ typedef struct {
   Grid        grid;         // grid information
   Charged     electrons;    // electron parameter values
   Charged     ions;         // ion parameter values
+  Neutral     neutrals;     // neutral-particle parameter values
   Plasma      plasma;       // plasma information
   MPIContext  mpi;          // MPI information
   Vec         vlasov;       // full vector of all Vlasov quantities
@@ -269,9 +275,15 @@ ProcessOptions(Context *ctx)
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-Tn", &realArg, &found));
   if (found) {
-    ctx->plasma.Tn = realArg;
+    ctx->neutrals.T = realArg;
   } else {
-    ctx->plasma.Tn = -1.0;
+    ctx->neutrals.T = -1.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vn0", &realArg, &found));
+  if (found) {
+    ctx->neutrals.v0 = realArg;
+  } else {
+    ctx->neutrals.v0 = 0.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-qi", &realArg, &found));
   if (found) {
@@ -441,10 +453,13 @@ ProcessOptions(Context *ctx)
   ctx->electrons.T = (0.5 * ctx->electrons.m / KB) * (PetscSqr(ctx->electrons.vT.x) + PetscSqr(ctx->electrons.vT.y) + PetscSqr(ctx->electrons.vT.z));
   ctx->ions.T = (0.5 * ctx->ions.m / KB) * (PetscSqr(ctx->ions.vT.x) + PetscSqr(ctx->ions.vT.y) + PetscSqr(ctx->ions.vT.z));
   // Set default neutral temperature based on charge species.
-  if (ctx->plasma.Tn == -1.0) {
-    ctx->plasma.Tn = ctx->ions.T;
+  if (ctx->neutrals.T == -1.0) {
+    ctx->neutrals.T = ctx->ions.T;
     PRINT_WORLD("Warning: Setting neutral temperature equal to ion temperature (%.1f K)\n", ctx->ions.T);
   }
+  // Set neutral thermal velocity from temperature.
+  ctx->neutrals.vT = PetscSqrtReal((2.0 / 3.0) * KB * ctx->neutrals.T);
+
   // TODO: Should we set default collision frequencies based on an analytic
   // formulation (e.g., from Schunk & Nagy)?
 
