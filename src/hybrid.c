@@ -108,6 +108,7 @@ typedef struct {
   RealVector B0; // constant magnetic-field amplitude
   RealVector E0; // constant electric-field amplitude
   PetscInt   Np; // number of charged particles
+  PetscReal  Tn; // temperature of neutral species
 } Plasma;
 
 typedef struct {
@@ -265,6 +266,12 @@ ProcessOptions(Context *ctx)
     ctx->plasma.Np = intArg;
   } else {
     ctx->plasma.Np = -1;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Tn", &realArg, &found));
+  if (found) {
+    ctx->plasma.Tn = realArg;
+  } else {
+    ctx->plasma.Tn = -1.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-qi", &realArg, &found));
   if (found) {
@@ -433,6 +440,13 @@ ProcessOptions(Context *ctx)
   // Set species temperature from fluid velocities.
   ctx->electrons.T = (0.5 * ctx->electrons.m / KB) * (PetscSqr(ctx->electrons.vT.x) + PetscSqr(ctx->electrons.vT.y) + PetscSqr(ctx->electrons.vT.z));
   ctx->ions.T = (0.5 * ctx->ions.m / KB) * (PetscSqr(ctx->ions.vT.x) + PetscSqr(ctx->ions.vT.y) + PetscSqr(ctx->ions.vT.z));
+  // Set default neutral temperature based on charge species.
+  if (ctx->plasma.Tn == -1.0) {
+    ctx->plasma.Tn = ctx->ions.T;
+    PRINT_WORLD("Warning: Setting neutral temperature equal to ion temperature (%.1f K)\n", ctx->ions.T);
+  }
+  // TODO: Should we set default collision frequencies based on an analytic
+  // formulation (e.g., from Schunk & Nagy)?
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
