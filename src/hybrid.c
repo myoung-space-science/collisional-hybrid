@@ -2292,8 +2292,9 @@ ViewReducedLHS(PetscInt Nx, PetscInt Ny, PetscInt Nz, void *ctx)
 /* Compute a vector of central differences from F.
 
 This function was designed as the first step in computing the gradient of the
-scalar function F(x, y, z) at (x0, y0, z0). It assumes that F contains ghost
-nodes.
+scalar function F(x, y, z) at (x0, y0, z0). It computes the numerator of each
+finite-difference term using 2nd-order centered, forward, and backward
+approximations. It assumes that F contains ghost nodes.
 */
 static PetscErrorCode
 DifferenceVector(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid grid, PetscReal f[NDIM])
@@ -2313,30 +2314,47 @@ DifferenceVector(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid 
   // Compute the x-dimension neighbors and corresponding weights.
   ixl = (PetscInt)x0;
   ixh = ixl+1;
-  if (ixh > Nx-1) {ixh = 0;} // [DEV] assumes periodic BC
   wxh = x0 - (PetscReal)ixl;
   wxl = 1.0 - wxh;
   // Compute the y-dimension neighbors and corresponding weights.
   iyl = (PetscInt)y0;
   iyh = iyl+1;
-  if (iyh > Ny-1) {iyh = 0;} // [DEV] assumes periodic BC
   wyh = y0 - (PetscReal)iyl;
   wyl = 1.0 - wyh;
   // Compute the z-dimension neighbors and corresponding weights.
   izl = (PetscInt)z0;
   izh = izl+1;
-  if (izh > Nz-1) {izh = 0;} // [DEV] assumes periodic BC
   wzh = z0 - (PetscReal)izl;
   wzl = 1.0 - wzh;
   // Compute the central difference in x at each grid point.
-  hhh = F[izh][iyh][ixh+1] - F[izh][iyh][ixh-1];
-  lhh = F[izl][iyh][ixh+1] - F[izl][iyh][ixh-1];
-  hlh = F[izh][iyl][ixh+1] - F[izh][iyl][ixh-1];
-  llh = F[izl][iyl][ixh+1] - F[izl][iyl][ixh-1];
-  hhl = F[izh][iyh][ixl+1] - F[izh][iyh][ixl-1];
-  lhl = F[izl][iyh][ixl+1] - F[izl][iyh][ixl-1];
-  hll = F[izh][iyl][ixl+1] - F[izh][iyl][ixl-1];
-  lll = F[izl][iyl][ixl+1] - F[izl][iyl][ixl-1];
+  PRINT_WORLD("x: (%03d <= %5.3f <= %03d), y: (%03d <= %5.3f <= %03d), z: (%03d <= %5.3f <= %03d)\n", ixl, x0, ixh, iyl, y0, iyh, izl, z0, izh);
+  PRINT_WORLD("Computing dx\n");
+  if (ixl >= 0) {
+    // 2nd-order central difference at ixl
+    hhl = F[izh][iyh][ixl+1] - F[izh][iyh][ixl-1];
+    lhl = F[izl][iyh][ixl+1] - F[izl][iyh][ixl-1];
+    hll = F[izh][iyl][ixl+1] - F[izh][iyl][ixl-1];
+    lll = F[izl][iyl][ixl+1] - F[izl][iyl][ixl-1];
+  } else {
+    // 2nd-order forward difference at ixl
+    hhl = -1.0*F[izh][iyh][ixl+2] + 4.0*F[izh][iyh][ixl+1] - 3.0*F[izh][iyh][ixl];
+    lhl = -1.0*F[izl][iyh][ixl+2] + 4.0*F[izl][iyh][ixl+1] - 3.0*F[izl][iyh][ixl];
+    hll = -1.0*F[izh][iyl][ixl+2] + 4.0*F[izh][iyl][ixl+1] - 3.0*F[izh][iyl][ixl];
+    lll = -1.0*F[izl][iyl][ixl+2] + 4.0*F[izl][iyl][ixl+1] - 3.0*F[izl][iyl][ixl];
+  }
+  if (ixh < Nx) {
+    // 2nd-order central difference at ixh
+    hhh = F[izh][iyh][ixh+1] - F[izh][iyh][ixh-1];
+    lhh = F[izl][iyh][ixh+1] - F[izl][iyh][ixh-1];
+    hlh = F[izh][iyl][ixh+1] - F[izh][iyl][ixh-1];
+    llh = F[izl][iyl][ixh+1] - F[izl][iyl][ixh-1];
+  } else {
+    // 2nd-order backward difference at ixh
+    hhh = +3.0*F[izh][iyh][ixh] - 4.0*F[izh][iyh][ixh-1] + 1.0*F[izh][iyh][ixh-2];
+    lhh = +3.0*F[izl][iyh][ixh] - 4.0*F[izl][iyh][ixh-1] + 1.0*F[izl][iyh][ixh-2];
+    hlh = +3.0*F[izh][iyl][ixh] - 4.0*F[izh][iyl][ixh-1] + 1.0*F[izh][iyl][ixh-2];
+    llh = +3.0*F[izl][iyl][ixh] - 4.0*F[izl][iyl][ixh-1] + 1.0*F[izl][iyl][ixh-2];
+  }
   whh = hlh + wyh*(hhh - hlh);
   whl = hll + wyh*(hhl - hll);
   wlh = llh + wyh*(lhh - llh);
@@ -2345,14 +2363,33 @@ DifferenceVector(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid 
   Ewl = wll + wxh*(whl - wll);
   f[0] = Ewl + wzh*(Ewh - Ewh);
   // Compute the central difference in y at each grid point.
-  hhh = F[izh][iyh+1][ixh] - F[izh][iyh-1][ixh];
-  lhh = F[izl][iyh+1][ixh] - F[izl][iyh-1][ixh];
-  hlh = F[izh][iyl+1][ixh] - F[izh][iyl-1][ixh];
-  llh = F[izl][iyl+1][ixh] - F[izl][iyl-1][ixh];
-  hhl = F[izh][iyh+1][ixl] - F[izh][iyh-1][ixl];
-  lhl = F[izl][iyh+1][ixl] - F[izl][iyh-1][ixl];
-  hll = F[izh][iyl+1][ixl] - F[izh][iyl-1][ixl];
-  lll = F[izl][iyl+1][ixl] - F[izl][iyl-1][ixl];
+  PRINT_WORLD("Computing dy\n");
+  if (iyl >= 0) {
+    // 2nd-order central difference at iyl
+    hlh = F[izh][iyl+1][ixh] - F[izh][iyl-1][ixh];
+    llh = F[izl][iyl+1][ixh] - F[izl][iyl-1][ixh];
+    hll = F[izh][iyl+1][ixl] - F[izh][iyl-1][ixl];
+    lll = F[izl][iyl+1][ixl] - F[izl][iyl-1][ixl];
+  } else {
+    // 2nd-order forward difference at iyl
+    hlh = -1.0*F[izh][iyl+2][ixh] + 4.0*F[izh][iyl+1][ixh] - 3.0*F[izh][iyl][ixh];
+    llh = -1.0*F[izl][iyl+2][ixh] + 4.0*F[izl][iyl+1][ixh] - 3.0*F[izl][iyl][ixh];
+    hll = -1.0*F[izh][iyl+2][ixl] + 4.0*F[izh][iyl+1][ixl] - 3.0*F[izh][iyl][ixl];
+    lll = -1.0*F[izl][iyl+2][ixl] + 4.0*F[izl][iyl+1][ixl] - 3.0*F[izl][iyl][ixl];
+  }
+  if (iyh < Ny) {
+    // 2nd-order central difference at iyh
+    hhh = F[izh][iyh+1][ixh] - F[izh][iyh-1][ixh];
+    lhh = F[izl][iyh+1][ixh] - F[izl][iyh-1][ixh];
+    hhl = F[izh][iyh+1][ixl] - F[izh][iyh-1][ixl];
+    lhl = F[izl][iyh+1][ixl] - F[izl][iyh-1][ixl];
+  } else {
+    // 2nd-order backward difference at iyh
+    hhh = +3.0*F[izh][iyh][ixh] - 4.0*F[izh][iyh-1][ixh] + 1.0*F[izh][iyh-2][ixh];
+    lhh = +3.0*F[izl][iyh][ixh] - 4.0*F[izl][iyh-1][ixh] + 1.0*F[izl][iyh-2][ixh];
+    hhl = +3.0*F[izh][iyh][ixl] - 4.0*F[izh][iyh-1][ixl] + 1.0*F[izh][iyh-2][ixl];
+    lhl = +3.0*F[izl][iyh][ixl] - 4.0*F[izl][iyh-1][ixl] + 1.0*F[izl][iyh-2][ixl];
+  }
   whh = hlh + wyh*(hhh - hlh);
   whl = hll + wyh*(hhl - hll);
   wlh = llh + wyh*(lhh - llh);
@@ -2361,14 +2398,33 @@ DifferenceVector(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid 
   Ewl = wll + wxh*(whl - wll);
   f[1] = Ewl + wzh*(Ewh - Ewh);
   // Compute the central difference in z at each grid point.
-  hhh = F[izh+1][iyh][ixh] - F[izh-1][iyh][ixh];
-  lhh = F[izl+1][iyh][ixh] - F[izl-1][iyh][ixh];
-  hlh = F[izh+1][iyl][ixh] - F[izh-1][iyl][ixh];
-  llh = F[izl+1][iyl][ixh] - F[izl-1][iyl][ixh];
-  hhl = F[izh+1][iyh][ixl] - F[izh-1][iyh][ixl];
-  lhl = F[izl+1][iyh][ixl] - F[izl-1][iyh][ixl];
-  hll = F[izh+1][iyl][ixl] - F[izh-1][iyl][ixl];
-  lll = F[izl+1][iyl][ixl] - F[izl-1][iyl][ixl];
+  PRINT_WORLD("Computing dz\n");
+  if (izl >= 0) {
+    // 2nd-order central difference at izl
+    lhh = F[izl+1][iyh][ixh] - F[izl-1][iyh][ixh];
+    llh = F[izl+1][iyl][ixh] - F[izl-1][iyl][ixh];
+    lhl = F[izl+1][iyh][ixl] - F[izl-1][iyh][ixl];
+    lll = F[izl+1][iyl][ixl] - F[izl-1][iyl][ixl];
+  } else {
+    // 2nd-order forward difference at izl
+    lhh = -1.0*F[izl+2][iyh][ixh] + 4.0*F[izl+1][iyh][ixh] - 3.0*F[izl][iyh][ixh];
+    llh = -1.0*F[izl+2][iyl][ixh] + 4.0*F[izl+1][iyl][ixh] - 3.0*F[izl][iyl][ixh];
+    lhl = -1.0*F[izl+2][iyh][ixl] + 4.0*F[izl+1][iyh][ixl] - 3.0*F[izl][iyh][ixl];
+    lll = -1.0*F[izl+2][iyl][ixl] + 4.0*F[izl+1][iyl][ixl] - 3.0*F[izl][iyl][ixl];
+  }
+  if (izh < Nz) {
+    // 2nd-order central difference at izh
+    hhh = F[izh+1][iyh][ixh] - F[izh-1][iyh][ixh];
+    hlh = F[izh+1][iyl][ixh] - F[izh-1][iyl][ixh];
+    hhl = F[izh+1][iyh][ixl] - F[izh-1][iyh][ixl];
+    hll = F[izh+1][iyl][ixl] - F[izh-1][iyl][ixl];
+  } else {
+    // 2nd-order backward difference at izh
+    hhh = +3.0*F[izh][iyh][ixh] - 4.0*F[izh-1][iyh][ixh] + 1.0*F[izh-2][iyh][ixh];
+    hlh = +3.0*F[izh][iyl][ixh] - 4.0*F[izh-1][iyl][ixh] + 1.0*F[izh-2][iyl][ixh];
+    hhl = +3.0*F[izh][iyh][ixl] - 4.0*F[izh-1][iyh][ixl] + 1.0*F[izh-2][iyh][ixl];
+    hll = +3.0*F[izh][iyl][ixl] - 4.0*F[izh-1][iyl][ixl] + 1.0*F[izh-2][iyl][ixl];
+  }
   whh = hlh + wyh*(hhh - hlh);
   whl = hll + wyh*(hhl - hll);
   wlh = llh + wyh*(lhh - llh);
@@ -2444,8 +2500,8 @@ BorisMover(KSP ksp, Context *ctx)
 
   /* Compute the electric-field scale factors.
 
-  These account for the species constants as well as the central-difference
-  gradient scale factors.
+  These account for the species constants as well as the 2nd-order
+  finite-difference gradient scale factors.
   */
   for (dim=0; dim<NDIM; dim++) {
     Escale[dim] = -0.5 * h[dim] * tscale;
