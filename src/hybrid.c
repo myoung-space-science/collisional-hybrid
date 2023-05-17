@@ -2566,6 +2566,23 @@ BorisMover(KSP ksp, Context *ctx)
 }
 
 
+static PetscErrorCode
+UpdateVelocities(KSP ksp, Context *ctx)
+{
+  PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
+
+  // Apply the Boris mover to integrate dv/dt = E + vxB.
+  PetscCall(BorisMover(ksp, ctx));
+
+  // Apply the appropriate collision algorithm.
+
+
+  ECHO_FUNCTION_EXIT;
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 int main(int argc, char **args)
 {
   MPIContext  mpi;
@@ -2657,15 +2674,7 @@ int main(int argc, char **args)
     PRINT_WORLD(itstr, it);
 
     /* Update velocities */
-    /* Notes
-    - $\frac{d\vec{v}}{dt} = \frac{e\vec{E}}{m_i}$.
-    - See SNES ex63.c::main (~ line 469) for possible structure.
-    */
-
-    /* --> Apply the 3-D Boris mover. */
-    PetscCall(BorisMover(ksp, &ctx));
-
-    /* --> Apply collisions. */
+    PetscCall(UpdateVelocities(ksp, &ctx));
 
     /* Update positions: $\frac{d\vec{r}}{dt} = \vec{v}$. */
 
