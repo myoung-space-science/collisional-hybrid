@@ -102,7 +102,7 @@ typedef struct {
   RealVector vT;    // thermal velocity
   PetscReal  gamma; // thermal coefficient
   PetscReal  T;     // temperature
-} Species;
+} Charged;
 
 typedef struct {
   RealVector B0; // constant magnetic-field amplitude
@@ -118,8 +118,8 @@ typedef struct {
 
 typedef struct {
   Grid        grid;         // grid information
-  Species     electrons;    // electron parameter values
-  Species     ions;         // ion parameter values
+  Charged     electrons;    // electron parameter values
+  Charged     ions;         // ion parameter values
   Plasma      plasma;       // plasma information
   MPIContext  mpi;          // MPI information
   Vec         vlasov;       // full vector of all Vlasov quantities
