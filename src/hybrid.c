@@ -457,9 +457,14 @@ ProcessOptions(Context *ctx)
   ctx->ions.kappa.x = ctx->ions.Omega.x / ctx->ions.nu;
   ctx->ions.kappa.y = ctx->ions.Omega.y / ctx->ions.nu;
   ctx->ions.kappa.z = ctx->ions.Omega.z / ctx->ions.nu;
+  // Compute velocity magnitudes.
+  ctx->electrons.vT.r = PetscSqrtReal(PetscSqr(ctx->electrons.vT.x) + PetscSqr(ctx->electrons.vT.y) + PetscSqr(ctx->electrons.vT.z));
+  ctx->ions.vT.r = PetscSqrtReal(PetscSqr(ctx->ions.vT.x) + PetscSqr(ctx->ions.vT.y) + PetscSqr(ctx->ions.vT.z));
+  ctx->electrons.v0.r = PetscSqrtReal(PetscSqr(ctx->electrons.v0.x) + PetscSqr(ctx->electrons.v0.y) + PetscSqr(ctx->electrons.v0.z));
+  ctx->ions.v0.r = PetscSqrtReal(PetscSqr(ctx->ions.v0.x) + PetscSqr(ctx->ions.v0.y) + PetscSqr(ctx->ions.v0.z));
   // Set species temperature from fluid velocities.
-  ctx->electrons.T = (0.5 * ctx->electrons.m / KB) * (PetscSqr(ctx->electrons.vT.x) + PetscSqr(ctx->electrons.vT.y) + PetscSqr(ctx->electrons.vT.z));
-  ctx->ions.T = (0.5 * ctx->ions.m / KB) * (PetscSqr(ctx->ions.vT.x) + PetscSqr(ctx->ions.vT.y) + PetscSqr(ctx->ions.vT.z));
+  ctx->electrons.T = (0.5 * ctx->electrons.m / KB) * (PetscSqr(ctx->electrons.vT.r));
+  ctx->ions.T = (0.5 * ctx->ions.m / KB) * (PetscSqr(ctx->ions.vT.r));
   // Set default neutral temperature based on charge species.
   if (ctx->neutrals.T == -1.0) {
     ctx->neutrals.T = ctx->ions.T;
