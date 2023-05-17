@@ -2327,8 +2327,6 @@ DifferenceVector(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid 
   wzh = z0 - (PetscReal)izl;
   wzl = 1.0 - wzh;
   // Compute the central difference in x at each grid point.
-  PRINT_WORLD("x: (%03d <= %5.3f <= %03d), y: (%03d <= %5.3f <= %03d), z: (%03d <= %5.3f <= %03d)\n", ixl, x0, ixh, iyl, y0, iyh, izl, z0, izh);
-  PRINT_WORLD("Computing dx\n");
   if (ixl >= 0) {
     // 2nd-order central difference at ixl
     hhl = F[izh][iyh][ixl+1] - F[izh][iyh][ixl-1];
@@ -2363,7 +2361,6 @@ DifferenceVector(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid 
   Ewl = wll + wxh*(whl - wll);
   f[0] = Ewl + wzh*(Ewh - Ewh);
   // Compute the central difference in y at each grid point.
-  PRINT_WORLD("Computing dy\n");
   if (iyl >= 0) {
     // 2nd-order central difference at iyl
     hlh = F[izh][iyl+1][ixh] - F[izh][iyl-1][ixh];
@@ -2398,7 +2395,6 @@ DifferenceVector(PetscReal ***F, PetscReal x0, PetscReal y0, PetscReal z0, Grid 
   Ewl = wll + wxh*(whl - wll);
   f[1] = Ewl + wzh*(Ewh - Ewh);
   // Compute the central difference in z at each grid point.
-  PRINT_WORLD("Computing dz\n");
   if (izl >= 0) {
     // 2nd-order central difference at izl
     lhh = F[izl+1][iyh][ixh] - F[izl-1][iyh][ixh];
