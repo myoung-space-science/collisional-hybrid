@@ -1190,7 +1190,6 @@ CollectParticles(Context *ctx)
   RealVector  r, *pos, v, *vel;
   PetscInt    ip, np;
   PetscInt    ixl, ixh, iyl, iyh, izl, izh;
-  PetscInt    Nx, Ny, Nz;
   PetscReal   wxl, wxh, wyl, wyh, wzl, wzh;
   PetscReal   hhh, lhh, hlh, llh, hhl, lhl, hll, lll;
   PetscReal   w[NDIM];
@@ -1224,11 +1223,6 @@ CollectParticles(Context *ctx)
   dx = ctx->grid.d.x;
   dy = ctx->grid.d.y;
   dz = ctx->grid.d.z;
-
-  // Extract number of cells.
-  Nx = ctx->grid.N.x;
-  Ny = ctx->grid.N.y;
-  Nz = ctx->grid.N.z;
 
   // Loop over particles.
   for (ip=0; ip<np; ip++) {
