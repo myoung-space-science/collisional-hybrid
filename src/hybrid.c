@@ -105,6 +105,7 @@ typedef struct {
 } Charged;
 
 typedef struct {
+  PetscReal m;  // mass
   PetscReal v0; // drift velocity
   PetscReal vT; // thermal velocity
   PetscReal T;  // temperature
@@ -272,6 +273,12 @@ ProcessOptions(Context *ctx)
     ctx->plasma.Np = intArg;
   } else {
     ctx->plasma.Np = -1;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-mn", &realArg, &found));
+  if (found) {
+    ctx->neutrals.m = realArg;
+  } else {
+    ctx->neutrals.m = 0.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-Tn", &realArg, &found));
   if (found) {
@@ -1203,6 +1210,7 @@ EchoSetup(Context ctx)
   PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "kappa_ix = %g\n", ctx.ions.kappa.x));
   PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "kappa_iy = %g\n", ctx.ions.kappa.y));
   PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "kappa_iz = %g\n", ctx.ions.kappa.z));
+  PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "mn = %f\n", ctx.neutrals.m));
   PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "Tn = %f\n", ctx.neutrals.T));
   PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "vnT = %f\n", ctx.neutrals.vT));
   PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "vn0 = %f\n", ctx.neutrals.v0));
