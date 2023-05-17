@@ -729,10 +729,13 @@ SobolDistribution(Context *ctx)
 {
   DM          swarm=ctx->swarm;
   PetscInt    seed=-1, ndim=NDIM;
-  PetscScalar *coords;
+  PetscReal   *coords, v;
   PetscInt    np, ip;
   PetscReal   r[NDIM];
   PetscReal   L[NDIM]={ctx->grid.L.x, ctx->grid.L.y, ctx->grid.L.z};
+  PetscReal   d[NDIM]={ctx->grid.d.x, ctx->grid.d.y, ctx->grid.d.z};
+  PetscReal   p0[NDIM]={ctx->grid.p0.x, ctx->grid.p0.y, ctx->grid.p0.z};
+  PetscReal   p1[NDIM]={ctx->grid.p1.x, ctx->grid.p1.y, ctx->grid.p1.z};
   PetscInt    dim;
 
   PetscFunctionBeginUser;
@@ -747,11 +750,17 @@ SobolDistribution(Context *ctx)
   // Get the local number of particles.
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
 
-  // Loop over all particles.
   for (ip=0; ip<np; ip++) {
     PetscCall(SobolSequenceND(&ndim, r-1));
     for (dim=0; dim<NDIM; dim++) {
-      coords[ip*NDIM + dim] = r[dim]*L[dim];
+      v = r[dim]*(L[dim] + d[dim]) - 0.5*d[dim];
+      if (v < p0[dim]) {
+        coords[ip*NDIM + dim] = p0[dim] + 0.01*d[dim];
+      } else if (v > p1[dim]) {
+        coords[ip*NDIM + dim] = p1[dim] - 0.01*d[dim];
+      } else {
+        coords[ip*NDIM + dim] = v;
+      }
     }
   }
 
