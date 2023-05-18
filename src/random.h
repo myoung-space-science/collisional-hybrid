@@ -177,7 +177,6 @@ float gasdev(long *idum)
 {
   static int   iset=0;
   static float gset;
-  PetscReal    r1, r2;
   float        fac, rsq, v1, v2;
 
   /* Reinitialize the sequence. */
