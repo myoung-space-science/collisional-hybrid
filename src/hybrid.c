@@ -7,6 +7,7 @@ static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 #include <petscdmda.h>
 #include <petscdmswarm.h>
 #include <petscviewerhdf5.h>
+#include "random.h"
 
 #define ECHO_FUNCTION_ENTER {PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n--> Entering %s(...) <--\n\n", __func__));}
 #define ECHO_FUNCTION_EXIT {PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n--> Exiting %s(...) <--\n\n", __func__));}
@@ -595,88 +596,6 @@ InitializeSwarmDM(DM grid, Context *ctx)
 }
 
 
-#define SOBOL_MAXBIT 30
-#define SOBOL_MAXDIM 6
-
-/* Adaptation of sobseq from Numerical Recipes, 2nd edition.
-
-This version differs as follows:
-- The iv array is uninitialized and there is a new ic array in place of the
-  original iv array
-- The (*n < 0) block initializes iv from ic.
-
-These changes are based on the sobseq function written by Bernie Vasquez
-(adapted from NR 2nd ed.), in the hybrid electromagnetic PIC code developed by
-Bernie Vasquez, Harald Kucharek, and Matt Young at UNH circa 2019. The note
-there reads "iv is initialized properly on each *n<0 call".
-
-We may consider registering this via PetscRandomRegister, then using it via
-PetscRandomSetType. See
-https://petsc.org/release/manualpages/Sys/PetscRandomRegister/ for example
-usage. See /home/matthew/petsc/src/sys/classes/random/interface/randreg.c and
-/home/matthew/petsc/src/sys/classes/random/impls/rand/rand.c for suggestions on
-how to wrap this function in order to register it.
-*/
-static PetscErrorCode
-SobolSequenceND(PetscInt *n, PetscReal x[])
-{
-  PetscInt j, k, l;
-  unsigned long i, im, ipp;
-  static unsigned long in;
-  static unsigned long ix[SOBOL_MAXDIM+1];
-  static unsigned long *iu[SOBOL_MAXBIT+1];
-  static unsigned long mdeg[SOBOL_MAXDIM+1]={0, 1, 2, 3, 3, 4, 4};
-  static unsigned long ip[SOBOL_MAXDIM+1]={0, 0, 1, 1, 2, 1, 4};
-  static unsigned long iv[SOBOL_MAXDIM*SOBOL_MAXBIT+1];
-  static unsigned long ic[SOBOL_MAXDIM*SOBOL_MAXBIT+1]={0, 1, 1, 1, 1, 1, 1, 3, 1, 3, 3, 1, 1, 5, 7, 7, 3, 3, 5, 15, 11, 5, 15, 13, 9};
-  static PetscReal fac;
-
-  PetscFunctionBeginUser;
-
-  if (*n < 0) {
-    for (j=1; j<=SOBOL_MAXDIM*SOBOL_MAXBIT+1; j++) {
-      iv[j] = ic[j];
-    }
-    for (j=1, k=0; j<=SOBOL_MAXBIT; j++, k += SOBOL_MAXDIM) {
-      iu[j] = &iv[k];
-    }
-    for (k=1; k<=SOBOL_MAXDIM; k++) {
-      for (j=1; j<=mdeg[k]; j++) {
-        iu[j][k] <<= (SOBOL_MAXBIT-j);
-      }
-      for (j=mdeg[k]+1; j<=SOBOL_MAXBIT; j++) {
-        ipp = ip[k];
-        i = iu[j-mdeg[k]][k];
-        i ^= (i >> mdeg[k]);
-        for (l=mdeg[k]-1; l>=1; l--) {
-          if (ipp & 1) i ^= iu[j-1][k];
-          ipp >>= 1;
-        }
-        iu[j][k] = i;
-      }
-    }
-    fac = 1.0 / ((long)1 << SOBOL_MAXBIT);
-    in = 0;
-  } else {
-    im = in++;
-    for (j=1; j<=SOBOL_MAXBIT; j++) {
-      if (!(im & 1)) break;
-      im >>= 1;
-    }
-    if (j > SOBOL_MAXBIT) {
-      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "SOBOL_MAXBIT too small in %s", __func__);
-    }
-    im = (j-1)*SOBOL_MAXDIM;
-    for (k=1; k<=PetscMin(*n, SOBOL_MAXDIM); k++) {
-      ix[k] ^= iv[im+k];
-      x[k] = ix[k]*fac;
-    }
-  }
-
-  PetscFunctionReturn(PETSC_SUCCESS);
-}
-
-
 static PetscErrorCode
 UniformDistribution_FromSwarm(Context *ctx)
 {
@@ -787,13 +706,13 @@ SobolDistribution(Context *ctx)
   PetscCall(DMSwarmGetField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
   // Initialize the psuedo-random number generator.
-  PetscCall(SobolSequenceND(&seed, r-1));
+  PetscCall(Sobseq(&seed, r-1));
 
   // Get the local number of particles.
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
 
   for (ip=0; ip<np; ip++) {
-    PetscCall(SobolSequenceND(&ndim, r-1));
+    PetscCall(Sobseq(&ndim, r-1));
     for (dim=0; dim<NDIM; dim++) {
       v = r[dim]*(L[dim] + d[dim]) - 0.5*d[dim];
       if (v < p0[dim]) {
@@ -999,114 +918,6 @@ InitializePositions(Context *ctx)
   PetscCall(DMSwarmGetSize(swarm, &ctx->plasma.Np));
 
   ECHO_FUNCTION_EXIT;
-  PetscFunctionReturn(PETSC_SUCCESS);
-}
-
-
-#define RAN3_MBIG 1000000000
-#define RAN3_MSEED 161803398
-#define RAN3_MZ 0
-#define RAN3_FAC (1.0 / RAN3_MBIG)
-
-/* Adaptation of ran3 from Numerical Recipes, 2nd edition.
-
-This implementation differs (aside from formatting) in that it stores its result
-in a user-provided variable, rather than return it. The motivation for doing so
-is to allow this function to leverage the PETSc error-checking machinery.
-*/
-static PetscErrorCode
-Ran3(long *idum, PetscReal *result)
-{
-  static int  inext, inextp;
-  static long ma[56];
-  static int  iff=0;
-  long        mj, mk;
-  int         i, ii, k;
-
-  PetscFunctionBeginUser;
-
-  if (*idum < 0 || iff == 0) {
-    iff = 1;
-    mj = labs(RAN3_MSEED - labs(*idum));
-    mj %= RAN3_MBIG;
-    ma[55] = mj;
-    mk = 1;
-    for (i=1; i<=54; i++) {
-      ii = (21*i) % 55;
-      ma[ii] = mk;
-      mk = mj-mk;
-      if (mk < RAN3_MZ) {
-        mk += RAN3_MBIG;
-      }
-      mj = ma[ii];
-      for (k=1; k<=4; k++) {
-        for (i=1; i<=55; i++) {
-          ma[i] -= ma[1+(i+30) % 55];
-          if (ma[i] < RAN3_MZ) {
-            ma[i] += RAN3_MBIG;
-          }
-        }
-      }
-      inext = 0;
-      inextp = 31;
-      *idum = 1;
-    }
-    if (++inext == 56) {
-      inext = 1;
-    }
-    if (++inextp == 56) {
-      inextp = 1;
-    }
-    mj = ma[inext]-ma[inextp];
-    if (mj < RAN3_MZ) {
-      mj += RAN3_MBIG;
-      ma[inext] = mj;
-      *result = mj*RAN3_FAC;
-    }
-  }
-
-  PetscFunctionReturn(PETSC_SUCCESS);
-}
-
-
-/* Adaptation of gasdev from Numerical Recipes, 2nd edition.
-
-This implementation differs (aside from formatting) in that it stores its result
-in a user-provided variable, rather than return it. The motivation for doing so
-is to allow this function to leverage the PETSc error-checking machinery.
-Furthermore, this implementation, like the implementation in EPPIC, uses the
-ran3 (rather than ran1) numerical recipe to generate uniform deviates.
-*/
-static PetscErrorCode
-GasDev(long *idum, PetscReal *result)
-{
-  static int   iset=0;
-  static float gset;
-  PetscReal    r1, r2;
-  float        fac, rsq, v1, v2;
-
-  PetscFunctionBeginUser;
-
-  if (*idum < 0) {
-    iset = 0;
-  }
-  if (iset == 0) {
-    do {
-      PetscCall(Ran3(idum, &r1));
-      v1 = 2.0*r1 - 1.0;
-      PetscCall(Ran3(idum, &r2));
-      v2 = 2.0*r2 - 1.0;
-      rsq = v1*v1 + v2*v2;
-    } while (rsq >= 1.0 || rsq == 0.0);
-    fac = sqrt(-2.0*log(rsq) / rsq);
-    gset = v1*fac;
-    iset = 1;
-    *result = v2*fac;
-  } else {
-    iset = 0;
-    *result = gset;
-  }
-
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
