@@ -1031,7 +1031,9 @@ EchoSetup(Context ctx)
   PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "mn = %f\n", ctx.neutrals.m));
   PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "Tn = %f\n", ctx.neutrals.T));
   PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "vnT = %f\n", ctx.neutrals.vT));
-  PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "vn0 = %f\n", ctx.neutrals.v0));
+  PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "vn0x = %f\n", ctx.neutrals.v0.x));
+  PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "vn0y = %f\n", ctx.neutrals.v0.y));
+  PetscCall(PetscViewerASCIIPrintf(ctx.optionsView, "vn0z = %f\n", ctx.neutrals.v0.z));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
