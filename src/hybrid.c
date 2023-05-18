@@ -143,7 +143,7 @@ ProcessOptions(Context *ctx)
 
   PetscFunctionBeginUser;
 
-  PetscInt intArg;
+  PetscInt  intArg;
   PetscReal realArg;
   PetscBool boolArg;
   PetscEnum enumArg;
