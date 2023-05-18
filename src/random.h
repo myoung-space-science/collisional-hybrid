@@ -135,26 +135,26 @@ float ran3(long *idum)
       inextp = 31;
       *idum = 1;
     }
-    /* Start here after initialization. */
-    // Increment inext, wrapping around 56 to 1.
-    if (++inext == 56) {
-      inext = 1;
-    }
-    // Increment inextp, wrapping around 56 to 1.
-    if (++inextp == 56) {
-      inextp = 1;
-    }
-    // Generate a new random number subtractively.
-    mj = ma[inext]-ma[inextp];
-    // Make sure it is in range.
-    if (mj < MZ) {
-      mj += MBIG;
-    }
-    // Store the new number.
-    ma[inext] = mj;
-    // Output the derived uniform deviate.
-    return mj*FAC;
   }
+  /* Start here after initialization. */
+  // Increment inext, wrapping around 56 to 1.
+  if (++inext == 56) {
+    inext = 1;
+  }
+  // Increment inextp, wrapping around 56 to 1.
+  if (++inextp == 56) {
+    inextp = 1;
+  }
+  // Generate a new random number subtractively.
+  mj = ma[inext]-ma[inextp];
+  // Make sure it is in range.
+  if (mj < MZ) {
+    mj += MBIG;
+  }
+  // Store the new number.
+  ma[inext] = mj;
+  // Output the derived uniform deviate.
+  return mj*FAC;
 }
 
 
