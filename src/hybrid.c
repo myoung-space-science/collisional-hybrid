@@ -271,9 +271,9 @@ ProcessOptions(Context *ctx)
   } else {
     ctx->neutrals.T = -1.0;
   }
-  // Neutral speeds: The user may provide a single neutral-particle speed for
-  // all Cartesian component or a speed for each component. The latter takes
-  // precedence. All values default to 0.
+  // The user may provide a single neutral-species drift speed for all
+  // components, as well as a thermal speed for each component. Any component
+  // not explicitly set will have the common value, which defaults to 0.
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-vn0", &realArg, &found));
   if (found) {
     ctx->neutrals.v0.x = realArg;
@@ -287,20 +287,14 @@ ProcessOptions(Context *ctx)
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-vn0x", &realArg, &found));
   if (found) {
     ctx->neutrals.v0.x = realArg;
-  } else {
-    ctx->neutrals.v0.x = 0.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-vn0y", &realArg, &found));
   if (found) {
     ctx->neutrals.v0.y = realArg;
-  } else {
-    ctx->neutrals.v0.y = 0.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-vn0z", &realArg, &found));
   if (found) {
     ctx->neutrals.v0.z = realArg;
-  } else {
-    ctx->neutrals.v0.z = 0.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-qi", &realArg, &found));
   if (found) {
