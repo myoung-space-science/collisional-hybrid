@@ -2427,11 +2427,117 @@ BorisMover(KSP ksp, Context *ctx)
 }
 
 
+/* Basic elastic-scattering routine for ion-neutral collisions.
+
+This function is based on, but not identical to, EPPIC elastic_scatter.
+*/
 static PetscErrorCode
 CollideParticles(Context *ctx)
 {
+  PetscInt   Nc;                                      // the number of particles to collide
+  PetscInt   Np=ctx->plasma.Np;                       // the total number of particles
+  PetscInt   ic, ip;
+  PetscReal  fc=ctx->ions.nu * ctx->dt;               // the product of the collision rate and the time step
+  PetscReal  vrm=ctx->ions.v0.r + 4.0*ctx->ions.vT.r; // the maximum allowed ion-neutral relative velocity
+  PetscReal  vnT=ctx->neutrals.vT;                    // the neutral-particle thermal speed
+  PetscReal  vn0=ctx->neutrals.v0.r;                  // the neutral-particle drift speed
+  PetscReal  vn0x=ctx->neutrals.v0.x;                 // the neutral-particle x-axis drift component
+  PetscReal  vn0y=ctx->neutrals.v0.y;                 // the neutral-particle y-axis drift component
+  PetscReal  vn0z=ctx->neutrals.v0.z;                 // the neutral-particle z-axis drift component
+  PetscReal  mn=ctx->neutrals.m;                      // the neutral-particle mass
+  PetscReal  mi=ctx->ions.m;                          // the ion mass
+  PetscReal  M=mn+mi;                                 // the total mass (mi+mn)
+  DM         swarm=ctx->swarm;
+  RealVector *vel;
+  PetscReal  vnx, vny, vnz;                           // neutral-particle velocity components
+  PetscReal  vix, viy, viz;                           // ion velocity components
+  PetscReal  vrx, vry, vrz;                           // ion-neutral relative-velocity components
+  PetscReal  vrr;                                     // ion-neutral relative-velocity magnitude
+  PetscReal  vcx, vcy, vcz;                           // center-of-mass velocity components
+  PetscReal  vcr;                                     // the ion speed with respect to the center of mass
+  PetscReal  costht, sintht, cosphi, sinphi;
+  PetscReal  ux, uy, uz, uperp, uphi;
+  PetscReal  ux1, uy1, uz1, ux2, uy2, uz2;
+  PetscReal  vfx, vfy, vfz;
+  long       seed=ctx->seed;
+
   PetscFunctionBeginUser;
   ECHO_FUNCTION_ENTER;
+
+  // Compute the number of collisions.
+  Nc = (PetscInt)(((PetscReal)Np * fc * vrm) / ((vnT + vn0) * PetscSqrtReal(mn / mi)));
+  if (Nc > Np) {
+    Nc = Np;
+  }
+
+  // Get an array representation of the particle velocities.
+  PetscCall(DMSwarmGetField(swarm, "velocity", NULL, NULL, (void **)&vel));
+
+  // Loop over number of collisions.
+  for (ic=0; ic<Nc; ic++) {
+    // Choose a random particle from the full ion distribution.
+    ip = (PetscInt)Np*ran3(&seed);
+
+    // Store the ion velocity components.
+    vix = vel[ip].x;
+    viy = vel[ip].y;
+    viz = vel[ip].z;
+
+    // Choose a random neutral-particle velocity.
+    vnx = gasdev(&seed)*vnT + vn0x;
+    vny = gasdev(&seed)*vnT + vn0y;
+    vnz = gasdev(&seed)*vnT + vn0z;
+
+    // Compute the ion-neutral relative velocity.
+    vrx = vix - vnx;
+    vry = viy - vny;
+    vrz = viz - vnz;
+    vrr = PetscSqrtReal(PetscSqr(vrx) + PetscSqr(vry) + PetscSqr(vrz));
+
+    // Collide only if the squared relative velocity is greater than the square
+    // of a random percentage of the maximum relative velocity.
+    if (PetscSqr(ran3(&seed)) < PetscSqr(vrr) / PetscSqr(vrm)) {
+      // Compute the center-of-mass (CoM) velocity.
+      vcx = (vix*mi + vnx*mn) / M;
+      vcy = (viy*mi + vny*mn) / M;
+      vcz = (viz*mi + vnz*mn) / M;
+
+      // Compute the particle speed relative to the CoM velocity.
+      vcr = PetscSqrtReal(PetscSqr(vix-vcx) + PetscSqr(viy-vcy) + PetscSqr(viz-vcz));
+
+      // Rotate the CoM frame to align its z axis with the incident direction.
+      costht = vrz / vrr;
+      sintht = PetscSqrtReal(1.0 - PetscSqr(costht));
+      cosphi = vrx / (vrr*sintht);
+      sinphi = vry / (vrr*sintht);
+
+      // Compute the unit scattering vector relative to the z axis.
+      uz = 2.0*ran3(&seed) - 1.0;
+      uperp = PetscSqrtReal(1.0 - PetscSqr(uz));
+      uphi = 2*PETSC_PI * ran3(&seed);
+      ux = uperp*PetscCosReal(uphi);
+      uy = uperp*PetscSinReal(uphi);
+
+      // Rotate the unit scattering vector to the incident coordinate system.
+      uz1 = uz*costht - ux*sintht;
+      ux1 = uz*sintht - ux*costht;
+      uy1 = uy;
+      ux2 = ux1*cosphi - uy1*sinphi;
+      uy2 = ux1*sinphi - uy1*cosphi;
+      uz2 = uz1;
+      vfx = vcr * ux2;
+      vfy = vcr * uy2;
+      vfz = vcr * uz2;
+
+      // Update the ion velocity.
+      vel[ip].x = (vcx + vfx);
+      vel[ip].y = (vcy + vfy);
+      vel[ip].z = (vcz + vfz);
+    }
+  }
+
+  // Restore the particle-velocities array.
+  PetscCall(DMSwarmRestoreField(swarm, "velocity", NULL, NULL, (void **)&vel));
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
