@@ -481,7 +481,7 @@ ProcessOptions(Context *ctx)
     PRINT_WORLD("Warning: Setting neutral temperature equal to ion temperature (%.1f K)\n", ctx->ions.T);
   }
   // Set neutral thermal velocity from temperature.
-  ctx->neutrals.vT = PetscSqrtReal((2.0 / 3.0) * KB * ctx->neutrals.T);
+  ctx->neutrals.vT = PetscSqrtReal((2.0 / 3.0) * KB * ctx->neutrals.T / ctx->neutrals.m);
 
   // TODO: Should we set default collision frequencies based on an analytic
   // formulation (e.g., from Schunk & Nagy)?
