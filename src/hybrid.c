@@ -911,8 +911,7 @@ InitializeVelocities(Context *ctx)
   PetscInt    np, ip;
   RealVector  *vel;
   PetscReal   dvx, dvy, dvz;
-  PetscInt    seed=-ctx->mpi.rank*12345;
-  PetscRandom  random;
+  long        seed=-ctx->mpi.rank*12345;
 
   PetscFunctionBeginUser;
   ECHO_FUNCTION_ENTER;
@@ -923,17 +922,11 @@ InitializeVelocities(Context *ctx)
   // Get an array representation of the particle velocities.
   PetscCall(DMSwarmGetField(swarm, "velocity", NULL, NULL, (void **)&vel));
 
-  // Set up a random-number generator.
-  PetscCall(PetscRandomCreate(PETSC_COMM_WORLD, &random));
-  PetscCall(PetscRandomSetSeed(random, seed));
-  PetscCall(PetscRandomSeed(random));
-  PetscCall(PetscRandomSetInterval(random, -1.0, +1.0));
-
   // Loop over particles and assign parameter values.
   for (ip=0; ip<np; ip++) {
-    PetscCall(PetscRandomGetValue(random, &dvx));
-    PetscCall(PetscRandomGetValue(random, &dvy));
-    PetscCall(PetscRandomGetValue(random, &dvz));
+    PetscCall(Gasdev(&seed, &dvx));
+    PetscCall(Gasdev(&seed, &dvy));
+    PetscCall(Gasdev(&seed, &dvz));
     vel[ip].x = ctx->ions.vT.x*dvx + ctx->ions.v0.x;
     vel[ip].y = ctx->ions.vT.y*dvy + ctx->ions.v0.y;
     vel[ip].z = ctx->ions.vT.z*dvz + ctx->ions.v0.z;
