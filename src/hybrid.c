@@ -362,41 +362,55 @@ ProcessOptions(Context *ctx)
   } else {
     ctx->ions.v0.z = 0.0;
   }
+  // The user may provide a single electron thermal speed for all components, as
+  // well as a thermal speed for each component. Any component not explicitly
+  // set will have the common value, which defaults to 0.
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-veT", &realArg, &found));
+  if (found) {
+    ctx->electrons.vT.x = realArg;
+    ctx->electrons.vT.y = realArg;
+    ctx->electrons.vT.z = realArg;
+  } else {
+    ctx->electrons.vT.x = 0.0;
+    ctx->electrons.vT.y = 0.0;
+    ctx->electrons.vT.z = 0.0;
+  }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-veTx", &realArg, &found));
   if (found) {
     ctx->electrons.vT.x = realArg;
-  } else {
-    ctx->electrons.vT.x = 0.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-veTy", &realArg, &found));
   if (found) {
     ctx->electrons.vT.y = realArg;
-  } else {
-    ctx->electrons.vT.y = 0.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-veTz", &realArg, &found));
   if (found) {
     ctx->electrons.vT.z = realArg;
+  }
+  // The user may provide a single ion thermal speed for all components, as well
+  // as a thermal speed for each component. Any component not explicitly set
+  // will have the common value, which defaults to 0.
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-viT", &realArg, &found));
+  if (found) {
+    ctx->ions.vT.x = realArg;
+    ctx->ions.vT.y = realArg;
+    ctx->ions.vT.z = realArg;
   } else {
-    ctx->electrons.vT.z = 0.0;
+    ctx->ions.vT.x = 0.0;
+    ctx->ions.vT.y = 0.0;
+    ctx->ions.vT.z = 0.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-viTx", &realArg, &found));
   if (found) {
     ctx->ions.vT.x = realArg;
-  } else {
-    ctx->ions.vT.x = 0.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-viTy", &realArg, &found));
   if (found) {
     ctx->ions.vT.y = realArg;
-  } else {
-    ctx->ions.vT.y = 0.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-viTz", &realArg, &found));
   if (found) {
     ctx->ions.vT.z = realArg;
-  } else {
-    ctx->ions.vT.z = 0.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-B0x", &realArg, &found));
   if (found) {
