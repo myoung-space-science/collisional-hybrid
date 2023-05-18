@@ -124,6 +124,7 @@ typedef struct {
   DensityType densityType;  // type of initial density profile to use
   PetscInt    Nt;           // number of time steps
   PetscReal   dt;           // time-step width
+  long        seed;         // random-number seed
 } Context;
 
 typedef struct {
@@ -937,7 +938,7 @@ InitializeVelocities(Context *ctx)
   PetscInt    np, ip;
   RealVector  *vel;
   PetscReal   dvx, dvy, dvz;
-  long        seed=-ctx->mpi.rank*12345;
+  long        seed=ctx->seed;
 
   PetscFunctionBeginUser;
   ECHO_FUNCTION_ENTER;
@@ -2485,6 +2486,9 @@ int main(int argc, char **args)
 
   /* Store MPI information in the application context. */
   ctx.mpi = mpi;
+
+  /* Define a rank-specific random-number seed. */
+  ctx.seed = (long)(-(mpi.rank + 1)*12345);
 
   /* Set up discrete grid. */
   PetscCall(InitializeGridDM(&grid, &ctx));
