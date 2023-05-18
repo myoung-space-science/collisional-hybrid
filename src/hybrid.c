@@ -320,41 +320,55 @@ ProcessOptions(Context *ctx)
   } else {
     ctx->ions.nu = 1.0;
   }
+  // The user may provide a single electron drift speed for all components, as
+  // well as a thermal speed for each component. Any component not explicitly
+  // set will have the common value, which defaults to 0.
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-ve0", &realArg, &found));
+  if (found) {
+    ctx->electrons.v0.x = realArg;
+    ctx->electrons.v0.y = realArg;
+    ctx->electrons.v0.z = realArg;
+  } else {
+    ctx->electrons.v0.x = 0.0;
+    ctx->electrons.v0.y = 0.0;
+    ctx->electrons.v0.z = 0.0;
+  }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-ve0x", &realArg, &found));
   if (found) {
     ctx->electrons.v0.x = realArg;
-  } else {
-    ctx->electrons.v0.x = 0.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-ve0y", &realArg, &found));
   if (found) {
     ctx->electrons.v0.y = realArg;
-  } else {
-    ctx->electrons.v0.y = 0.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-ve0z", &realArg, &found));
   if (found) {
     ctx->electrons.v0.z = realArg;
+  }
+  // The user may provide a single ion drift speed for all components, as
+  // well as a thermal speed for each component. Any component not explicitly
+  // set will have the common value, which defaults to 0.
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vi0", &realArg, &found));
+  if (found) {
+    ctx->ions.v0.x = realArg;
+    ctx->ions.v0.y = realArg;
+    ctx->ions.v0.z = realArg;
   } else {
-    ctx->electrons.v0.z = 0.0;
+    ctx->ions.v0.x = 0.0;
+    ctx->ions.v0.y = 0.0;
+    ctx->ions.v0.z = 0.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-vi0x", &realArg, &found));
   if (found) {
     ctx->ions.v0.x = realArg;
-  } else {
-    ctx->ions.v0.x = 0.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-vi0y", &realArg, &found));
   if (found) {
     ctx->ions.v0.y = realArg;
-  } else {
-    ctx->ions.v0.y = 0.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-vi0z", &realArg, &found));
   if (found) {
     ctx->ions.v0.z = realArg;
-  } else {
-    ctx->ions.v0.z = 0.0;
   }
   // The user may provide a single electron thermal speed for all components, as
   // well as a thermal speed for each component. Any component not explicitly
