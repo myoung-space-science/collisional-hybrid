@@ -2,6 +2,7 @@
 #define _RANDOM_H
 
 #include <petsc.h>
+#include "hybrid.h"
 
 #define IA 16807
 #define IM 2147483647
