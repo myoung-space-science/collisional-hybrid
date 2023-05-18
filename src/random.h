@@ -15,6 +15,9 @@
 #define MZ 0
 #define FAC (1.0 / MBIG)
 
+#define MAXBIT 30
+#define MAXDIM 6
+
 
 /* Adaptation of ran1 from Numerical Recipes, 2nd edition. */
 float ran1(long *idum)
@@ -214,6 +217,78 @@ Gasdev(long *idum, PetscReal *result)
 {
   PetscFunctionBeginUser;
   *result = (PetscReal)gasdev(idum);
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+/* Adaptation of sobseq from Numerical Recipes, 2nd edition.
+
+This version differs as follows:
+- The iv array is uninitialized and there is a new ic array in place of the
+  original iv array
+- The (*n < 0) block initializes iv from ic.
+
+These changes are based on the sobseq function written by Bernie Vasquez
+(adapted from NR 2nd ed.), in the hybrid electromagnetic PIC code developed by
+Bernie Vasquez, Harald Kucharek, and Matt Young at UNH circa 2019. The note
+there reads "iv is initialized properly on each *n<0 call".
+*/
+static PetscErrorCode
+Sobseq(PetscInt *n, PetscReal x[])
+{
+  PetscInt j, k, l;
+  unsigned long i, im, ipp;
+  static unsigned long in;
+  static unsigned long ix[MAXDIM+1];
+  static unsigned long *iu[MAXBIT+1];
+  static unsigned long mdeg[MAXDIM+1]={0, 1, 2, 3, 3, 4, 4};
+  static unsigned long ip[MAXDIM+1]={0, 0, 1, 1, 2, 1, 4};
+  static unsigned long iv[MAXDIM*MAXBIT+1];
+  static unsigned long ic[MAXDIM*MAXBIT+1]={0, 1, 1, 1, 1, 1, 1, 3, 1, 3, 3, 1, 1, 5, 7, 7, 3, 3, 5, 15, 11, 5, 15, 13, 9};
+  static PetscReal fac;
+
+  PetscFunctionBeginUser;
+
+  if (*n < 0) {
+    for (j=1; j<=MAXDIM*MAXBIT+1; j++) {
+      iv[j] = ic[j];
+    }
+    for (j=1, k=0; j<=MAXBIT; j++, k += MAXDIM) {
+      iu[j] = &iv[k];
+    }
+    for (k=1; k<=MAXDIM; k++) {
+      for (j=1; j<=mdeg[k]; j++) {
+        iu[j][k] <<= (MAXBIT-j);
+      }
+      for (j=mdeg[k]+1; j<=MAXBIT; j++) {
+        ipp = ip[k];
+        i = iu[j-mdeg[k]][k];
+        i ^= (i >> mdeg[k]);
+        for (l=mdeg[k]-1; l>=1; l--) {
+          if (ipp & 1) i ^= iu[j-1][k];
+          ipp >>= 1;
+        }
+        iu[j][k] = i;
+      }
+    }
+    fac = 1.0 / ((long)1 << MAXBIT);
+    in = 0;
+  } else {
+    im = in++;
+    for (j=1; j<=MAXBIT; j++) {
+      if (!(im & 1)) break;
+      im >>= 1;
+    }
+    if (j > MAXBIT) {
+      SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "MAXBIT too small in %s", __func__);
+    }
+    im = (j-1)*MAXDIM;
+    for (k=1; k<=PetscMin(*n, MAXDIM); k++) {
+      ix[k] ^= iv[im+k];
+      x[k] = ix[k]*fac;
+    }
+  }
+
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
