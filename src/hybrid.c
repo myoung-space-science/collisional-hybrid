@@ -396,6 +396,12 @@ ProcessOptions(Context *ctx)
   if (found) {
     ctx->electrons.vT.z = realArg;
   }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Te", &realArg, &found));
+  if (found) {
+    ctx->electrons.T = realArg;
+  } else {
+    ctx->electrons.T = 0.0;
+  }
   // The user may provide a single ion thermal speed for all components, as well
   // as a thermal speed for each component. Any component not explicitly set
   // will have the common value, which defaults to 0.
@@ -420,6 +426,12 @@ ProcessOptions(Context *ctx)
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-viTz", &realArg, &found));
   if (found) {
     ctx->ions.vT.z = realArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Ti", &realArg, &found));
+  if (found) {
+    ctx->ions.T = realArg;
+  } else {
+    ctx->ions.T = 0.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-B0x", &realArg, &found));
   if (found) {
