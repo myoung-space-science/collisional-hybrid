@@ -148,6 +148,7 @@ ProcessOptions(Context *ctx)
   PetscBool boolArg;
   PetscEnum enumArg;
   PetscBool found;
+  PetscReal tmp;
 
   // Set fundamental parameter values.
   ctx->electrons.q = -Q;
@@ -488,15 +489,32 @@ ProcessOptions(Context *ctx)
   ctx->ions.kappa.x = ctx->ions.Omega.x / ctx->ions.nu;
   ctx->ions.kappa.y = ctx->ions.Omega.y / ctx->ions.nu;
   ctx->ions.kappa.z = ctx->ions.Omega.z / ctx->ions.nu;
-  // Compute velocity magnitudes.
-  ctx->electrons.vT.r = PetscSqrtReal(PetscSqr(ctx->electrons.vT.x) + PetscSqr(ctx->electrons.vT.y) + PetscSqr(ctx->electrons.vT.z));
-  ctx->ions.vT.r = PetscSqrtReal(PetscSqr(ctx->ions.vT.x) + PetscSqr(ctx->ions.vT.y) + PetscSqr(ctx->ions.vT.z));
+  // Compute drift-velocity magnitudes.
   ctx->electrons.v0.r = PetscSqrtReal(PetscSqr(ctx->electrons.v0.x) + PetscSqr(ctx->electrons.v0.y) + PetscSqr(ctx->electrons.v0.z));
   ctx->ions.v0.r = PetscSqrtReal(PetscSqr(ctx->ions.v0.x) + PetscSqr(ctx->ions.v0.y) + PetscSqr(ctx->ions.v0.z));
   ctx->neutrals.v0.r = PetscSqrtReal(PetscSqr(ctx->neutrals.v0.x) + PetscSqr(ctx->neutrals.v0.y) + PetscSqr(ctx->neutrals.v0.z));
-  // Set species temperature from fluid velocities.
-  ctx->electrons.T = (0.5 * ctx->electrons.m / KB) * (PetscSqr(ctx->electrons.vT.r));
-  ctx->ions.T = (0.5 * ctx->ions.m / KB) * (PetscSqr(ctx->ions.vT.r));
+  // Make electron temperature and thermal velocity consistent.
+  if ((ctx->electrons.vT.x != 0.0) || (ctx->electrons.vT.y != 0.0) || (ctx->electrons.vT.z != 0.0)) {
+    ctx->electrons.vT.r = PetscSqrtReal(PetscSqr(ctx->electrons.vT.x) + PetscSqr(ctx->electrons.vT.y) + PetscSqr(ctx->electrons.vT.z));
+    ctx->electrons.T = (0.5 * ctx->electrons.m / KB) * (PetscSqr(ctx->electrons.vT.r));
+  } else {
+    tmp = PetscSqrtReal(2.0 * KB * ctx->electrons.T / ctx->electrons.m) / 3.0;
+    ctx->electrons.vT.x = tmp;
+    ctx->electrons.vT.y = tmp;
+    ctx->electrons.vT.z = tmp;
+    ctx->electrons.vT.r = PetscSqrtReal(PetscSqr(ctx->electrons.vT.x) + PetscSqr(ctx->electrons.vT.y) + PetscSqr(ctx->electrons.vT.z));
+  }
+  // Make ion temperature and thermal velocity consistent.
+  if ((ctx->ions.vT.x != 0.0) || (ctx->ions.vT.y != 0.0) || (ctx->ions.vT.z != 0.0)) {
+    ctx->ions.vT.r = PetscSqrtReal(PetscSqr(ctx->ions.vT.x) + PetscSqr(ctx->ions.vT.y) + PetscSqr(ctx->ions.vT.z));
+    ctx->ions.T = (0.5 * ctx->ions.m / KB) * (PetscSqr(ctx->ions.vT.r));
+  } else {
+    tmp = PetscSqrtReal(2.0 * KB * ctx->ions.T / ctx->ions.m) / 3.0;
+    ctx->ions.vT.x = tmp;
+    ctx->ions.vT.y = tmp;
+    ctx->ions.vT.z = tmp;
+    ctx->ions.vT.r = PetscSqrtReal(PetscSqr(ctx->ions.vT.x) + PetscSqr(ctx->ions.vT.y) + PetscSqr(ctx->ions.vT.z));
+  }
   // Set default neutral temperature based on charge species.
   if (ctx->neutrals.T == -1.0) {
     ctx->neutrals.T = ctx->ions.T;
