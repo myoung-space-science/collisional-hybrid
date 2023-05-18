@@ -89,10 +89,10 @@ typedef struct {
 } Charged;
 
 typedef struct {
-  PetscReal m;  // mass
-  PetscReal v0; // drift velocity
-  PetscReal vT; // thermal velocity
-  PetscReal T;  // temperature
+  PetscReal  m;  // mass
+  RealVector v0; // drift velocity
+  PetscReal  vT; // thermal velocity
+  PetscReal  T;  // temperature
 } Neutral;
 
 typedef struct {
@@ -270,11 +270,36 @@ ProcessOptions(Context *ctx)
   } else {
     ctx->neutrals.T = -1.0;
   }
+  // Neutral speeds: The user may provide a single neutral-particle speed for
+  // all Cartesian component or a speed for each component. The latter takes
+  // precedence. All values default to 0.
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-vn0", &realArg, &found));
   if (found) {
-    ctx->neutrals.v0 = realArg;
+    ctx->neutrals.v0.x = realArg;
+    ctx->neutrals.v0.y = realArg;
+    ctx->neutrals.v0.z = realArg;
   } else {
-    ctx->neutrals.v0 = 0.0;
+    ctx->neutrals.v0.x = 0.0;
+    ctx->neutrals.v0.y = 0.0;
+    ctx->neutrals.v0.z = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vn0x", &realArg, &found));
+  if (found) {
+    ctx->neutrals.v0.x = realArg;
+  } else {
+    ctx->neutrals.v0.x = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vn0y", &realArg, &found));
+  if (found) {
+    ctx->neutrals.v0.y = realArg;
+  } else {
+    ctx->neutrals.v0.y = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vn0z", &realArg, &found));
+  if (found) {
+    ctx->neutrals.v0.z = realArg;
+  } else {
+    ctx->neutrals.v0.z = 0.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-qi", &realArg, &found));
   if (found) {
