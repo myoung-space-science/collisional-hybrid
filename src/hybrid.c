@@ -470,6 +470,7 @@ ProcessOptions(Context *ctx)
   ctx->ions.vT.r = PetscSqrtReal(PetscSqr(ctx->ions.vT.x) + PetscSqr(ctx->ions.vT.y) + PetscSqr(ctx->ions.vT.z));
   ctx->electrons.v0.r = PetscSqrtReal(PetscSqr(ctx->electrons.v0.x) + PetscSqr(ctx->electrons.v0.y) + PetscSqr(ctx->electrons.v0.z));
   ctx->ions.v0.r = PetscSqrtReal(PetscSqr(ctx->ions.v0.x) + PetscSqr(ctx->ions.v0.y) + PetscSqr(ctx->ions.v0.z));
+  ctx->neutrals.v0.r = PetscSqrtReal(PetscSqr(ctx->neutrals.v0.x) + PetscSqr(ctx->neutrals.v0.y) + PetscSqr(ctx->neutrals.v0.z));
   // Set species temperature from fluid velocities.
   ctx->electrons.T = (0.5 * ctx->electrons.m / KB) * (PetscSqr(ctx->electrons.vT.r));
   ctx->ions.T = (0.5 * ctx->ions.m / KB) * (PetscSqr(ctx->ions.vT.r));
