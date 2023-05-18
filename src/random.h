@@ -166,3 +166,55 @@ Ran3(long *idum, PetscReal *result)
 }
 
 
+/* Adaptation of gasdev from Numerical Recipes, 2nd edition. */
+float gasdev(long *idum)
+{
+  static int   iset=0;
+  static float gset;
+  PetscReal    r1, r2;
+  float        fac, rsq, v1, v2;
+
+  /* Reinitialize the sequence. */
+  if (*idum < 0) {
+    iset = 0;
+  }
+  // If we don't have an extra deviate handy, pick two uniform numbers in the
+  // square extending from -1 to +1 in each direction; keep picking until they
+  // fall within the unit circle.
+  if (iset == 0) {
+    do {
+      v1 = 2.0*ran1(idum) - 1.0;
+      v2 = 2.0*ran1(idum) - 1.0;
+      rsq = v1*v1 + v2*v2;
+    } while (rsq >= 1.0 || rsq == 0.0);
+    fac = sqrt(-2.0*log(rsq) / rsq);
+    // Make the Box-Muller transformation to get two normal deviates.
+    gset = v1*fac;
+    // Set the reinitialization flag.
+    iset = 1;
+    // Return one deviate and save the other for next time.
+    return v2*fac;
+  // If we have an extra deviate handy, unset the reinitialization flag and
+  // return the available deviate.
+  } else {
+    iset = 0;
+    return gset;
+  }
+}
+
+
+/* Wrapper for local implementation of gasdev.
+
+This function stores the result of gasdev in a user-provided variable, in order
+to leverage the PETSc error-checking machinery. Users may also directly use
+gasdev in functional form.
+*/
+static PetscErrorCode
+Gasdev(long *idum, PetscReal *result)
+{
+  PetscFunctionBeginUser;
+  *result = (PetscReal)gasdev(idum);
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
