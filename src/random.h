@@ -1,3 +1,6 @@
+#ifndef _RANDOM_H
+#define _RANDOM_H
+
 #include <petsc.h>
 
 #define IA 16807
@@ -292,4 +295,4 @@ Sobseq(PetscInt *n, PetscReal x[])
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
-
+#endif // _RANDOM_H
