@@ -2657,6 +2657,49 @@ UpdateVelocities(KSP ksp, Context *ctx)
 }
 
 
+/* Update the ion positions according to $\frac{d\vec{r}}{dt} = \vec{v}$. */
+static PetscErrorCode
+UpdatePositions(Context *ctx)
+{
+  DM          swarm=ctx->swarm;
+  RealVector  *pos, *vel;
+  PetscInt    ip, np;
+  PetscReal   dt=ctx->dt;
+
+  PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
+
+  // Get an array representation of the ion positions.
+  PetscCall(DMSwarmGetField(swarm, "position", NULL, NULL, (void **)&pos));
+
+  // Get an array representation of the ion velocities.
+  PetscCall(DMSwarmGetField(swarm, "velocity", NULL, NULL, (void **)&vel));
+
+  // Get the number of particles on this rank.
+  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+
+  // Loop over ions.
+  for (ip=0; ip<np; ip++) {
+    // Update the position components.
+    pos[ip].x += vel[ip].x * dt;
+    pos[ip].y += vel[ip].y * dt;
+    pos[ip].z += vel[ip].z * dt;
+    // TODO: Apply boundary conditions.
+  }
+  // Restore the ion-positions array.
+  PetscCall(DMSwarmRestoreField(swarm, "position", NULL, NULL, (void **)&pos));
+
+  // Restore the ion-velocities array.
+  PetscCall(DMSwarmRestoreField(swarm, "velocity", NULL, NULL, (void **)&vel));
+
+  // Update the swarm.
+  PetscCall(DMSwarmMigrate(swarm, PETSC_TRUE));
+
+  ECHO_FUNCTION_EXIT;
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 int main(int argc, char **args)
 {
   MPIContext  mpi;
@@ -2753,10 +2796,8 @@ int main(int argc, char **args)
     /* Update velocities */
     PetscCall(UpdateVelocities(ksp, &ctx));
 
-    /* Update positions: $\frac{d\vec{r}}{dt} = \vec{v}$. */
-
-    /* Update the swarm. */
-    PetscCall(DMSwarmMigrate(ctx.swarm, PETSC_TRUE));
+    /* Update positions. */
+    PetscCall(UpdatePositions(&ctx));
 
     /* Compute density and flux from particle positions. */
 
