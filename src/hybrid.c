@@ -2850,11 +2850,6 @@ int main(int argc, char **args)
 
   PRINT_WORLD("\n*** Main time-step loop ***\n\n");
   /* Begin main time-step loop. */
-  /* Notes
-  - See KSP ex70.c::SolveTimeDepStokes (~ line 1170) for possible structure of
-    time-step loop.
-  - This could use a second-order leapfrog scheme similar to EPPIC.
-  */
   for (it=0; it<ctx.Nt; it++) {
 
     /* Create a string to display time step with the appropriate width. */
