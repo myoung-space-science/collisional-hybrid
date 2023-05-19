@@ -1214,6 +1214,21 @@ CollectParticles(Context *ctx)
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
+
+static PetscErrorCode
+ComputePotential(KSP ksp, Context *ctx)
+{
+  PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
+
+  PetscCall(KSPSolve(ksp, NULL, NULL));
+  PetscCall(KSPGetSolution(ksp, &ctx->phi));
+
+  ECHO_FUNCTION_EXIT;
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 /* Get the global vector corresponding to a named DM field.
 
   Note: Something like this may exist in PETSc but I can't find it.
@@ -2740,7 +2755,6 @@ int main(int argc, char **args)
   Context     ctx;
   DM          grid, solve;
   KSP         ksp;
-  Vec         phi;
   PetscInt    it;
   char        itstr[256]="", itfmt[5];
   PetscInt    itwidth;
@@ -2800,14 +2814,12 @@ int main(int argc, char **args)
   PetscCall(KSPSetComputeInitialGuess(ksp, ComputeInitialPhi, &ctx));
   PetscCall(KSPSetComputeRHS(ksp, ComputeRHS, &ctx));
   PetscCall(KSPSetComputeOperators(ksp, ComputeLHS, &ctx));
-  PetscCall(KSPSolve(ksp, NULL, NULL));
-  PetscCall(KSPGetSolution(ksp, &phi));
-  PetscCall(PetscObjectSetName((PetscObject)phi, "potential"));
-  ctx.phi = phi;
+  PetscCall(ComputePotential(ksp, &ctx));
+  PetscCall(PetscObjectSetName((PetscObject)ctx.phi, "potential"));
 
   /* Output initial conditions. */
   PetscCall(VecViewComposite(grid, ctx.vlasov, ctx.gridView));
-  PetscCall(VecView(phi, ctx.gridView));
+  PetscCall(VecView(ctx.phi, ctx.gridView));
 
   /* Create a string to display time step with the appropriate width. */
   PetscCall(PetscStrcat(itstr, "Time step "));
