@@ -1484,8 +1484,7 @@ ComputeSinusoidalRHS(KSP ksp, Vec b, void *_ctx)
   PetscCall(DMDAVecRestoreArray(dm, b, &rhs));
 
   // Make the RHS vector consistent with the LHS operator.
-  PetscCall(MatNullSpaceCreate(
-            PETSC_COMM_WORLD, PETSC_TRUE, 0, NULL, &nullspace));
+  PetscCall(MatNullSpaceCreate(PETSC_COMM_WORLD, PETSC_TRUE, 0, NULL, &nullspace));
   PetscCall(MatNullSpaceRemove(nullspace, b));
   PetscCall(MatNullSpaceDestroy(&nullspace));
 
@@ -1643,8 +1642,7 @@ ComputeFullRHS(KSP ksp, Vec b, void *_ctx)
   PetscCall(DMDAVecRestoreArray(dm, b, &rhs));
 
   // Make the RHS vector consistent with the LHS operator.
-  PetscCall(MatNullSpaceCreate(
-            PETSC_COMM_WORLD, PETSC_TRUE, 0, NULL, &nullspace));
+  PetscCall(MatNullSpaceCreate(PETSC_COMM_WORLD, PETSC_TRUE, 0, NULL, &nullspace));
   PetscCall(MatNullSpaceRemove(nullspace, b));
   PetscCall(MatNullSpaceDestroy(&nullspace));
 
@@ -1667,9 +1665,7 @@ ComputeIdentityLHS(KSP ksp, Mat J, Mat A, void *_ctx)
 
   if (ctx->viewLHS) {
     PetscViewer viewer;
-    PetscCall(PetscViewerBinaryOpen(
-              PETSC_COMM_WORLD,
-              "lhs.dat", FILE_MODE_WRITE, &viewer));
+    PetscCall(PetscViewerBinaryOpen(PETSC_COMM_WORLD, "lhs.dat", FILE_MODE_WRITE, &viewer));
     PetscCall(MatView(A, viewer));
     PetscCall(PetscViewerDestroy(&viewer));
   }
@@ -1838,8 +1834,7 @@ ComputeLaplacianLHS(KSP ksp, Mat J, Mat A, void *_ctx)
         col[18].i = row.i;
         col[18].j = row.j;
         col[18].k = row.k;
-        PetscCall(MatSetValuesStencil(
-                  A, 1, &row, NVALUES, col, val, INSERT_VALUES));
+        PetscCall(MatSetValuesStencil(A, 1, &row, NVALUES, col, val, INSERT_VALUES));
       }
     }
   }
@@ -1847,16 +1842,13 @@ ComputeLaplacianLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   PetscCall(MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY));
   PetscCall(MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY));
 
-  PetscCall(MatNullSpaceCreate(
-            PETSC_COMM_WORLD, PETSC_TRUE, 0, NULL, &nullspace));
+  PetscCall(MatNullSpaceCreate(PETSC_COMM_WORLD, PETSC_TRUE, 0, NULL, &nullspace));
   PetscCall(MatSetNullSpace(A, nullspace));
   PetscCall(MatNullSpaceDestroy(&nullspace));
 
   if (ctx->viewLHS) {
     PetscViewer viewer;
-    PetscCall(PetscViewerBinaryOpen(
-              PETSC_COMM_WORLD,
-              "lhs.dat", FILE_MODE_WRITE, &viewer));
+    PetscCall(PetscViewerBinaryOpen(PETSC_COMM_WORLD, "lhs.dat", FILE_MODE_WRITE, &viewer));
     PetscCall(MatView(A, viewer));
     PetscCall(PetscViewerDestroy(&viewer));
   }
@@ -2103,8 +2095,7 @@ ComputeFullLHS(KSP ksp, Mat J, Mat A, void *_ctx)
         col[18].i = row.i;
         col[18].j = row.j;
         col[18].k = row.k;
-        PetscCall(MatSetValuesStencil(
-                  A, 1, &row, NVALUES, col, val, INSERT_VALUES));
+        PetscCall(MatSetValuesStencil(A, 1, &row, NVALUES, col, val, INSERT_VALUES));
       }
     }
   }
@@ -2115,16 +2106,13 @@ ComputeFullLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   PetscCall(MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY));
   PetscCall(MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY));
 
-  PetscCall(MatNullSpaceCreate(
-            PETSC_COMM_WORLD, PETSC_TRUE, 0, NULL, &nullspace));
+  PetscCall(MatNullSpaceCreate(PETSC_COMM_WORLD, PETSC_TRUE, 0, NULL, &nullspace));
   PetscCall(MatSetNullSpace(A, nullspace));
   PetscCall(MatNullSpaceDestroy(&nullspace));
 
   if (ctx->viewLHS) {
     PetscViewer viewer;
-    PetscCall(PetscViewerBinaryOpen(
-              PETSC_COMM_WORLD,
-              "lhs.dat", FILE_MODE_WRITE, &viewer));
+    PetscCall(PetscViewerBinaryOpen(PETSC_COMM_WORLD, "lhs.dat", FILE_MODE_WRITE, &viewer));
     PetscCall(MatView(A, viewer));
     PetscCall(PetscViewerDestroy(&viewer));
   }
@@ -2151,9 +2139,7 @@ ComputeRHS(KSP ksp, Vec b, void *ctx)
     PetscCall(ComputeFullRHS(ksp, b, ctx));
     break;
   default:
-    SETERRQ(
-      PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG,
-      "Unknown RHS type: \"%s\"\n", RHSTypes[user->rhsType]);
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Unknown RHS type: \"%s\"\n", RHSTypes[user->rhsType]);
   }
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -2178,9 +2164,7 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *ctx)
     PetscCall(ComputeFullLHS(ksp, J, A, ctx));
     break;
   default:
-    SETERRQ(
-      PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG,
-      "Unknown LHS type: \"%s\"\n", LHSTypes[user->lhsType]);
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Unknown LHS type: \"%s\"\n", LHSTypes[user->lhsType]);
   }
 
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -2224,9 +2208,7 @@ ViewReducedLHS(PetscInt Nx, PetscInt Ny, PetscInt Nz, void *ctx)
   PetscCall(KSPSetDM(ksp, dm));
   PetscCall(KSPSetComputeOperators(ksp, ComputeLHS, &ctx));
   PetscCall(KSPGetOperators(ksp, &A, NULL));
-  PetscCall(PetscViewerBinaryOpen(
-            PETSC_COMM_WORLD,
-            "lhs.dat", FILE_MODE_WRITE, &viewer));
+  PetscCall(PetscViewerBinaryOpen(PETSC_COMM_WORLD, "lhs.dat", FILE_MODE_WRITE, &viewer));
   PetscCall(MatView(A, viewer));
   PetscCall(PetscViewerDestroy(&viewer));
   PetscCall(DMDestroy(&dm));
