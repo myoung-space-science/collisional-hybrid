@@ -30,12 +30,27 @@ case_map['default']=run_default
 run_test_collection_8cubed() {
     ./run.sh \
         -Nx 8 -Ny 8 -Nz 8 \
-        -Np 512 \
+        -Np 1024 \
         -n 1 \
         -x1 0.8 -y1 0.8 -z1 0.8 \
         --lhs-type laplacian --rhs-type sinusoidal
 }
 case_map['test-collection-8cubed']=run_test_collection_8cubed
+run_test_collisions_8cubed() {
+    ./run.sh \
+        -Nx 8 -Ny 8 -Nz 8 \
+        -Np 1024 \
+        -n 1 \
+        -mi 5e-26 \
+        -mn 4.6e-26 \
+        -Tn 300.0 \
+        -Ti 300.0 \
+        -dt 1e-5 \
+        -nui 5e3 \
+        -x1 0.8 -y1 0.8 -z1 0.8 \
+        --lhs-type laplacian --rhs-type sinusoidal
+}
+case_map['test-collisions-8cubed']=run_test_collisions_8cubed
 run_test_collection_asymmetric() {
     ./run.sh \
         -Nx 15 -Ny 10 -Nz 8 \
@@ -46,8 +61,8 @@ run_test_collection_asymmetric() {
 case_map['test-collection-asymmetric']=run_test_collection_asymmetric
 run_test_collection_32cubed() {
     ./run.sh \
-        -Nx 32 -Ny 32 -Nz 32 \
-        -Np 262144 \
+        -Nx 64 -Ny 64 -Nz 64 \
+        -Np 1048576 \
         -n 1 \
         --lhs-type laplacian --rhs-type sinusoidal
 }
@@ -77,7 +92,8 @@ run_basic_physics() {
         -ksp_type gmres \
         -ksp_max_it 100 \
         -pc_type jacobi \
-        -Nx 16 -Ny 16 -Nz 16 -n 2 \
+        -Nx 64 -Ny 64 -Nz 64 \
+        -n 1 \
         -nue 5e4 \
         -nui 3e3 \
         -B0z 2.5e-05 \
