@@ -273,8 +273,8 @@ ProcessOptions(Context *ctx)
     ctx->neutrals.T = -1.0;
   }
   // The user may provide a single neutral-species drift speed for all
-  // components, as well as a thermal speed for each component. Any component
-  // not explicitly set will have the common value, which defaults to 0.
+  // components, as well as a drift speed for each component. Any component
+  // value not explicitly set will have the common value, which defaults to 0.
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-vn0", &realArg, &found));
   if (found) {
     ctx->neutrals.v0.x = realArg;
@@ -322,8 +322,8 @@ ProcessOptions(Context *ctx)
     ctx->ions.nu = 1.0;
   }
   // The user may provide a single electron drift speed for all components, as
-  // well as a thermal speed for each component. Any component not explicitly
-  // set will have the common value, which defaults to 0.
+  // well as a drift speed for each component. Any component value not
+  // explicitly set will have the common value, which defaults to 0.
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-ve0", &realArg, &found));
   if (found) {
     ctx->electrons.v0.x = realArg;
@@ -346,9 +346,9 @@ ProcessOptions(Context *ctx)
   if (found) {
     ctx->electrons.v0.z = realArg;
   }
-  // The user may provide a single ion drift speed for all components, as
-  // well as a thermal speed for each component. Any component not explicitly
-  // set will have the common value, which defaults to 0.
+  // The user may provide a single ion drift speed for all components, as well
+  // as a drift speed for each component. Any component value not explicitly set
+  // will have the common value, which defaults to 0.
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-vi0", &realArg, &found));
   if (found) {
     ctx->ions.v0.x = realArg;
@@ -372,8 +372,8 @@ ProcessOptions(Context *ctx)
     ctx->ions.v0.z = realArg;
   }
   // The user may provide a single electron thermal speed for all components, as
-  // well as a thermal speed for each component. Any component not explicitly
-  // set will have the common value, which defaults to 0.
+  // well as a thermal speed for each component. Any component value not
+  // explicitly set will have the common value, which defaults to 0.
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-veT", &realArg, &found));
   if (found) {
     ctx->electrons.vT.x = realArg;
@@ -403,8 +403,8 @@ ProcessOptions(Context *ctx)
     ctx->electrons.T = 0.0;
   }
   // The user may provide a single ion thermal speed for all components, as well
-  // as a thermal speed for each component. Any component not explicitly set
-  // will have the common value, which defaults to 0.
+  // as a thermal speed for each component. Any component value not explicitly
+  // set will have the common value, which defaults to 0.
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-viT", &realArg, &found));
   if (found) {
     ctx->ions.vT.x = realArg;
