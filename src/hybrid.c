@@ -2529,6 +2529,8 @@ CollideParticles(Context *ctx)
   Nc = (PetscInt)(((PetscReal)Np * fc * vrm) / ((vnT + vn0) * PetscSqrtReal(mn / mi)));
   if (Nc > Np) {
     Nc = Np;
+  } else if (Nc < 0) {
+    Nc = 0;
   }
 
   // Get an array representation of the particle velocities.
