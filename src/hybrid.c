@@ -2771,7 +2771,9 @@ int main(int argc, char **args)
   DM          grid, solve;
   KSP         ksp;
   PetscInt    it;
-  char        itmsg[256]="", itstr[256]="", itfmt[5], outfile[PETSC_MAX_PATH_LEN]="";
+  char        itfmt[5];
+  char        pathfmt[PETSC_MAX_PATH_LEN]="", pathstr[PETSC_MAX_PATH_LEN];
+  char        stepfmt[256]="", stepstr[256];
   PetscInt    itwidth;
 
   PetscFunctionBeginUser;
@@ -2831,14 +2833,20 @@ int main(int argc, char **args)
   /* Create a format string for the time step. */
   itwidth = 1+PetscLog10Real(ctx.Nt);
   sprintf(itfmt, "%%0%dd", itwidth);
-  sprintf(itstr, itfmt, 0);
+
+  /* Create a template for time-dependent filenames. */
+  PetscCall(PetscStrcat(pathfmt, "arrays-"));
+  PetscCall(PetscStrcat(pathfmt, itfmt));
+  PetscCall(PetscStrcat(pathfmt, ".hdf"));
 
   /* Output initial conditions. */
-  // TODO: Predefine string template ("arrays-%0[w]d.hdf") and update.
-  sprintf(outfile, "arrays-");
-  PetscCall(PetscStrcat(outfile, itstr));
-  PetscCall(PetscStrcat(outfile, ".hdf"));
-  PetscCall(OutputHDF5(outfile, &ctx));
+  sprintf(pathstr, pathfmt, 0);
+  PetscCall(OutputHDF5(pathstr, &ctx));
+
+  /* Create a template for the time-step string. */
+  PetscCall(PetscStrcat(stepfmt, "Time step "));
+  PetscCall(PetscStrcat(stepfmt, itfmt));
+  PetscCall(PetscStrcat(stepfmt, "\n"));
 
   PRINT_WORLD("\n*** Main time-step loop ***\n\n");
   /* Begin main time-step loop. */
@@ -2850,12 +2858,8 @@ int main(int argc, char **args)
   for (it=0; it<ctx.Nt; it++) {
 
     /* Create a string to display time step with the appropriate width. */
-    // TODO: Predefine string template ("Time step %0[w]d\n") and update.
-    sprintf(itstr, itfmt, it);
-    sprintf(itmsg, "Time step ");
-    PetscCall(PetscStrcat(itmsg, itstr));
-    PetscCall(PetscStrcat(itmsg, "\n"));
-    PRINT_WORLD(itmsg);
+    sprintf(stepstr, stepfmt, it);
+    PRINT_WORLD(stepstr);
 
     /* Update velocities */
     PetscCall(UpdateVelocities(ksp, &ctx));
@@ -2870,10 +2874,8 @@ int main(int argc, char **args)
     PetscCall(ComputePotential(ksp, &ctx));
 
     /* Output current time step. */
-    sprintf(outfile, "arrays-");
-    PetscCall(PetscStrcat(outfile, itstr));
-    PetscCall(PetscStrcat(outfile, ".hdf"));
-    PetscCall(OutputHDF5(outfile, &ctx));
+    sprintf(pathstr, pathfmt, it);
+    PetscCall(OutputHDF5(pathstr, &ctx));
 
   }
 
