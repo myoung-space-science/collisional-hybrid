@@ -116,7 +116,7 @@ typedef struct {
   Vec         vlasov;       // full vector of all Vlasov quantities
   DM          swarm;        // PIC-swarm data manager
   Vec         phi;          // electrostatic potential
-  PetscViewer gridView;     // viewer for arrays of simulated quantities
+  Vec         rhs;          // potential-equation forcing vector
   PetscViewer optionsView;  // viewer for parameter values
   PetscBool   viewLHS;      // option to view LHS operator structure
   RHSType     rhsType;      // type of RHS vector to use
@@ -124,6 +124,7 @@ typedef struct {
   DensityType densityType;  // type of initial density profile to use
   PetscInt    Nt;           // number of time steps
   PetscReal   dt;           // time-step width
+  PetscInt    it;           // time-step counter
   long        seed;         // random-number seed
 } Context;
 
@@ -1288,35 +1289,52 @@ RestoreFieldVec(DM dm, Vec full, const char *name, Vec *vec)
 
 
 static PetscErrorCode
-VecViewComposite(DM grid, Vec full, PetscViewer viewer)
+OutputHDF5(const char *name, Context *ctx)
 {
-  PetscInt nf;
-  char **names;
-  IS *isArray;
-  DM *dmArray;
-  PetscInt field;
-  Vec vec;
+  PetscViewer viewer;
+  DM          gridDM, *dms, dm;
+  PetscInt    Nf;
+  char        **keys;
+  PetscInt    field;
+  Vec         target, current=ctx->vlasov, rhs=ctx->rhs, phi=ctx->phi;
 
   PetscFunctionBeginUser;
 
-  PetscCall(DMCreateFieldDecomposition(
-            grid, &nf, &names, &isArray, &dmArray));
-  for (field=0; field<nf; field++) {
-    PetscCall(DMGetGlobalVector(dmArray[field], &vec));
-    PetscCall(VecStrideGather(full, field, vec, INSERT_VALUES));
-    PetscCall(PetscObjectSetName((PetscObject)vec, names[field]));
-    PetscCall(VecView(vec, viewer));
-    PetscCall(DMRestoreGlobalVector(dmArray[field], &vec));
+  // Get the grid DM from the swarm DM.
+  PetscCall(DMSwarmGetCellDM(ctx->swarm, &gridDM));
+
+  // Create the HDF5 viewer.
+  PetscCall(PetscViewerHDF5Open(PETSC_COMM_WORLD, name, FILE_MODE_WRITE, &viewer));
+
+  // Write grid quantities to the file.
+  PetscCall(DMCreateFieldDecomposition(gridDM, &Nf, &keys, NULL, &dms));
+  for (field=0; field<Nf; field++) {
+    dm = dms[field];
+    PetscCall(DMGetGlobalVector(dm, &target));
+    PetscCall(VecStrideGather(current, field, target, INSERT_VALUES));
+    PetscCall(PetscObjectSetName((PetscObject)target, keys[field]));
+    PetscCall(VecView(target, viewer));
+    PetscCall(DMRestoreGlobalVector(dm, &target));
   }
 
-  for (field=0; field<nf; field++) {
-    PetscFree(names[field]);
-    PetscCall(ISDestroy(&isArray[field]));
-    PetscCall(DMDestroy(&dmArray[field]));
+  // Release memory.
+  for (field=0; field<Nf; field++) {
+    PetscFree(keys[field]);
+    PetscCall(DMDestroy(&dms[field]));
   }
-  PetscFree(names);
-  PetscFree(isArray);
-  PetscFree(dmArray);
+  PetscFree(keys);
+  PetscFree(dms);
+
+  // Write the forcing vector to the file.
+  PetscCall(PetscObjectSetName((PetscObject)rhs, "rhs"));
+  PetscCall(VecView(rhs, viewer));
+
+  // Write the solution vector to the file.
+  PetscCall(PetscObjectSetName((PetscObject)phi, "potential"));
+  PetscCall(VecView(phi, viewer));
+
+  // Destroy the HDF5 viewer.
+  PetscCall(PetscViewerDestroy(&viewer));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -1375,9 +1393,8 @@ ComputeConstantRHS(KSP ksp, Vec b, void *_ctx)
   // Restore the density vector.
   PetscCall(RestoreFieldVec(grid, ctx->vlasov, "density", &density));
 
-  // Write the RHS vector to HDF5.
-  PetscCall(PetscObjectSetName((PetscObject)b, "rhs"));
-  PetscCall(VecView(b, ctx->gridView));
+  // Store the RHS vector in the problem context.
+  ctx->rhs = b;
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -1462,9 +1479,8 @@ ComputeSinusoidalRHS(KSP ksp, Vec b, void *_ctx)
   PetscCall(MatNullSpaceRemove(nullspace, b));
   PetscCall(MatNullSpaceDestroy(&nullspace));
 
-  // Write the RHS vector to HDF5.
-  PetscCall(PetscObjectSetName((PetscObject)b, "rhs"));
-  PetscCall(VecView(b, ctx->gridView));
+  // Store the RHS vector in the problem context.
+  ctx->rhs = b;
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -1622,9 +1638,8 @@ ComputeFullRHS(KSP ksp, Vec b, void *_ctx)
   PetscCall(MatNullSpaceRemove(nullspace, b));
   PetscCall(MatNullSpaceDestroy(&nullspace));
 
-  // Write the RHS vector to HDF5.
-  PetscCall(PetscObjectSetName((PetscObject)b, "rhs"));
-  PetscCall(VecView(b, ctx->gridView));
+  // Store the RHS vector in the problem context.
+  ctx->rhs = b;
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -2756,7 +2771,7 @@ int main(int argc, char **args)
   DM          grid, solve;
   KSP         ksp;
   PetscInt    it;
-  char        itstr[256]="", itfmt[5];
+  char        itmsg[256]="", itstr[256]="", itfmt[5], outfile[PETSC_MAX_PATH_LEN]="";
   PetscInt    itwidth;
 
   PetscFunctionBeginUser;
@@ -2772,9 +2787,6 @@ int main(int argc, char **args)
 
   /* Assign parameter values from user arguments or defaults. */
   PetscCall(ProcessOptions(&ctx));
-
-  /* Set up the viewer for simulated quantities. */
-  PetscCall(PetscViewerHDF5Open(PETSC_COMM_WORLD, "grid.hdf", FILE_MODE_WRITE, &ctx.gridView));
 
   /* Store MPI information in the application context. */
   ctx.mpi = mpi;
@@ -2815,18 +2827,18 @@ int main(int argc, char **args)
   PetscCall(KSPSetComputeRHS(ksp, ComputeRHS, &ctx));
   PetscCall(KSPSetComputeOperators(ksp, ComputeLHS, &ctx));
   PetscCall(ComputePotential(ksp, &ctx));
-  PetscCall(PetscObjectSetName((PetscObject)ctx.phi, "potential"));
 
-  /* Output initial conditions. */
-  PetscCall(VecViewComposite(grid, ctx.vlasov, ctx.gridView));
-  PetscCall(VecView(ctx.phi, ctx.gridView));
-
-  /* Create a string to display time step with the appropriate width. */
-  PetscCall(PetscStrcat(itstr, "Time step "));
+  /* Create a format string for the time step. */
   itwidth = 1+PetscLog10Real(ctx.Nt);
   sprintf(itfmt, "%%0%dd", itwidth);
-  PetscCall(PetscStrcat(itstr, itfmt));
-  PetscCall(PetscStrcat(itstr, "\n"));
+  sprintf(itstr, itfmt, 0);
+
+  /* Output initial conditions. */
+  // TODO: Predefine string template ("arrays-%0[w]d.hdf") and update.
+  sprintf(outfile, "arrays-");
+  PetscCall(PetscStrcat(outfile, itstr));
+  PetscCall(PetscStrcat(outfile, ".hdf"));
+  PetscCall(OutputHDF5(outfile, &ctx));
 
   PRINT_WORLD("\n*** Main time-step loop ***\n\n");
   /* Begin main time-step loop. */
@@ -2836,7 +2848,14 @@ int main(int argc, char **args)
   - This could use a second-order leapfrog scheme similar to EPPIC.
   */
   for (it=0; it<ctx.Nt; it++) {
-    PRINT_WORLD(itstr, it);
+
+    /* Create a string to display time step with the appropriate width. */
+    // TODO: Predefine string template ("Time step %0[w]d\n") and update.
+    sprintf(itstr, itfmt, it);
+    sprintf(itmsg, "Time step ");
+    PetscCall(PetscStrcat(itmsg, itstr));
+    PetscCall(PetscStrcat(itmsg, "\n"));
+    PRINT_WORLD(itmsg);
 
     /* Update velocities */
     PetscCall(UpdateVelocities(ksp, &ctx));
@@ -2851,14 +2870,15 @@ int main(int argc, char **args)
     PetscCall(ComputePotential(ksp, &ctx));
 
     /* Output current time step. */
-    PetscCall(VecViewComposite(grid, ctx.vlasov, ctx.gridView));
-    PetscCall(VecView(ctx.phi, ctx.gridView));
+    sprintf(outfile, "arrays-");
+    PetscCall(PetscStrcat(outfile, itstr));
+    PetscCall(PetscStrcat(outfile, ".hdf"));
+    PetscCall(OutputHDF5(outfile, &ctx));
 
   }
 
   /* Free memory. */
   PetscCall(PetscViewerDestroy(&ctx.optionsView));
-  PetscCall(PetscViewerDestroy(&ctx.gridView));
   PetscCall(KSPDestroy(&ksp));
   PetscCall(VecDestroy(&ctx.vlasov));
   PetscCall(DMDestroy(&grid));
