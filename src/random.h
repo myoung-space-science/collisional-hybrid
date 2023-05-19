@@ -121,20 +121,20 @@ float ran3(long *idum)
         mk += MBIG;
       }
       mj = ma[ii];
-      // Randomize them by "warming up the generator".
-      for (k=1; k<=4; k++) {
-        for (i=1; i<=55; i++) {
-          ma[i] -= ma[1+(i+30) % 55];
-          if (ma[i] < MZ) {
-            ma[i] += MBIG;
-          }
+    }
+    // Randomize them by "warming up the generator".
+    for (k=1; k<=4; k++) {
+      for (i=1; i<=55; i++) {
+        ma[i] -= ma[1+(i+30) % 55];
+        if (ma[i] < MZ) {
+          ma[i] += MBIG;
         }
       }
-      // Prepare indices for the first generated number.
-      inext = 0;
-      inextp = 31;
-      *idum = 1;
     }
+    // Prepare indices for the first generated number.
+    inext = 0;
+    inextp = 31;
+    *idum = 1;
   }
   /* Start here after initialization. */
   // Increment inext, wrapping around 56 to 1.
