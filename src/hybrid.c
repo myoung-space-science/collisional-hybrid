@@ -2848,8 +2848,7 @@ int main(int argc, char **args)
     PetscCall(CollectParticles(&ctx));
 
     /* Compute potential from density. */
-
-    /* Apply boundary conditions. */
+    PetscCall(ComputePotential(ksp, &ctx));
 
     /* Output current time step. */
 
