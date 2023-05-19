@@ -2487,7 +2487,8 @@ static PetscErrorCode
 CollideParticles(Context *ctx)
 {
   PetscInt   Nc;                                      // the number of collisions to attempt
-  PetscInt   Nf=0;                                    // the number of actual collisions
+  PetscInt   Ns=0;                                    // the number of successful collision attempts
+  PetscInt   Nf=0;                                    // the number of failed collision attempts
   PetscInt   Np=ctx->plasma.Np;                       // the total number of particles
   PetscInt   ic, ip;
   PetscReal  fc=ctx->ions.nu * ctx->dt;               // the product of the collision rate and the time step
@@ -2536,11 +2537,12 @@ CollideParticles(Context *ctx)
   // Get an array representation of the particle velocities.
   PetscCall(DMSwarmGetField(swarm, "velocity", NULL, NULL, (void **)&vel));
 
-  // Report number of planned collisions.
-  PRINT_WORLD("Attempting to collide %d particles out of %d ...\n", Nc, Np);
+  // Report number of collisions.
+  PRINT_WORLD("Colliding %d particles out of %d ...\n", Nc, Np);
 
-  // Loop over number of collisions.
-  for (ic=0; ic<Nc; ic++) {
+  // Attempt collisions until we reach the required number.
+  ic = 0;
+  while (Ns < Nc) {
     // Choose a random ion from the full distribution.
     ip = (PetscInt)(Np*ran3(&seed));
 
@@ -2613,11 +2615,14 @@ CollideParticles(Context *ctx)
       ratio = vfr / viT;
       if (ratio > 10) {
         PRINT_WORLD("Warning: Refusing to accept collision that results in final speed = %4.1f times thermal speed\n", ratio);
+        Nf++;
+        // TODO: We may want to terminate after a certain number of failures, or
+        // keep more detailed statistics of the types of failures.
       } else {
         vel[ip].x = vfx;
         vel[ip].y = vfy;
         vel[ip].z = vfz;
-        Nf++;
+        Ns++;
       }
 
     }
@@ -2627,7 +2632,7 @@ CollideParticles(Context *ctx)
   PetscCall(DMSwarmRestoreField(swarm, "velocity", NULL, NULL, (void **)&vel));
 
   // Report the number of actual collisions.
-  PRINT_WORLD("Completed %d out of %d collisions.\n", Nf, Nc);
+  PRINT_WORLD("Collision efficiency: %6.4f.\n", (PetscReal)Ns/(PetscReal)(Ns+Nf));
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
