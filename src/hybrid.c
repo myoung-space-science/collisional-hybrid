@@ -2664,6 +2664,16 @@ UpdatePositions(Context *ctx)
   DM          swarm=ctx->swarm;
   RealVector  *pos, *vel;
   PetscInt    ip, np;
+  PetscReal   x, y, z;
+  PetscReal   Lx=ctx->grid.L.x;
+  PetscReal   Ly=ctx->grid.L.y;
+  PetscReal   Lz=ctx->grid.L.z;
+  PetscReal   x0=ctx->grid.p0.x;
+  PetscReal   y0=ctx->grid.p0.y;
+  PetscReal   z0=ctx->grid.p0.z;
+  PetscReal   x1=ctx->grid.p1.x;
+  PetscReal   y1=ctx->grid.p1.y;
+  PetscReal   z1=ctx->grid.p1.z;
   PetscReal   dt=ctx->dt;
 
   PetscFunctionBeginUser;
@@ -2680,11 +2690,34 @@ UpdatePositions(Context *ctx)
 
   // Loop over ions.
   for (ip=0; ip<np; ip++) {
-    // Update the position components.
-    pos[ip].x += vel[ip].x * dt;
-    pos[ip].y += vel[ip].y * dt;
-    pos[ip].z += vel[ip].z * dt;
-    // TODO: Apply boundary conditions.
+    // Update the x position.
+    x = pos[ip].x + vel[ip].x*dt;
+    // [DEV] Apply periodic BC along x.
+    while (x < x0) {
+      x += Lx;
+    }
+    while (x > x1) {
+      x -= Lx;
+    }
+    // Update the y position.
+    y = pos[ip].y + vel[ip].y*dt;
+    // [DEV] Apply periodic BC along y.
+    while (y < y0) {
+      y += Ly;
+    }
+    while (y > y1) {
+      y -= Ly;
+    }
+    // Update the z position.
+    z = pos[ip].z + vel[ip].z*dt;
+    // [DEV] Apply periodic BC along z.
+    while (z < z0) {
+      z += Lz;
+    }
+    while (z > z1) {
+      z -= Lz;
+    }
+    // TODO: Implement more flexible BC.
   }
   // Restore the ion-positions array.
   PetscCall(DMSwarmRestoreField(swarm, "position", NULL, NULL, (void **)&pos));
@@ -2799,7 +2832,8 @@ int main(int argc, char **args)
     /* Update positions. */
     PetscCall(UpdatePositions(&ctx));
 
-    /* Compute density and flux from particle positions. */
+    /* Compute density and flux from ion positions. */
+    PetscCall(CollectParticles(&ctx));
 
     /* Compute potential from density. */
 
