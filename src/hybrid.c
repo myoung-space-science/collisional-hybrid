@@ -2486,18 +2486,23 @@ This function is based on, but not identical to, EPPIC elastic_scatter.
 static PetscErrorCode
 CollideParticles(Context *ctx)
 {
-  PetscInt   Nc;                                      // the number of particles to collide
+  PetscInt   Nc;                                      // the number of collisions to attempt
+  PetscInt   Nf=0;                                    // the number of actual collisions
   PetscInt   Np=ctx->plasma.Np;                       // the total number of particles
   PetscInt   ic, ip;
   PetscReal  fc=ctx->ions.nu * ctx->dt;               // the product of the collision rate and the time step
-  PetscReal  vrm=ctx->ions.v0.r + 4.0*ctx->ions.vT.r; // the maximum allowed ion-neutral relative velocity
-  PetscReal  vnT=ctx->neutrals.vT;                    // the neutral-particle thermal speed
-  PetscReal  vn0=ctx->neutrals.v0.r;                  // the neutral-particle drift speed
-  PetscReal  vn0x=ctx->neutrals.v0.x;                 // the neutral-particle x-axis drift component
-  PetscReal  vn0y=ctx->neutrals.v0.y;                 // the neutral-particle y-axis drift component
-  PetscReal  vn0z=ctx->neutrals.v0.z;                 // the neutral-particle z-axis drift component
-  PetscReal  mn=ctx->neutrals.m;                      // the neutral-particle mass
-  PetscReal  mi=ctx->ions.m;                          // the ion mass
+  PetscReal  viT=ctx->ions.vT.r;                      // the ion-species thermal speed
+  PetscReal  vi0x=ctx->ions.v0.x;                     // the ion-species x-axis drift component
+  PetscReal  vi0y=ctx->ions.v0.y;                     // the ion-species y-axis drift component
+  PetscReal  vi0z=ctx->ions.v0.z;                     // the ion-species z-axis drift component
+  PetscReal  vnT=ctx->neutrals.vT;                    // the neutral-species thermal speed
+  PetscReal  vn0=ctx->neutrals.v0.r;                  // the neutral-species drift speed
+  PetscReal  vn0x=ctx->neutrals.v0.x;                 // the neutral-species x-axis drift component
+  PetscReal  vn0y=ctx->neutrals.v0.y;                 // the neutral-species y-axis drift component
+  PetscReal  vn0z=ctx->neutrals.v0.z;                 // the neutral-species z-axis drift component
+  PetscReal  vrm;                                     // the maximum ion-neutral relative velocity
+  PetscReal  mi=ctx->ions.m;                          // the ion-species mass
+  PetscReal  mn=ctx->neutrals.m;                      // the neutral-species mass
   PetscReal  M=mn+mi;                                 // the total mass (mi+mn)
   DM         swarm=ctx->swarm;
   RealVector *vel;
@@ -2508,15 +2513,19 @@ CollideParticles(Context *ctx)
   PetscReal  vcx, vcy, vcz;                           // center-of-mass velocity components
   PetscReal  vcr;                                     // the ion speed with respect to the center of mass
   PetscReal  costht, sintht, cosphi, sinphi;
-  PetscReal  ux, uy, uz, uperp, uphi;
+  PetscReal  ux, uy, uz, uperp, uphi;                 // components of the unit scattering vector
   PetscReal  ux1, uy1, uz1, ux2, uy2, uz2;
-  PetscReal  vfx, vfy, vfz;
+  PetscReal  vfx, vfy, vfz, vfr;                      // components and magnitude of current ion's final speed
   long       seed=ctx->seed;
+  PetscReal  ratio;                                   // ratio of current ion's final speed to thermal speed
 
   PetscFunctionBeginUser;
   ECHO_FUNCTION_ENTER;
 
-  // Compute the number of collisions.
+  // Compute the maximum relative velocity.
+  vrm = 4.0*viT + PetscSqrtReal(PetscSqr(vi0x-vn0x) + PetscSqr(vi0y-vn0y) + PetscSqr(vi0z-vn0z));
+
+  // Compute the number of collisions to attempt.
   Nc = (PetscInt)(((PetscReal)Np * fc * vrm) / ((vnT + vn0) * PetscSqrtReal(mn / mi)));
   if (Nc > Np) {
     Nc = Np;
@@ -2525,10 +2534,13 @@ CollideParticles(Context *ctx)
   // Get an array representation of the particle velocities.
   PetscCall(DMSwarmGetField(swarm, "velocity", NULL, NULL, (void **)&vel));
 
+  // Report number of planned collisions.
+  PRINT_WORLD("Attempting to collide %d particles out of %d ...\n", Nc, Np);
+
   // Loop over number of collisions.
   for (ic=0; ic<Nc; ic++) {
-    // Choose a random particle from the full ion distribution.
-    ip = (PetscInt)Np*ran3(&seed);
+    // Choose a random ion from the full distribution.
+    ip = (PetscInt)(Np*ran3(&seed));
 
     // Store the ion velocity components.
     vix = vel[ip].x;
@@ -2549,6 +2561,7 @@ CollideParticles(Context *ctx)
     // Collide only if the squared relative velocity is greater than the square
     // of a random percentage of the maximum relative velocity.
     if (PetscSqr(ran3(&seed)) < PetscSqr(vrr) / PetscSqr(vrm)) {
+
       // Compute the center-of-mass (CoM) velocity.
       vcx = (vix*mi + vnx*mn) / M;
       vcy = (viy*mi + vny*mn) / M;
@@ -2557,39 +2570,62 @@ CollideParticles(Context *ctx)
       // Compute the particle speed relative to the CoM velocity.
       vcr = PetscSqrtReal(PetscSqr(vix-vcx) + PetscSqr(viy-vcy) + PetscSqr(viz-vcz));
 
-      // Rotate the CoM frame to align its z axis with the incident direction.
-      costht = vrz / vrr;
-      sintht = PetscSqrtReal(1.0 - PetscSqr(costht));
-      cosphi = vrx / (vrr*sintht);
-      sinphi = vry / (vrr*sintht);
-
-      // Compute the unit scattering vector relative to the z axis.
+      // Compute the unit scattering vector relative to the CoM z axis.
       uz = 2.0*ran3(&seed) - 1.0;
       uperp = PetscSqrtReal(1.0 - PetscSqr(uz));
       uphi = 2*PETSC_PI * ran3(&seed);
       ux = uperp*PetscCosReal(uphi);
       uy = uperp*PetscSinReal(uphi);
 
-      // Rotate the unit scattering vector to the incident coordinate system.
-      uz1 = uz*costht - ux*sintht;
-      ux1 = uz*sintht - ux*costht;
-      uy1 = uy;
-      ux2 = ux1*cosphi - uy1*sinphi;
-      uy2 = ux1*sinphi - uy1*cosphi;
-      uz2 = uz1;
-      vfx = vcr * ux2;
-      vfy = vcr * uy2;
-      vfz = vcr * uz2;
+      // Rotate the CoM frame to align its z axis with the incident direction.
+      costht = vrz / vrr;
+      sintht = PetscSqrtReal(1.0 - PetscSqr(costht));
+      cosphi = vrx / (vrr*sintht);
+      sinphi = vry / (vrr*sintht);
 
-      // Update the ion velocity.
-      vel[ip].x = (vcx + vfx);
-      vel[ip].y = (vcy + vfy);
-      vel[ip].z = (vcz + vfz);
+      /* Rotate the unit scattering vector to the incident coordinate system.
+      1. rotation about CoM y axis:          (xc, yc, zc) -> (xp, yp, zp)
+      2. rotation about intermediate z axis: (xp, yp, zp) -> (xi, yi, zi)
+      */
+      ux1 = uz*sintht + ux*costht;
+      uy1 = uy;
+      uz1 = uz*costht - ux*sintht;
+      ux2 = ux1*cosphi - uy1*sinphi;
+      uy2 = ux1*sinphi + uy1*cosphi;
+      uz2 = uz1;
+
+      /* Assign final CoM velocity components.
+      vfx = vcr * ((uz*sintht + ux*costht)*cosphi - uy*sinphi)
+      vfy = vcr * ((uz*sintht - ux*costht)*sinphi + uy*cosphi)
+      vfz = vcr * ( uz*costht - ux*sintht                    )
+      */
+      vfx = vcx + vcr*ux2;
+      vfy = vcy + vcr*uy2;
+      vfz = vcz + vcr*uz2;
+
+      /* Finalize
+      - if result is unphysical, do not use it
+      - otherwise, update the ion velocity components and count the collision
+      */
+      vfr = PetscSqrtReal(PetscSqr(vfx) + PetscSqr(vfy) + PetscSqr(vfz));
+      ratio = vfr / viT;
+      if (ratio > 10) {
+        PRINT_WORLD("Warning: Refusing to accept collision that results in final speed = %4.1f times thermal speed\n", ratio);
+      } else {
+        vel[ip].x = vfx;
+        vel[ip].y = vfy;
+        vel[ip].z = vfz;
+        Nf++;
+      }
+
     }
   }
 
   // Restore the particle-velocities array.
   PetscCall(DMSwarmRestoreField(swarm, "velocity", NULL, NULL, (void **)&vel));
+
+  // Report the number of actual collisions.
+  PRINT_WORLD("Completed %d out of %d collisions.\n", Nf, Nc);
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -2606,7 +2642,9 @@ UpdateVelocities(KSP ksp, Context *ctx)
   PetscCall(BorisMover(ksp, ctx));
 
   // Apply the appropriate collision algorithm.
-  PetscCall(CollideParticles(ctx));
+  if (ctx->neutrals.m > 0.0) {
+    PetscCall(CollideParticles(ctx));
+  }
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
