@@ -1129,7 +1129,7 @@ CollectParticles(Context *ctx)
   // Get an array representation of the ion velocities.
   PetscCall(DMSwarmGetField(swarm, "velocity", NULL, NULL, (void **)&vel));
 
-  // Get the number of particles on this rank.
+  // Get the number of ions on this rank.
   PetscCall(DMSwarmGetLocalSize(swarm, &np));
 
   // Extract cell widths.
@@ -1137,9 +1137,9 @@ CollectParticles(Context *ctx)
   dy = ctx->grid.d.y;
   dz = ctx->grid.d.z;
 
-  // Loop over particles.
+  // Loop over ions.
   for (ip=0; ip<np; ip++) {
-    // Get the current particle's coordinates.
+    // Get the current ion's coordinates.
     r = pos[ip];
     // Normalize each coordinate to a fractional number of grid cells.
     x = r.x / dx;
