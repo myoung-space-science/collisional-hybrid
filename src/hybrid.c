@@ -2851,6 +2851,8 @@ int main(int argc, char **args)
     PetscCall(ComputePotential(ksp, &ctx));
 
     /* Output current time step. */
+    PetscCall(VecViewComposite(grid, ctx.vlasov, ctx.gridView));
+    PetscCall(VecView(ctx.phi, ctx.gridView));
 
   }
 
