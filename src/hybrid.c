@@ -1123,10 +1123,10 @@ CollectParticles(Context *ctx)
   // array from the local vector causes it to have room for the ghost points.
   PetscCall(DMDAVecGetArray(grid, gridvec, &array));
 
-  // Get an array representation of the particle positions.
+  // Get an array representation of the ion positions.
   PetscCall(DMSwarmGetField(swarm, "position", NULL, NULL, (void **)&pos));
 
-  // Get an array representation of the particle velocities.
+  // Get an array representation of the ion velocities.
   PetscCall(DMSwarmGetField(swarm, "velocity", NULL, NULL, (void **)&vel));
 
   // Get the number of particles on this rank.
@@ -1204,10 +1204,10 @@ CollectParticles(Context *ctx)
   // Restore the local grid vector.
   PetscCall(DMRestoreLocalVector(grid, &gridvec));
 
-  // Restore the particle-positions array.
+  // Restore the ion-positions array.
   PetscCall(DMSwarmRestoreField(swarm, "position", NULL, NULL, (void **)&pos));
 
-  // Restore the particle-velocities array.
+  // Restore the ion-velocities array.
   PetscCall(DMSwarmRestoreField(swarm, "velocity", NULL, NULL, (void **)&vel));
 
   ECHO_FUNCTION_EXIT;
