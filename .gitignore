@@ -4,3 +4,4 @@ petsc-tutorials
 .vscode
 **/__pycache__/*
 dev
+*.o
