@@ -2489,8 +2489,8 @@ CollideParticles(Context *ctx)
   PetscInt   Nc;                                      // the number of collisions to attempt
   PetscInt   Ns=0;                                    // the number of successful collision attempts
   PetscInt   Nf=0;                                    // the number of failed collision attempts
-  PetscInt   Np=ctx->plasma.Np;                       // the total number of particles
-  PetscInt   ic, ip;
+  PetscInt   Np=ctx->plasma.Np;                       // the total number of ions
+  PetscInt   ip;                                      // the current ion
   PetscReal  fc=ctx->ions.nu * ctx->dt;               // the product of the collision rate and the time step
   PetscReal  viT=ctx->ions.vT.r;                      // the ion-species thermal speed
   PetscReal  vi0x=ctx->ions.v0.x;                     // the ion-species x-axis drift component
@@ -2541,7 +2541,6 @@ CollideParticles(Context *ctx)
   PRINT_WORLD("Colliding %d particles out of %d ...\n", Nc, Np);
 
   // Attempt collisions until we reach the required number.
-  ic = 0;
   while (Ns < Nc) {
     // Choose a random ion from the full distribution.
     ip = (PetscInt)(Np*ran3(&seed));
