@@ -121,8 +121,15 @@ cleanup() {
 
 trap cleanup EXIT
 
+mark_stage() {
+    stage="${1}"
+    if [ $verbose == 1 ]; then
+        echo "[${0##*/}] ${stage} stage"
+    fi
+}
+
 # Mark this stage.
-stage="Setup"
+mark_stage "Setup"
 
 # Set the output file name.
 outfile="${outname}.${outtype}"
@@ -139,7 +146,7 @@ dstdir=${rundir}/${outdir}
 mkdir -p ${dstdir}
 
 # Mark this stage.
-stage="Symlink"
+mark_stage "Symlink"
 
 # Create a symlink to this run in the directory of runs.
 cd ${rundir}
@@ -151,7 +158,7 @@ if [ ${verbose} == 1 ]; then
 fi
 
 # Mark this stage.
-stage="Build"
+mark_stage "Build"
 
 # Build the executable in the source directory.
 cd ${srcdir}
@@ -161,7 +168,7 @@ make ${prog} &> ${dstdir}/build.log
 cd ${dstdir}
 
 # Mark this stage.
-stage="Run"
+mark_stage "Run"
 
 # Run the program.
 if [ ${debug} == 1 ]; then
