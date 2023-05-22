@@ -11,6 +11,7 @@ static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 #include "random.h"
 #include "lhs.h"
 #include "rhs.h"
+#include "output.h"
 
 const char *RHSTypes[] = {
   "constant", "sinusoidal", "full", "RHSType", "RHS_", NULL
@@ -375,6 +376,34 @@ ProcessOptions(Context *ctx)
     ctx->dt = 1.0 / ctx->ions.nu;
   }
 
+  // Set the LHS function based on LHS type.
+  switch (ctx->lhsType) {
+  case LHS_IDENTITY:
+    ctx->lhsFunc = ComputeIdentityLHS;
+    break;
+  case LHS_LAPLACIAN:
+    ctx->lhsFunc = ComputeLaplacianLHS;
+    break;
+  case LHS_FULL:
+    ctx->lhsFunc = ComputeFullLHS;
+    break;
+  default:
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Unknown LHS type: \"%s\"\n", LHSTypes[ctx->lhsType]);
+  }
+  // Set RHS function based on RHS type.
+  switch (ctx->rhsType) {
+  case RHS_CONSTANT:
+    ctx->rhsFunc = ComputeConstantRHS;
+    break;
+  case RHS_SINUSOIDAL:
+    ctx->rhsFunc = ComputeSinusoidalRHS;
+    break;
+  case RHS_FULL:
+    ctx->rhsFunc = ComputeFullRHS;
+    break;
+  default:
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Unknown RHS type: \"%s\"\n", RHSTypes[ctx->rhsType]);
+  }
   // Set grid lengths from lower and upper bounds.
   ctx->grid.L.x = ctx->grid.p1.x - ctx->grid.p0.x;
   ctx->grid.L.y = ctx->grid.p1.y - ctx->grid.p0.y;
@@ -1133,58 +1162,6 @@ ComputePotential(KSP ksp, Context *ctx)
 
 
 static PetscErrorCode
-OutputHDF5(const char *name, Context *ctx)
-{
-  PetscViewer viewer;
-  DM          gridDM, *dms, dm;
-  PetscInt    Nf;
-  char        **keys;
-  PetscInt    field;
-  Vec         target, current=ctx->vlasov, rhs=ctx->rhs, phi=ctx->phi;
-
-  PetscFunctionBeginUser;
-
-  // Get the grid DM from the swarm DM.
-  PetscCall(DMSwarmGetCellDM(ctx->swarm, &gridDM));
-
-  // Create the HDF5 viewer.
-  PetscCall(PetscViewerHDF5Open(PETSC_COMM_WORLD, name, FILE_MODE_WRITE, &viewer));
-
-  // Write grid quantities to the file.
-  PetscCall(DMCreateFieldDecomposition(gridDM, &Nf, &keys, NULL, &dms));
-  for (field=0; field<Nf; field++) {
-    dm = dms[field];
-    PetscCall(DMGetGlobalVector(dm, &target));
-    PetscCall(VecStrideGather(current, field, target, INSERT_VALUES));
-    PetscCall(PetscObjectSetName((PetscObject)target, keys[field]));
-    PetscCall(VecView(target, viewer));
-    PetscCall(DMRestoreGlobalVector(dm, &target));
-  }
-
-  // Release memory.
-  for (field=0; field<Nf; field++) {
-    PetscFree(keys[field]);
-    PetscCall(DMDestroy(&dms[field]));
-  }
-  PetscFree(keys);
-  PetscFree(dms);
-
-  // Write the forcing vector to the file.
-  PetscCall(PetscObjectSetName((PetscObject)rhs, "rhs"));
-  PetscCall(VecView(rhs, viewer));
-
-  // Write the solution vector to the file.
-  PetscCall(PetscObjectSetName((PetscObject)phi, "potential"));
-  PetscCall(VecView(phi, viewer));
-
-  // Destroy the HDF5 viewer.
-  PetscCall(PetscViewerDestroy(&viewer));
-
-  PetscFunctionReturn(PETSC_SUCCESS);
-}
-
-
-static PetscErrorCode
 ComputeInitialPhi(KSP ksp, Vec phi, void *_ctx)
 {
   // Note that this function requires this signature for use with
@@ -1205,19 +1182,7 @@ ComputeRHS(KSP ksp, Vec b, void *ctx)
 
   PetscFunctionBeginUser;
 
-  switch (user->rhsType) {
-  case RHS_CONSTANT:
-    PetscCall(ComputeConstantRHS(ksp, b, ctx));
-    break;
-  case RHS_SINUSOIDAL:
-    PetscCall(ComputeSinusoidalRHS(ksp, b, ctx));
-    break;
-  case RHS_FULL:
-    PetscCall(ComputeFullRHS(ksp, b, ctx));
-    break;
-  default:
-    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Unknown RHS type: \"%s\"\n", RHSTypes[user->rhsType]);
-  }
+  PetscCall(user->rhsFunc(ksp, b, ctx));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
@@ -1230,66 +1195,7 @@ ComputeLHS(KSP ksp, Mat J, Mat A, void *ctx)
 
   PetscFunctionBeginUser;
 
-  switch (user->lhsType) {
-  case LHS_IDENTITY:
-    PetscCall(ComputeIdentityLHS(ksp, J, A, ctx));
-    break;
-  case LHS_LAPLACIAN:
-    PetscCall(ComputeLaplacianLHS(ksp, J, A, ctx));
-    break;
-  case LHS_FULL:
-    PetscCall(ComputeFullLHS(ksp, J, A, ctx));
-    break;
-  default:
-    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Unknown LHS type: \"%s\"\n", LHSTypes[user->lhsType]);
-  }
-
-  PetscFunctionReturn(PETSC_SUCCESS);
-}
-
-
-/*
-Notes
------
-* This function is supposed to provide a way to view the basic structure of the
-  LHS operator matrix, even for production-sized runs, without potentially
-  creating a very large binary file.
-* It doesn't currently work because the local N{x,y,z} arguments are not
-  necessarily consistent with their corresponding values in the application
-  context. We could consider defining a new context to pass to this function,
-  but that may require refactoring ComputeLHS.
-*/
-static PetscErrorCode
-ViewReducedLHS(PetscInt Nx, PetscInt Ny, PetscInt Nz, void *ctx)
-{
-  KSP            ksp;
-  DM             dm;
-  DMBoundaryType xBC=DM_BOUNDARY_PERIODIC;
-  DMBoundaryType yBC=DM_BOUNDARY_PERIODIC;
-  DMBoundaryType zBC=DM_BOUNDARY_PERIODIC;
-  Mat            A;
-  PetscViewer    viewer;
-
-  PetscFunctionBeginUser;
-
-  PetscCall(DMDACreate3d(
-            PETSC_COMM_WORLD,
-            xBC, yBC, zBC,
-            DMDA_STENCIL_BOX,
-            Nx, Ny, Nz,
-            PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE,
-            1, 1,
-            NULL, NULL, NULL,
-            &dm));
-  PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
-  PetscCall(KSPSetDM(ksp, dm));
-  PetscCall(KSPSetComputeOperators(ksp, ComputeLHS, &ctx));
-  PetscCall(KSPGetOperators(ksp, &A, NULL));
-  PetscCall(PetscViewerBinaryOpen(PETSC_COMM_WORLD, "lhs.dat", FILE_MODE_WRITE, &viewer));
-  PetscCall(MatView(A, viewer));
-  PetscCall(PetscViewerDestroy(&viewer));
-  PetscCall(DMDestroy(&dm));
-  PetscCall(KSPDestroy(&ksp));
+  PetscCall(user->lhsFunc(ksp, J, A, ctx));
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
