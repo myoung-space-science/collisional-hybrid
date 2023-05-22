@@ -24,7 +24,9 @@ declare -A case_map
 
 # Define the case functions.
 run_default() {
-    ./run.sh -Nx 8 -Ny 8 -Nz 8
+    ./run.sh \
+        -Nx 8 -Ny 8 -Nz 8 \
+        ${1}
 }
 case_map['default']=run_default
 run_test_collection_8cubed() {
@@ -33,7 +35,8 @@ run_test_collection_8cubed() {
         -Np 1024 \
         -n 1 \
         -x1 0.8 -y1 0.8 -z1 0.8 \
-        --lhs-type laplacian --rhs-type sinusoidal
+        --lhs-type laplacian --rhs-type sinusoidal \
+        ${1}
 }
 case_map['test-collection-8cubed']=run_test_collection_8cubed
 run_test_collisions_8cubed() {
@@ -48,7 +51,8 @@ run_test_collisions_8cubed() {
         -dt 1e-5 \
         -nui 5e3 \
         -x1 0.8 -y1 0.8 -z1 0.8 \
-        --lhs-type laplacian --rhs-type sinusoidal
+        --lhs-type laplacian --rhs-type sinusoidal \
+        ${1}
 }
 case_map['test-collisions-8cubed']=run_test_collisions_8cubed
 run_test_collection_asymmetric() {
@@ -56,7 +60,8 @@ run_test_collection_asymmetric() {
         -Nx 15 -Ny 10 -Nz 8 \
         -Np 1200 \
         -n 1 \
-        --lhs-type laplacian --rhs-type sinusoidal
+        --lhs-type laplacian --rhs-type sinusoidal \
+        ${1}
 }
 case_map['test-collection-asymmetric']=run_test_collection_asymmetric
 run_test_collection_32cubed() {
@@ -64,7 +69,8 @@ run_test_collection_32cubed() {
         -Nx 64 -Ny 64 -Nz 64 \
         -Np 1048576 \
         -n 1 \
-        --lhs-type laplacian --rhs-type sinusoidal
+        --lhs-type laplacian --rhs-type sinusoidal \
+        ${1}
 }
 case_map['test-collection-32cubed']=run_test_collection_32cubed
 run_test_collection_long_x() {
@@ -74,7 +80,8 @@ run_test_collection_long_x() {
         -Np 1000000 \
         -n 1 \
         --density-type sinusoidal \
-        --lhs-type laplacian --rhs-type sinusoidal
+        --lhs-type laplacian --rhs-type sinusoidal \
+        ${1}
 }
 case_map['test-collection-long-x']=run_test_collection_long_x
 run_gamg_basic() {
@@ -84,7 +91,8 @@ run_gamg_basic() {
         -ksp_max_it 100 \
         -pc_type gamg \
         -pc_gamg_type agg \
-        -Nx 16 -Ny 16 -Nz 16 -n 2
+        -Nx 16 -Ny 16 -Nz 16 -n 2 \
+        ${1}
 }
 case_map['gamg-basic']=run_gamg_basic
 run_basic_physics() {
@@ -106,7 +114,8 @@ run_basic_physics() {
         -viTy 247.0 \
         -viTz 247.0 \
         -ksp_monitor_short \
-        -ksp_converged_reason
+        -ksp_converged_reason \
+        ${1}
 }
 case_map['basic-physics']=run_basic_physics
 
@@ -131,7 +140,7 @@ run_case() {
         # Move the runtime directory to the top of the stack.
         pushd "${projdir}" &> /dev/null
         # Run the case.
-        ${case_map[${1}]}
+        ${case_map[${1}]} --verbose
         # Remove the runtime directory from the stack.
         popd &> /dev/null
     else
