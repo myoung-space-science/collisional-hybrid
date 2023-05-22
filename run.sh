@@ -6,6 +6,7 @@ set -e
 
 # Declare the name of the target program.
 prog=hybrid
+progname=${0##*/}
 
 # Declare project-related directories.
 rootdir=/home/matthew/sandbox/dmswarm-hybrid
@@ -35,13 +36,12 @@ endul=$(tput rmul)
 # This is the CLI's main help text.
 show_help()
 {
-    cli_name=${0##*/}
     echo "
 ${textbf}NAME${textnm}
-        $cli_name - Run the hybrid simulation
+        $progname - Run the hybrid simulation
 
 ${textbf}SYNOPSIS${textnm}
-        ${textbf}$cli_name${textnm} [${startul}OPTIONS${endul}]
+        ${textbf}$progname${textnm} [${startul}OPTIONS${endul}]
 
 ${textbf}DESCRIPTION${textnm}
         This script will make and execute ${textbf}${prog}${textnm}.
@@ -124,7 +124,7 @@ trap cleanup EXIT
 mark_stage() {
     stage="${1}"
     if [ $verbose == 1 ]; then
-        echo "[${0##*/}] ${stage} stage"
+        echo "[${progname}] ${stage} stage"
     fi
 }
 
