@@ -1,0 +1,11 @@
+#ifndef OUTPUT_H
+#define OUTPUT_H
+
+#include <petsc.h>
+#include "hybrid.h"
+
+extern PetscErrorCode OutputHDF5(const char *name, Context *ctx);
+
+extern PetscErrorCode ViewReducedLHS(PetscInt Nx, PetscInt Ny, PetscInt Nz, void *_ctx);
+
+#endif // OUTPUT_H
