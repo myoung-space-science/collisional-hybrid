@@ -115,6 +115,11 @@ typedef enum {
   DENSITY_GAUSSIAN,
 } DensityType;
 
+// TODO: Consider moving LHS and RHS typedefs to their respective header files.
+// That would mean we'd need to include those header files here.
+typedef PetscErrorCode (*LHSFunc)(KSP ksp, Mat J, Mat A, void *_ctx);
+typedef PetscErrorCode (*RHSFunc)(KSP ksp, Vec b, void *_ctx);
+
 typedef struct {
   Grid        grid;         // grid information
   Charged     electrons;    // electron parameter values
@@ -129,6 +134,8 @@ typedef struct {
   PetscBool   viewLHS;      // option to view LHS operator structure
   RHSType     rhsType;      // type of RHS vector to use
   LHSType     lhsType;      // type of LHS operator to use
+  RHSFunc     rhsFunc;      // function corresponding to rhsType
+  LHSFunc     lhsFunc;      // function corresponding to lhsType
   DensityType densityType;  // type of initial density profile to use
   PetscInt    Nt;           // number of time steps
   PetscReal   dt;           // time-step width
