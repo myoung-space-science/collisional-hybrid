@@ -1,5 +1,5 @@
-#ifndef _HYBRID_H
-#define _HYBRID_H
+#ifndef HYBRID_H
+#define HYBRID_H
 
 #include <petsc.h>
 
@@ -22,4 +22,4 @@
 #define PRINT_RANKS(...) {PetscCall(PetscSynchronizedPrintf(PETSC_COMM_WORLD, __VA_ARGS__)); PetscCall(PetscSynchronizedFlush(PETSC_COMM_WORLD, PETSC_STDOUT));}
 #define NEWLINE {PRINT_WORLD("\n");}
 
-#endif // _HYBRID_H
+#endif // HYBRID_H
