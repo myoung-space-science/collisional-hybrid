@@ -642,11 +642,13 @@ UniformDistribution(Context *ctx)
   // Get a representation of the particle coordinates.
   PetscCall(DMSwarmGetField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
-  // Loop over cells; place an equal number of particles at the center of each.
+  // Loop over cells and place an equal number of particles at the center of
+  // each cell in all but the last row of each index. This will result in a
+  // symmetric step-function distribution. It is not truly uniform.
   for (ip=0; ip<np_cell; ip++) {
-    for (i=i0; i<i0+ni; i++) {
-      for (j=j0; j<j0+nj; j++) {
-        for (k=k0; k<k0+nk; k++) {
+    for (i=i0; i<i0+ni-1; i++) {
+      for (j=j0; j<j0+nj-1; j++) {
+        for (k=k0; k<k0+nk-1; k++) {
           idx = (ip*nc + k + j*nk + i*nk*nj)*NDIM;
           r[0] = (PetscReal)(i + 1);
           r[1] = (PetscReal)(j + 1);
