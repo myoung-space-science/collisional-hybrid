@@ -460,21 +460,21 @@ ProcessOptions(Context *ctx)
   } else if ((ctx->xBC[0] != BC_PERIODIC) && (ctx->xBC[1] != BC_PERIODIC)) {
     ctx->xDMBC = DM_BOUNDARY_GHOSTED;
   } else {
-    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Inconsistent x-axis boundary conditions: {%s, %s}\n", BCTypes[ctx->xBC[0]], BCTypes[ctx->xBC[1]]);
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_INCOMP, "Inconsistent x-axis boundary conditions: {%s, %s}\n", BCTypes[ctx->xBC[0]], BCTypes[ctx->xBC[1]]);
   }
   if ((ctx->yBC[0] == BC_PERIODIC) && (ctx->yBC[1] == BC_PERIODIC)) {
     ctx->yDMBC = DM_BOUNDARY_PERIODIC;
   } else if ((ctx->yBC[0] != BC_PERIODIC) && (ctx->yBC[1] != BC_PERIODIC)) {
     ctx->yDMBC = DM_BOUNDARY_GHOSTED;
   } else {
-    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Inconsistent y-axis boundary conditions: {%s, %s}\n", BCTypes[ctx->yBC[0]], BCTypes[ctx->yBC[1]]);
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_INCOMP, "Inconsistent y-axis boundary conditions: {%s, %s}\n", BCTypes[ctx->yBC[0]], BCTypes[ctx->yBC[1]]);
   }
   if ((ctx->zBC[0] == BC_PERIODIC) && (ctx->zBC[1] == BC_PERIODIC)) {
     ctx->zDMBC = DM_BOUNDARY_PERIODIC;
   } else if ((ctx->zBC[0] != BC_PERIODIC) && (ctx->zBC[1] != BC_PERIODIC)) {
     ctx->zDMBC = DM_BOUNDARY_GHOSTED;
   } else {
-    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Inconsistent z-axis boundary conditions: {%s, %s}\n", BCTypes[ctx->zBC[0]], BCTypes[ctx->zBC[1]]);
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_INCOMP, "Inconsistent z-axis boundary conditions: {%s, %s}\n", BCTypes[ctx->zBC[0]], BCTypes[ctx->zBC[1]]);
   }
   if ((ctx->xDMBC == DM_BOUNDARY_PERIODIC) && (ctx->yDMBC == DM_BOUNDARY_PERIODIC) && (ctx->zDMBC == DM_BOUNDARY_PERIODIC)) {
     ctx->stencilFunc = ComputePeriodicStencil;
