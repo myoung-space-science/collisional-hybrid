@@ -1698,8 +1698,10 @@ CollideParticles(Context *ctx)
       if (ratio > 10) {
         PRINT_WORLD("Warning: Refusing to accept collision that results in final speed = %4.1f times thermal speed\n", ratio);
         Nf++;
-        // TODO: We may want to terminate after a certain number of failures, or
-        // keep more detailed statistics of the types of failures.
+        // Terminate the simulation if at least 10 collisions have failed.
+        if (Nf >= 10) {
+          SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_SIG, "Failed to collide %d ion-neutral pairs. Aborting.", Nf);
+        }
       } else {
         vel[ip].x = vfx;
         vel[ip].y = vfy;
