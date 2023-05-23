@@ -2,6 +2,142 @@
 #include "hybrid.h"
 #include "lhs.h"
 
+PetscErrorCode ComputeInteriorStencil(PetscInt i, PetscInt j, PetscInt k, PetscReal ***f, MatStencil cols[NVALUES], PetscReal vals[NVALUES])
+{
+  PetscFunctionBeginUser;
+  // Assign the value at node (i+1, j, k).
+  vals[0] = f[k][j][i+1];
+  cols[0].i = i+1;
+  cols[0].j = j;
+  cols[0].k = k;
+  // Assign the value at node (i-1, j, k).
+  vals[1] = f[k][j][i-1];
+  cols[1].i = i-1;
+  cols[1].j = j;
+  cols[1].k = k;
+  // Assign the value at node (i, j+1, k).
+  vals[2] = f[k][j+1][i];
+  cols[2].i = i;
+  cols[2].j = j+1;
+  cols[2].k = k;
+  // Assign the value at node (i, j-1, k).
+  vals[3] = f[k][j-1][i];
+  cols[3].i = i;
+  cols[3].j = j-1;
+  cols[3].k = k;
+  // Assign the value at node (i, j, k+1).
+  vals[4] = f[k+1][j][i];
+  cols[4].i = i;
+  cols[4].j = j;
+  cols[4].k = k+1;
+  // Assign the value at node (i, j, k-1).
+  vals[5] = f[k-1][j][i];
+  cols[5].i = i;
+  cols[5].j = j;
+  cols[5].k = k-1;
+  // Assign the value at node (i+1, j+1, k).
+  vals[6] = f[k][j+1][i+1];
+  cols[6].i = i+1;
+  cols[6].j = j+1;
+  cols[6].k = k;
+  // Assign the value at node (i+1, j-1, k).
+  vals[7] = f[k][j-1][i+1];
+  cols[7].i = i+1;
+  cols[7].j = j-1;
+  cols[7].k = k;
+  // Assign the value at node (i-1, j+1, k).
+  vals[8] = f[k][j+1][i-1];
+  cols[8].i = i-1;
+  cols[8].j = j+1;
+  cols[8].k = k;
+  // Assign the value at node (i-1, j-1, k).
+  vals[9] = f[k][j-1][i-1];
+  cols[9].i = i-1;
+  cols[9].j = j-1;
+  cols[9].k = k;
+  // Assign the value at node (i+1, j, k+1).
+  vals[10] = f[k+1][j][i+1];
+  cols[10].i = i+1;
+  cols[10].j = j;
+  cols[10].k = k+1;
+  // Assign the value at node (i+1, j, k-1).
+  vals[11] = f[k-1][j][i+1];
+  cols[11].i = i+1;
+  cols[11].j = j;
+  cols[11].k = k-1;
+  // Assign the value at node (i-1, j, k+1).
+  vals[12] = f[k+1][k][i-1];
+  cols[12].i = i-1;
+  cols[12].j = j;
+  cols[12].k = k+1;
+  // Assign the value at node (i-1, j, k-1).
+  vals[13] = f[k-1][j][i-1];
+  cols[13].i = i-1;
+  cols[13].j = j;
+  cols[13].k = k-1;
+  // Assign the value at node (i, j+1, k+1).
+  vals[14] = f[k+1][j+1][i];
+  cols[14].i = i;
+  cols[14].j = j+1;
+  cols[14].k = k+1;
+  // Assign the value at node (i, j+1, k-1).
+  vals[15] = f[k-1][j+1][i];
+  cols[15].i = i;
+  cols[15].j = j+1;
+  cols[15].k = k-1;
+  // Assign the value at node (i, j-1, k+1).
+  vals[16] = f[k+1][j-1][i];
+  cols[16].i = i;
+  cols[16].j = j-1;
+  cols[16].k = k+1;
+  // Assign the value at node (i, j-1, k-1).
+  vals[17] = f[k-1][j-1][i];
+  cols[17].i = i;
+  cols[17].j = j-1;
+  cols[17].k = k-1;
+  // Assign the value at node (i, j, k).
+  vals[18] = f[k][j][i];
+  cols[18].i = i;
+  cols[18].j = j;
+  cols[18].k = k;
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+PetscErrorCode ComputePeriodicStencil(PetscInt i, PetscInt j, PetscInt k, PetscReal ***f, MatStencil cols[NVALUES], PetscReal vals[NVALUES], Context *ctx)
+{
+  PetscFunctionBeginUser;
+
+  PetscCall(ComputeInteriorStencil(i, j, k, f, cols, vals));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+PetscErrorCode ComputeNeumannStencil(PetscInt i, PetscInt j, PetscInt k, PetscReal ***f, MatStencil cols[NVALUES], PetscReal vals[NVALUES], Context *ctx)
+{
+  PetscInt     Nx=ctx->grid.N.x;
+  PetscInt     Ny=ctx->grid.N.y;
+  PetscInt     Nz=ctx->grid.N.z;
+
+  PetscFunctionBeginUser;
+
+  // TODO
+  if (i==0 || j==0 || k==0 || i==Nx-1 || j==Ny-1 || k==Nz-1) {
+    if (i == Nx-1) {}
+    if (i == 0) {}
+    if (j == Ny-1) {}
+    if (j == 0) {}
+    if (k == Nz-1) {}
+    if (k == 0) {}
+  } else {
+    PetscCall(ComputeInteriorStencil(i, j, k, f, cols, vals));
+  }
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 PetscErrorCode ComputeIdentityLHS(KSP ksp, Mat J, Mat A, void *_ctx)
 {
   Context      *ctx=(Context *)_ctx;
@@ -230,25 +366,17 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   PetscInt     ni, nj, nk;
   // grid indices
   PetscInt     i, j, k;
-  PetscInt     im1, ip1, jm1, jp1, km1, kp1;
   // the density value at the current and neighboring grid points
   PetscScalar  nijk, npjk, nmjk, nipk, nimk, nijp, nijm;
-  // diagonal coefficient
-  PetscScalar  vijk=1.0;
-  // star-stencil coefficients
-  PetscScalar  vpjk=0.0, vmjk=0.0, vipk=0.0, vimk=0.0, vijp=0.0, vijm=0.0;
-  // x-y corners
-  PetscScalar  vmmk=0.0, vpmk=0.0, vmpk=0.0, vppk=0.0;
-  // x-z corners
-  PetscScalar  vpjp=0.0, vpjm=0.0, vmjp=0.0, vmjm=0.0;
-  // y-z corners
-  PetscScalar  vipp=0.0, vipm=0.0, vimp=0.0, vimm=0.0;
+  // discretization coefficients
+  Vec          F;
+  PetscReal    ***f;
   // the current value at each active stencil point
-  PetscScalar  val[NVALUES];
+  PetscScalar  vals[NVALUES];
   // the current matrix row
   MatStencil   row;
   // the current matrix column of each active stencil point
-  MatStencil   col[NVALUES];
+  MatStencil   cols[NVALUES];
   // the operator nullspace
   MatNullSpace nullspace;
 
@@ -292,6 +420,8 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   syz = 0.25*ctx->grid.d.x  / detA;
   szz = ctx->grid.d.x * ctx->grid.d.y / ctx->grid.d.z / detA;
 
+  // TODO: Pre-compute sij*rij coefficients for efficiency.
+
   // Get the grid DM from the context.
   PetscCall(DMSwarmGetCellDM(ctx->swarm, &grid));
 
@@ -304,6 +434,11 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   // Get the DM associated with the KSP.
   PetscCall(KSPGetDM(ksp, &dm));
 
+  // Get a local array of zeros that shares data with the KSP DM.
+  PetscCall(DMGetLocalVector(dm, &F));
+  PetscCall(VecZeroEntries(F));
+  PetscCall(DMDAVecGetArray(dm, F, &f));
+
   // Get this processor's indices.
   PetscCall(DMDAGetCorners(dm, &i0, &j0, &k0, &ni, &nj, &nk));
 
@@ -312,9 +447,7 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *_ctx)
     for (j=j0; j<j0+nj; j++) {
       for (i=i0; i<i0+ni; i++) {
 
-        // Define forward and backward indices.
-
-        // Assign density values
+        // Assign density values.
         nijk = array[k][j][i].n;
         nmjk = array[k][j][i-1].n;
         npjk = array[k][j][i+1].n;
@@ -324,130 +457,39 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *_ctx)
         nijp = array[k+1][j][i].n;
 
         /* x-y corner coefficients */
-        vppk =  sxy*rxy*(npjk + nijk) + syx*ryx*(nipk + nijk);
-        vpmk = -sxy*rxy*(npjk + nijk) - syx*ryx*(nijk + nimk);
-        vmpk = -sxy*rxy*(nijk + nmjk) - syx*ryx*(nipk + nijk);
-        vmmk =  sxy*rxy*(nijk + nmjk) + syx*ryx*(nijk + nimk);
+        f[k][j+1][i+1] =  sxy*rxy*(npjk + nijk) + syx*ryx*(nipk + nijk);
+        f[k][j-1][i+1] = -sxy*rxy*(npjk + nijk) - syx*ryx*(nijk + nimk);
+        f[k][j+1][i-1] = -sxy*rxy*(nijk + nmjk) - syx*ryx*(nipk + nijk);
+        f[k][j-1][i-1] =  sxy*rxy*(nijk + nmjk) + syx*ryx*(nijk + nimk);
         /* x-z corner coefficients */
-        vpjp =  sxz*rxz*(npjk + nijk) + szx*rzx*(nijp + nijk);
-        vpjm = -sxz*rxz*(npjk + nijk) - szx*rzx*(nijk + nijm);
-        vmjp = -sxz*rxz*(nijk + nmjk) - szx*rzx*(nijp + nijk);
-        vmjm =  sxz*rxz*(nijk + nmjk) + szx*rzx*(nijk + nijm);
+        f[k+1][j][i+1] =  sxz*rxz*(npjk + nijk) + szx*rzx*(nijp + nijk);
+        f[k-1][j][i+1] = -sxz*rxz*(npjk + nijk) - szx*rzx*(nijk + nijm);
+        f[k+1][j][i-1] = -sxz*rxz*(nijk + nmjk) - szx*rzx*(nijp + nijk);
+        f[k-1][j][i-1] =  sxz*rxz*(nijk + nmjk) + szx*rzx*(nijk + nijm);
         /* y-z corner coefficients */
-        vipp =  syz*ryz*(nipk + nijk) + szy*rzy*(nijp + nijk);
-        vipm = -syz*ryz*(nipk + nijk) - szy*rzy*(nijk + nijm);
-        vimp = -syz*ryz*(nijk + nimk) - szy*rzy*(nijp + nijk);
-        vimm =  syz*ryz*(nijk + nimk) + szy*rzy*(nijk + nijm);
+        f[k+1][j+1][i] =  syz*ryz*(nipk + nijk) + szy*rzy*(nijp + nijk);
+        f[k-1][j+1][i] = -syz*ryz*(nipk + nijk) - szy*rzy*(nijk + nijm);
+        f[k+1][j-1][i] = -syz*ryz*(nijk + nimk) - szy*rzy*(nijp + nijk);
+        f[k-1][j-1][i] =  syz*ryz*(nijk + nimk) + szy*rzy*(nijk + nijm);
         /* star-stencil coefficients */
-        vpjk =  sxx*rxx*(npjk + nijk) + vppk + vpmk + vpjp + vpjm;
-        vmjk =  sxx*rxx*(nijk + nmjk) + vmpk + vmmk + vmjp + vmjm;
-        vipk =  syy*ryy*(nipk + nijk) + vppk + vmpk + vipp + vipm;
-        vimk =  syy*ryy*(nijk + nimk) + vpmk + vmmk + vimp + vimm;
-        vijp =  szz*rzz*(nijp + nijk) + vpjp + vmjp + vipp + vimp;
-        vijm =  szz*rzz*(nijk + nijm) + vpjm + vmjm + vipm + vimm;
+        f[k][j][i+1] =  sxx*rxx*(npjk + nijk) + syx*ryx*(nipk - nimk) + szx*rzx*(nijp - nijm);
+        f[k][j][i-1] =  sxx*rxx*(nijk + nmjk) - syx*ryx*(nipk - nimk) - szx*rzx*(nijp - nijm);
+        f[k][j+1][i] =  syy*ryy*(nipk + nijk) + sxy*rxy*(npjk - nmjk) + szy*rzy*(nijp - nijm);
+        f[k][j-1][i] =  syy*ryy*(nijk + nimk) - sxy*rxy*(npjk - nmjk) - szy*rzy*(nijp - nijm);
+        f[k+1][j][i] =  szz*rzz*(nijp + nijk) + sxz*rxz*(npjk - nmjk) + syz*ryz*(nipk - nimk);
+        f[k-1][j][i] =  szz*rzz*(nijk + nijm) - sxz*rxz*(npjk - nmjk) - syz*ryz*(nipk - nimk);
         /* diagonal coefficient */
-        vijk = -(vpjk + vipk + vijp + vmjk + vimk + vijm);
+        f[k][j][i] = -(sxx*rxx*(npjk + 2*nijk + nmjk) + syy*ryy*(nipk + 2*nijk + nimk) + szz*rzz*(nijp + 2*nijk + nijm));
 
+        PetscCall(ComputePeriodicStencil(i, j, k, f, cols, vals, ctx));
         row.i = i; row.j = j; row.k = k;
-        // Interior node (i+1, j, k)
-        val[0] = vpjk;
-        col[0].i = i+1;
-        col[0].j = j;
-        col[0].k = k;
-        // Interior node (i-1, j, k)
-        val[1] = vmjk;
-        col[1].i = i-1;
-        col[1].j = j;
-        col[1].k = k;
-        // Interior node (i, j+1, k)
-        val[2] = vipk;
-        col[2].i = i;
-        col[2].j = j+1;
-        col[2].k = k;
-        // Interior node (i, j-1, k)
-        val[3] = vimk;
-        col[3].i = i;
-        col[3].j = j-1;
-        col[3].k = k;
-        // Interior node (i, j, k+1)
-        val[4] = vijp;
-        col[4].i = i;
-        col[4].j = j;
-        col[4].k = k+1;
-        // Interior node (i, j, k-1)
-        val[5] = vijm;
-        col[5].i = i;
-        col[5].j = j;
-        col[5].k = k-1;
-        // Interior node (i+1, j+1, k)
-        val[6] = vppk;
-        col[6].i = i+1;
-        col[6].j = j+1;
-        col[6].k = k;
-        // Interior node (i+1, j-1, k)
-        val[7] = vpmk;
-        col[7].i = i+1;
-        col[7].j = j-1;
-        col[7].k = k;
-        // Interior node (i-1, j+1, k)
-        val[8] = vmpk;
-        col[8].i = i-1;
-        col[8].j = j+1;
-        col[8].k = k;
-        // Interior node (i-1, j-1, k)
-        val[9] = vmmk;
-        col[9].i = i-1;
-        col[9].j = j-1;
-        col[9].k = k;
-        // Interior node (i+1, j, k+1)
-        val[10] = vpjp;
-        col[10].i = i+1;
-        col[10].j = j;
-        col[10].k = k+1;
-        // Interior node (i+1, j, k-1)
-        val[11] = vpjm;
-        col[11].i = i+1;
-        col[11].j = j;
-        col[11].k = k-1;
-        // Interior node (i-1, j, k+1)
-        val[12] = vmjp;
-        col[12].i = i-1;
-        col[12].j = j;
-        col[12].k = k+1;
-        // Interior node (i-1, j, k-1)
-        val[13] = vmjm;
-        col[13].i = i-1;
-        col[13].j = j;
-        col[13].k = k-1;
-        // Interior node (i, j+1, k+1)
-        val[14] = vipp;
-        col[14].i = i;
-        col[14].j = j+1;
-        col[14].k = k+1;
-        // Interior node (i, j+1, k-1)
-        val[15] = vipm;
-        col[15].i = i;
-        col[15].j = j+1;
-        col[15].k = k-1;
-        // Interior node (i, j-1, k+1)
-        val[16] = vimp;
-        col[16].i = i;
-        col[16].j = j-1;
-        col[16].k = k+1;
-        // Interior node (i, j-1, k-1)
-        val[17] = vimm;
-        col[17].i = i;
-        col[17].j = j-1;
-        col[17].k = k-1;
-        // Interior node (i, j, k)
-        val[18] = vijk;
-        col[18].i = row.i;
-        col[18].j = row.j;
-        col[18].k = row.k;
-        PetscCall(MatSetValuesStencil(A, 1, &row, NVALUES, col, val, INSERT_VALUES));
+        PetscCall(MatSetValuesStencil(A, 1, &row, NVALUES, cols, vals, INSERT_VALUES));
       }
     }
   }
+
+  PetscCall(DMDAVecRestoreArray(dm, F, &f));
+  PetscCall(DMRestoreLocalVector(dm, &F));
 
   PetscCall(DMDAVecRestoreArray(grid, gridvec, &array));
   PetscCall(DMRestoreLocalVector(grid, &gridvec));
