@@ -221,6 +221,10 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *_ctx)
   PetscInt     ni, nj, nk;
   // grid indices
   PetscInt     i, j, k;
+  PetscInt     im1, ip1, jm1, jp1, km1, kp1;
+  PetscInt     Nx=ctx->grid.N.x;
+  PetscInt     Ny=ctx->grid.N.y;
+  PetscInt     Nz=ctx->grid.N.z;
   // the density value at the current and neighboring grid points
   PetscScalar  nijk, npjk, nmjk, nipk, nimk, nijp, nijm;
   PetscScalar  nppk, npmk, nmpk, nmmk;
@@ -231,6 +235,7 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *_ctx)
   PetscScalar  E0z=ctx->plasma.E0.z;
   PetscScalar  cth=ctx->electrons.gamma*KB*ctx->electrons.T/Q;
   PetscScalar  cG=ctx->electrons.m*ctx->electrons.nu/Q;
+  PetscScalar  Eterm=0.0, Pterm=0.0, Gterm=0.0;
   PetscScalar  val;
   // the operator nullspace
   MatNullSpace nullspace;
@@ -282,34 +287,41 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *_ctx)
     for (j=j0; j<j0+nj; j++) {
       for (i=i0; i<i0+ni; i++) {
 
+        // Define backward and forward indices. [DEV] Use periodic BC for now.
+        im1 = (i == 0) ? Nx-1 : i-1;
+        ip1 = (i == Nx-1) ? 0 : i+1;
+        jm1 = (j == 0) ? Ny-1 : j-1;
+        jp1 = (j == Ny-1) ? 0 : j+1;
+        km1 = (k == 0) ? Nz-1 : k-1;
+        kp1 = (k == Nz-1) ? 0 : k+1;
+
         // Assign temporary density values.
         nijk = gridarr[k][j][i].n;
-        nmjk = gridarr[k][j][i-1].n;
-        npjk = gridarr[k][j][i+1].n;
-        nimk = gridarr[k][j-1][i].n;
-        nipk = gridarr[k][j+1][i].n;
-        nijm = gridarr[k-1][j][i].n;
-        nijp = gridarr[k+1][j][i].n;
-        nppk = gridarr[k][j+1][i+1].n;
-        npmk = gridarr[k][j-1][i+1].n;
-        nmpk = gridarr[k][j+1][i-1].n;
-        nmmk = gridarr[k][j-1][i-1].n;
-        npjp = gridarr[k+1][j][i+1].n;
-        npjm = gridarr[k-1][j][i+1].n;
-        nmjp = gridarr[k+1][j][i-1].n;
-        nmjm = gridarr[k-1][j][i-1].n;
-        nipp = gridarr[k+1][j+1][i].n;
-        nipm = gridarr[k-1][j+1][i].n;
-        nimp = gridarr[k+1][j-1][i].n;
-        nimm = gridarr[k-1][j-1][i].n;
+        nmjk = gridarr[k][j][im1].n;
+        npjk = gridarr[k][j][ip1].n;
+        nimk = gridarr[k][jm1][i].n;
+        nipk = gridarr[k][jp1][i].n;
+        nijm = gridarr[km1][j][i].n;
+        nijp = gridarr[kp1][j][i].n;
+        nppk = gridarr[k][jp1][ip1].n;
+        npmk = gridarr[k][jm1][ip1].n;
+        nmpk = gridarr[k][jp1][im1].n;
+        nmmk = gridarr[k][jm1][im1].n;
+        npjp = gridarr[kp1][j][ip1].n;
+        npjm = gridarr[km1][j][ip1].n;
+        nmjp = gridarr[kp1][j][im1].n;
+        nmjm = gridarr[km1][j][im1].n;
+        nipp = gridarr[kp1][jp1][i].n;
+        nipm = gridarr[km1][jp1][i].n;
+        nimp = gridarr[kp1][jm1][i].n;
+        nimm = gridarr[km1][jm1][i].n;
 
-        // Assign the RHS value at (i, j, k).
-        val =
-          // div(n R E0)
+        /* Assign the RHS value at (i, j, k). */
+        Eterm = // div(n R E0)
           (rxx*E0x + rxy*E0y + rxz*E0z)*(npjk - nmjk)*dy*dz +
-          (ryx*E0x + ryy*E0y + ryz*E0z)*(nipk - nimk)*dy*dz +
-          (rzx*E0x + rzy*E0y + rzz*E0z)*(nijp - nijm)*dy*dz +
-          // div(R div(P)) / e
+          (ryx*E0x + ryy*E0y + ryz*E0z)*(nipk - nimk)*dx*dz +
+          (rzx*E0x + rzy*E0y + rzz*E0z)*(nijp - nijm)*dx*dy;
+        Pterm = // div(R div(P)) / e
           cth * (
             rxx * (npjk - 2.0*nijk + nmjk) * (2.0*dy*dz/dx) +
             rxy * (nppk - npmk - nmpk + nmmk) * (0.5*dz) +
@@ -319,13 +331,13 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *_ctx)
             ryz * (nipp - nipm - nimp + nimm) * (0.5*dx) +
             rzx * (npjp - npjm - nmjp + nmjm) * (0.5*dy) +
             rzy * (nipp - nipm - nimp + nimm) * (0.5*dx) +
-            rzz * (nijp - 2.0*nijk + nijm) * (2.0*dx*dy/dz)) +
-          // (1+kappa^2) (me nue / e) div(flux)
+            rzz * (nijp - 2.0*nijk + nijm) * (2.0*dx*dy/dz));
+        Gterm = // (1+kappa^2) (me nue / e) div(flux)
           detA * cG * (
-            (gridarr[k][j][i+1].flux[0]-gridarr[k][j][i-1].flux[0])*(dy*dz) +
-            (gridarr[k][j+1][i].flux[1]-gridarr[k][j-1][i].flux[1])*(dx*dz) +
-            (gridarr[k+1][j][i].flux[2]-gridarr[k-1][j][i].flux[2])*(dx*dy));
-        rhs[k][j][i] = val / detA;
+            (gridarr[k][j][ip1].flux[0]-gridarr[k][j][im1].flux[0])*(dy*dz) +
+            (gridarr[k][jp1][i].flux[1]-gridarr[k][jm1][i].flux[1])*(dx*dz) +
+            (gridarr[kp1][j][i].flux[2]-gridarr[km1][j][i].flux[2])*(dx*dy));
+        rhs[k][j][i] = (Eterm + Pterm + Gterm) / detA;
       }
     }
   }
