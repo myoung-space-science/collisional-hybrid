@@ -116,32 +116,48 @@ typedef enum {
   DENSITY_GAUSSIAN,
 } DensityType;
 
+extern const char *BCTypes[];
+
+typedef enum {
+  BC_PERIODIC,
+  BC_INJECTION,
+  BC_REFLECTION,
+  BC_DIRICHLET,
+  BC_NEUMANN,
+} BCType;
+
 // TODO: Consider moving LHS and RHS typedefs to their respective header files.
 // That would mean we'd need to include those header files here.
 typedef PetscErrorCode (*LHSFunc)(KSP ksp, Mat J, Mat A, void *_ctx);
 typedef PetscErrorCode (*RHSFunc)(KSP ksp, Vec b, void *_ctx);
 
 typedef struct {
-  Grid        grid;         // grid information
-  Charged     electrons;    // electron parameter values
-  Charged     ions;         // ion parameter values
-  Neutral     neutrals;     // neutral-particle parameter values
-  Plasma      plasma;       // plasma information
-  MPIContext  mpi;          // MPI information
-  Vec         vlasov;       // full vector of all Vlasov quantities
-  DM          swarm;        // PIC-swarm data manager
-  Vec         phi;          // electrostatic potential
-  Vec         rhs;          // potential-equation forcing vector
-  PetscBool   viewLHS;      // option to view LHS operator structure
-  RHSType     rhsType;      // type of RHS vector to use
-  LHSType     lhsType;      // type of LHS operator to use
-  RHSFunc     rhsFunc;      // function corresponding to rhsType
-  LHSFunc     lhsFunc;      // function corresponding to lhsType
-  DensityType densityType;  // type of initial density profile to use
-  PetscInt    Nt;           // number of time steps
-  PetscReal   dt;           // time-step width
-  PetscInt    it;           // time-step counter
-  long        seed;         // random-number seed
+  Grid           grid;         // grid information
+  Charged        electrons;    // electron parameter values
+  Charged        ions;         // ion parameter values
+  Neutral        neutrals;     // neutral-particle parameter values
+  Plasma         plasma;       // plasma information
+  MPIContext     mpi;          // MPI information
+  Vec            vlasov;       // full vector of all Vlasov quantities
+  DM             swarm;        // PIC-swarm data manager
+  Vec            phi;          // electrostatic potential
+  Vec            rhs;          // potential-equation forcing vector
+  PetscBool      viewLHS;      // option to view LHS operator structure
+  BCType         xBC[2];       // x-axis boundary condition(s)
+  BCType         yBC[2];       // y-axis boundary condition(s)
+  BCType         zBC[2];       // z-axis boundary condition(s)
+  DMBoundaryType xDMBC;        // x-axis boundary type for the DM
+  DMBoundaryType yDMBC;        // y-axis boundary type for the DM
+  DMBoundaryType zDMBC;        // z-axis boundary type for the DM
+  RHSType        rhsType;      // type of RHS vector to use
+  LHSType        lhsType;      // type of LHS operator to use
+  RHSFunc        rhsFunc;      // function corresponding to rhsType
+  LHSFunc        lhsFunc;      // function corresponding to lhsType
+  DensityType    densityType;  // type of initial density profile to use
+  PetscInt       Nt;           // number of time steps
+  PetscReal      dt;           // time-step width
+  PetscInt       it;           // time-step counter
+  long           seed;         // random-number seed
 } Context;
 
 typedef struct {

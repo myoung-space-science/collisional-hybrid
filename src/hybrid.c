@@ -25,6 +25,10 @@ const char *DensityTypes[] ={
   "flat-sobol", "flat-reverse", "flat-normal", "uniform", "sinusoidal", "gaussian", "DensityType", "DENSITY_", NULL
 };
 
+const char *BCTypes[] = {
+  "periodic", "injection", "reflection", "dirichlet", "neumann", "BCType", "BC_", NULL
+};
+
 static PetscErrorCode
 ProcessOptions(Context *ctx)
 {
@@ -146,6 +150,42 @@ ProcessOptions(Context *ctx)
   }
   if (ctx->grid.p1.z == ctx->grid.p0.z) {
       PRINT_WORLD("Warning: zero-width z dimension\n");
+  }
+  PetscCall(PetscOptionsGetEnum(NULL, NULL, "--x0-bc", BCTypes, &enumArg, &found));
+  if (found) {
+    ctx->xBC[0] = enumArg;
+  } else {
+    ctx->xBC[0] = BC_PERIODIC;
+  }
+  PetscCall(PetscOptionsGetEnum(NULL, NULL, "--x1-bc", BCTypes, &enumArg, &found));
+  if (found) {
+    ctx->xBC[1] = enumArg;
+  } else {
+    ctx->xBC[1] = BC_PERIODIC;
+  }
+  PetscCall(PetscOptionsGetEnum(NULL, NULL, "--y0-bc", BCTypes, &enumArg, &found));
+  if (found) {
+    ctx->yBC[0] = enumArg;
+  } else {
+    ctx->yBC[0] = BC_PERIODIC;
+  }
+  PetscCall(PetscOptionsGetEnum(NULL, NULL, "--y1-bc", BCTypes, &enumArg, &found));
+  if (found) {
+    ctx->yBC[1] = enumArg;
+  } else {
+    ctx->yBC[1] = BC_PERIODIC;
+  }
+  PetscCall(PetscOptionsGetEnum(NULL, NULL, "--z0-bc", BCTypes, &enumArg, &found));
+  if (found) {
+    ctx->zBC[0] = enumArg;
+  } else {
+    ctx->zBC[0] = BC_PERIODIC;
+  }
+  PetscCall(PetscOptionsGetEnum(NULL, NULL, "--z1-bc", BCTypes, &enumArg, &found));
+  if (found) {
+    ctx->zBC[1] = enumArg;
+  } else {
+    ctx->zBC[1] = BC_PERIODIC;
   }
   PetscCall(PetscOptionsGetInt(NULL, NULL, "-Np", &intArg, &found));
   if (found) {
@@ -408,6 +448,28 @@ ProcessOptions(Context *ctx)
   ctx->grid.L.x = ctx->grid.p1.x - ctx->grid.p0.x;
   ctx->grid.L.y = ctx->grid.p1.y - ctx->grid.p0.y;
   ctx->grid.L.z = ctx->grid.p1.z - ctx->grid.p0.z;
+  // Set up boundary conditions. If one is periodic, both must be periodic.
+  if ((ctx->xBC[0] == BC_PERIODIC) && (ctx->xBC[1] == BC_PERIODIC)) {
+    ctx->xDMBC = DM_BOUNDARY_PERIODIC;
+  } else if ((ctx->xBC[0] != BC_PERIODIC) && (ctx->xBC[1] != BC_PERIODIC)) {
+    ctx->xDMBC = DM_BOUNDARY_GHOSTED;
+  } else {
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Inconsistent x-axis boundary conditions: {%s, %s}\n", BCTypes[ctx->xBC[0]], BCTypes[ctx->xBC[1]]);
+  }
+  if ((ctx->yBC[0] == BC_PERIODIC) && (ctx->yBC[1] == BC_PERIODIC)) {
+    ctx->yDMBC = DM_BOUNDARY_PERIODIC;
+  } else if ((ctx->yBC[0] != BC_PERIODIC) && (ctx->yBC[1] != BC_PERIODIC)) {
+    ctx->yDMBC = DM_BOUNDARY_GHOSTED;
+  } else {
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Inconsistent y-axis boundary conditions: {%s, %s}\n", BCTypes[ctx->yBC[0]], BCTypes[ctx->yBC[1]]);
+  }
+  if ((ctx->zBC[0] == BC_PERIODIC) && (ctx->zBC[1] == BC_PERIODIC)) {
+    ctx->zDMBC = DM_BOUNDARY_PERIODIC;
+  } else if ((ctx->zBC[0] != BC_PERIODIC) && (ctx->zBC[1] != BC_PERIODIC)) {
+    ctx->zDMBC = DM_BOUNDARY_GHOSTED;
+  } else {
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Inconsistent z-axis boundary conditions: {%s, %s}\n", BCTypes[ctx->zBC[0]], BCTypes[ctx->zBC[1]]);
+  }
   // Set species gyrofrequency from q, B0, and m.
   ctx->electrons.Omega.x = PetscAbsReal(ctx->electrons.q * ctx->plasma.B0.x / ctx->electrons.m);
   ctx->electrons.Omega.y = PetscAbsReal(ctx->electrons.q * ctx->plasma.B0.y / ctx->electrons.m);
@@ -469,9 +531,9 @@ InitializeGridDM(DM *grid, Context *ctx)
   PetscInt       Nx=(ctx->grid.N.x > 0 ? ctx->grid.N.x : 7);
   PetscInt       Ny=(ctx->grid.N.y > 0 ? ctx->grid.N.y : 7);
   PetscInt       Nz=(ctx->grid.N.z > 0 ? ctx->grid.N.z : 7);
-  DMBoundaryType xBC=DM_BOUNDARY_GHOSTED;
-  DMBoundaryType yBC=DM_BOUNDARY_GHOSTED;
-  DMBoundaryType zBC=DM_BOUNDARY_GHOSTED;
+  DMBoundaryType xBC=ctx->xDMBC;
+  DMBoundaryType yBC=ctx->yDMBC;
+  DMBoundaryType zBC=ctx->zDMBC;
   PetscReal      dx, dy, dz;
   PetscInt       dof=4;
   PetscInt       width=1;
