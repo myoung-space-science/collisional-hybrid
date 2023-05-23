@@ -21,6 +21,7 @@
 #define PRINT_WORLD(...) {PetscCall(PetscPrintf(PETSC_COMM_WORLD, __VA_ARGS__));}
 #define PRINT_RANKS(...) {PetscCall(PetscSynchronizedPrintf(PETSC_COMM_WORLD, __VA_ARGS__)); PetscCall(PetscSynchronizedFlush(PETSC_COMM_WORLD, PETSC_STDOUT));}
 #define NEWLINE {PRINT_WORLD("\n");}
+#define PRINTLINE {PRINT_WORLD("%d\n", __LINE__);}
 
 #define NDIM 3
 #define Q 1.6022e-19   // fundamental charge in C
