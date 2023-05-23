@@ -1814,13 +1814,7 @@ int main(int argc, char **args)
   PetscCall(PetscStrcat(pathfmt, ".hdf"));
 
   /* Output initial conditions. */
-  // TODO: Distinguish this output from the output at the end of the `it=0`
-  // step, below. We could
-  // - append "initial" to this file name
-  // - increment `it` in the time-step file name
-  // - start `it` from 1; could introduce bugs if we use `it` in other places
-  //   later and forget to decrement it
-  sprintf(pathstr, pathfmt, 0);
+  sprintf(pathstr, "arrays-initial.hdf");
   PetscCall(OutputHDF5(pathstr, &ctx));
 
   /* Create a template for the time-step string. */
