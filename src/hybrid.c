@@ -1037,6 +1037,9 @@ EchoSetup(Context ctx)
   PetscCall(PetscViewerASCIIPrintf(viewer, "dx = %f [m]\n", ctx.grid.d.x));
   PetscCall(PetscViewerASCIIPrintf(viewer, "dy = %f [m]\n", ctx.grid.d.y));
   PetscCall(PetscViewerASCIIPrintf(viewer, "dz = %f [m]\n", ctx.grid.d.z));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "xBC = {%s, %s}\n", BCTypes[ctx.xBC[0]], BCTypes[ctx.xBC[1]]));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "yBC = {%s, %s}\n", BCTypes[ctx.yBC[0]], BCTypes[ctx.yBC[1]]));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "zBC = {%s, %s}\n", BCTypes[ctx.zBC[0]], BCTypes[ctx.zBC[1]]));
   PetscCall(PetscViewerASCIIPrintf(viewer, "Np = %d\n", ctx.plasma.Np));
   PetscCall(PetscViewerASCIIPrintf(viewer, "B0x = %g [T]\n", ctx.plasma.B0.x));
   PetscCall(PetscViewerASCIIPrintf(viewer, "B0y = %g [T]\n", ctx.plasma.B0.y));
