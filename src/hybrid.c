@@ -1838,6 +1838,7 @@ int main(int argc, char **args)
   if (mpi.rank == 0) {
     time(&startTime);
   }
+  PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n**************** START *****************\n\n"));
 
   /* Assign parameter values from user arguments or defaults. */
@@ -1937,6 +1938,8 @@ int main(int argc, char **args)
   if (mpi.rank == 0) {
     time(&endTime);
   }
+  PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
+
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n----------------------------------------\n"));
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Start time: %s", asctime(localtime(&startTime))));
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "End time:   %s", asctime(localtime(&endTime))));
