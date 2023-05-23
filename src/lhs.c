@@ -104,7 +104,7 @@ PetscErrorCode ComputeInteriorStencil(PetscInt i, PetscInt j, PetscInt k, PetscR
 }
 
 
-PetscErrorCode ComputePeriodicStencil(PetscInt i, PetscInt j, PetscInt k, PetscReal ***f, MatStencil cols[NVALUES], PetscReal vals[NVALUES], Context *ctx)
+PetscErrorCode ComputePeriodicStencil(PetscInt i, PetscInt j, PetscInt k, PetscReal ***f, MatStencil cols[NVALUES], PetscReal vals[NVALUES], void *ctx)
 {
   PetscFunctionBeginUser;
 
@@ -114,11 +114,12 @@ PetscErrorCode ComputePeriodicStencil(PetscInt i, PetscInt j, PetscInt k, PetscR
 }
 
 
-PetscErrorCode ComputeNeumannStencil(PetscInt i, PetscInt j, PetscInt k, PetscReal ***f, MatStencil cols[NVALUES], PetscReal vals[NVALUES], Context *ctx)
+PetscErrorCode ComputeNeumannStencil(PetscInt i, PetscInt j, PetscInt k, PetscReal ***f, MatStencil cols[NVALUES], PetscReal vals[NVALUES], void *ctx)
 {
-  PetscInt     Nx=ctx->grid.N.x;
-  PetscInt     Ny=ctx->grid.N.y;
-  PetscInt     Nz=ctx->grid.N.z;
+  Context  *user=(Context *)ctx;
+  PetscInt Nx=user->grid.N.x;
+  PetscInt Ny=user->grid.N.y;
+  PetscInt Nz=user->grid.N.z;
 
   PetscFunctionBeginUser;
 
@@ -481,7 +482,7 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *_ctx)
         /* diagonal coefficient */
         f[k][j][i] = -(sxx*rxx*(npjk + 2*nijk + nmjk) + syy*ryy*(nipk + 2*nijk + nimk) + szz*rzz*(nijp + 2*nijk + nijm));
 
-        PetscCall(ComputePeriodicStencil(i, j, k, f, cols, vals, ctx));
+        PetscCall(ComputePeriodicStencil(i, j, k, f, cols, vals, (void *)ctx));
         row.i = i; row.j = j; row.k = k;
         PetscCall(MatSetValuesStencil(A, 1, &row, NVALUES, cols, vals, INSERT_VALUES));
       }

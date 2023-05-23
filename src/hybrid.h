@@ -126,8 +126,7 @@ typedef enum {
   BC_NEUMANN,
 } BCType;
 
-// TODO: Consider moving LHS and RHS typedefs to their respective header files.
-// That would mean we'd need to include those header files here.
+typedef PetscErrorCode (*StencilFunc)(PetscInt i, PetscInt j, PetscInt k, PetscReal ***f, MatStencil cols[NVALUES], PetscReal vals[NVALUES], void *ctx);
 typedef PetscErrorCode (*LHSFunc)(KSP ksp, Mat J, Mat A, void *_ctx);
 typedef PetscErrorCode (*RHSFunc)(KSP ksp, Vec b, void *_ctx);
 
@@ -153,6 +152,7 @@ typedef struct {
   LHSType        lhsType;      // type of LHS operator to use
   RHSFunc        rhsFunc;      // function corresponding to rhsType
   LHSFunc        lhsFunc;      // function corresponding to lhsType
+  StencilFunc    stencilFunc;  // LHS stencil function corresponding to boundary conditions
   DensityType    densityType;  // type of initial density profile to use
   PetscInt       Nt;           // number of time steps
   PetscReal      dt;           // time-step width

@@ -448,7 +448,13 @@ ProcessOptions(Context *ctx)
   ctx->grid.L.x = ctx->grid.p1.x - ctx->grid.p0.x;
   ctx->grid.L.y = ctx->grid.p1.y - ctx->grid.p0.y;
   ctx->grid.L.z = ctx->grid.p1.z - ctx->grid.p0.z;
-  // Set up boundary conditions. If one is periodic, both must be periodic.
+  // Set up boundary conditions.
+  // - If one is periodic, both must be periodic.
+  // - The pair of boundary conditions for a given axis sets the DM boundary
+  //   type for that axis.
+  // - The combination of all boundary conditions determines the LHS stencil
+  //   function.
+  // - Some combinations may not be implemented.
   if ((ctx->xBC[0] == BC_PERIODIC) && (ctx->xBC[1] == BC_PERIODIC)) {
     ctx->xDMBC = DM_BOUNDARY_PERIODIC;
   } else if ((ctx->xBC[0] != BC_PERIODIC) && (ctx->xBC[1] != BC_PERIODIC)) {
@@ -469,6 +475,11 @@ ProcessOptions(Context *ctx)
     ctx->zDMBC = DM_BOUNDARY_GHOSTED;
   } else {
     SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Inconsistent z-axis boundary conditions: {%s, %s}\n", BCTypes[ctx->zBC[0]], BCTypes[ctx->zBC[1]]);
+  }
+  if ((ctx->xDMBC == DM_BOUNDARY_PERIODIC) && (ctx->yDMBC == DM_BOUNDARY_PERIODIC) && (ctx->zDMBC == DM_BOUNDARY_PERIODIC)) {
+    ctx->stencilFunc = ComputePeriodicStencil;
+  } else {
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Unsupported boundary conditions: {%s, %s} x {%s, %s} x {%s, %s}\n", BCTypes[ctx->xBC[0]], BCTypes[ctx->xBC[1]], BCTypes[ctx->yBC[0]], BCTypes[ctx->yBC[1]], BCTypes[ctx->zBC[0]], BCTypes[ctx->zBC[1]]);
   }
   // Set species gyrofrequency from q, B0, and m.
   ctx->electrons.Omega.x = PetscAbsReal(ctx->electrons.q * ctx->plasma.B0.x / ctx->electrons.m);
