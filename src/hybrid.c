@@ -615,7 +615,9 @@ UniformDistribution(Context *ctx)
   PetscInt    i0, j0, k0;
   PetscInt    ni, nj, nk, nc;
   PetscInt    i, j, k, idx;
-  PetscReal   dx, dy, dz;
+  PetscInt    dim;
+  PetscReal   r[NDIM];
+  PetscReal   d[NDIM]={ctx->grid.d.x, ctx->grid.d.y, ctx->grid.d.z};
 
   PetscFunctionBeginUser;
   ECHO_FUNCTION_ENTER;
@@ -637,11 +639,6 @@ UniformDistribution(Context *ctx)
   // to use its existing buffer size.
   PetscCall(DMSwarmSetLocalSizes(swarm, np_cell*nc, -1));
 
-  // Extract the cell widths.
-  dx = ctx->grid.d.x;
-  dy = ctx->grid.d.y;
-  dz = ctx->grid.d.z;
-
   // Get a representation of the particle coordinates.
   PetscCall(DMSwarmGetField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
@@ -651,9 +648,12 @@ UniformDistribution(Context *ctx)
       for (j=j0; j<j0+nj; j++) {
         for (k=k0; k<k0+nk; k++) {
           idx = (ip*nc + k + j*nk + i*nk*nj)*NDIM;
-          coords[idx + 0] = dx*((PetscReal)i + 0.5);
-          coords[idx + 1] = dy*((PetscReal)j + 0.5);
-          coords[idx + 2] = dz*((PetscReal)k + 0.5);
+          r[0] = (PetscReal)(i + 1);
+          r[1] = (PetscReal)(j + 1);
+          r[2] = (PetscReal)(k + 1);
+          for (dim=0; dim<NDIM; dim++) {
+            coords[idx + dim] = d[dim]*(r[dim] - 0.5);
+          }
         }
       }
     }
