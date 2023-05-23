@@ -221,7 +221,7 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   // local grid vector
   Vec          gridvec;
   // array representation of grid quantities
-  GridNode  ***array;
+  GridNode     ***array;
   // the DM of the KSP
   DM           dm;
   // indices of the lower left corner of the local grid
