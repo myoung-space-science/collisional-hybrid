@@ -372,6 +372,8 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   // discretization coefficients
   Vec          F;
   PetscReal    ***f;
+  // the stencil function
+  StencilFunc  ComputeStencil=ctx->stencilFunc;
   // the current value at each active stencil point
   PetscScalar  vals[NVALUES];
   // the current matrix row
@@ -482,7 +484,8 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *_ctx)
         /* diagonal coefficient */
         f[k][j][i] = -(sxx*rxx*(npjk + 2*nijk + nmjk) + syy*ryy*(nipk + 2*nijk + nimk) + szz*rzz*(nijp + 2*nijk + nijm));
 
-        PetscCall(ComputePeriodicStencil(i, j, k, f, cols, vals, (void *)ctx));
+        // Compute the stencil values.
+        PetscCall(ComputeStencil(i, j, k, f, cols, vals, (void *)ctx));
         row.i = i; row.j = j; row.k = k;
         PetscCall(MatSetValuesStencil(A, 1, &row, NVALUES, cols, vals, INSERT_VALUES));
       }
