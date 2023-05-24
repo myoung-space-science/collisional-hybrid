@@ -1,7 +1,7 @@
 petscdir ?= ~/petsc
 localbin = ../bin
 
-hybrid: hybrid.o random.o lhs.o rhs.o output.o parameters.o
+hybrid: hybrid.o random.o lhs.o rhs.o output.o parameters.o initialize.o
 	-$(CLINKER) -o ${localbin}/$@ $^ $(LDLIBS)
 
 include ${petscdir}/lib/petsc/conf/variables
