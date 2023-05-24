@@ -1287,7 +1287,7 @@ int main(int argc, char **args)
 
   /* Echo the initial state. */
   if (mpi.rank == 0) {
-    PetscCall(EchoSetup(ctx));
+    PetscCall(EchoOptions(ctx));
   }
   PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
 

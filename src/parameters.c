@@ -525,7 +525,7 @@ PetscErrorCode ProcessOptions(Context *ctx)
 
 
 /* Report the current value of each runtime parameter. */
-PetscErrorCode EchoSetup(Context ctx)
+PetscErrorCode EchoOptions(Context ctx)
 {
   PetscViewer viewer;
 
