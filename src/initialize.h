@@ -10,4 +10,8 @@ extern PetscErrorCode InitializePotentialDM(DM *dm, Context *ctx);
 
 extern PetscErrorCode InitializeIonsDM(DM vlasovDM, Context *ctx);
 
+extern PetscErrorCode InitializePositions(Context *ctx);
+
+extern PetscErrorCode InitializeVelocities(Context *ctx);
+
 #endif // INITIALIZE_H
