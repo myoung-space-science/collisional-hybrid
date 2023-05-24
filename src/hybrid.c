@@ -6,7 +6,6 @@ static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 #include <petscdm.h>
 #include <petscdmda.h>
 #include <petscdmswarm.h>
-#include <petscviewerhdf5.h>
 #include "hybrid.h"
 #include "random.h"
 #include "lhs.h"

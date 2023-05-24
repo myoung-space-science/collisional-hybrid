@@ -1,4 +1,5 @@
 #include <petsc.h>
+#include <petscviewerhdf5.h>
 #include "hybrid.h"
 
 PetscErrorCode OutputHDF5(const char *name, Context *ctx)
