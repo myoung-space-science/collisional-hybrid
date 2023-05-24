@@ -84,6 +84,42 @@ run_test_collection_long_x() {
         ${1}
 }
 case_map['test-collection-long-x']=run_test_collection_long_x
+run_test_rhs_indices() {
+    ./run.sh \
+        -Nx 64 -Ny 64 -Nz 64 \
+        -n 1 \
+        -Np 1048576 \
+        --lhs-type laplacian \
+        -vi0x 1.0 \
+        -vi0y 2.0 \
+        -vi0z 3.0 \
+        -nue 5e4 \
+        -nui 3e3 \
+        -B0z 5e-5 \
+        -E0y 5e-2 \
+        -mi 5.0e-26 \
+        -mn 4.6e-26 \
+        -Te 600.0 \
+        -Ti 300.0 \
+        -Tn 300.0 \
+        --density-type flat-sobol \
+        ${1}
+}
+case_map['test-rhs-indices']=run_test_rhs_indices
+run_test_lhs_indices() {
+    ./run.sh \
+        -Nx 64 -Ny 64 -Nz 64 \
+        -n 1 \
+        -Np 1048576 \
+        --rhs-type sinusoidal \
+        -mi 5.0e-26 \
+        -mn 4.6e-26 \
+        -Ti 300.0 \
+        -Tn 300.0 \
+        -nui 3e3 \
+        ${1}
+}
+case_map['test-lhs-indices']=run_test_lhs_indices
 run_gamg_basic() {
     ./run.sh \
         -ksp_monitor_short \
