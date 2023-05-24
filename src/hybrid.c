@@ -537,7 +537,7 @@ ProcessOptions(Context *ctx)
 
 
 static PetscErrorCode
-InitializeVlasovDM(DM *grid, Context *ctx)
+InitializeVlasovDM(DM *dm, Context *ctx)
 {
   PetscInt       Nx=(ctx->grid.N.x > 0 ? ctx->grid.N.x : 7);
   PetscInt       Ny=(ctx->grid.N.y > 0 ? ctx->grid.N.y : 7);
@@ -552,17 +552,17 @@ InitializeVlasovDM(DM *grid, Context *ctx)
   PetscFunctionBeginUser;
   ECHO_FUNCTION_ENTER;
 
-  // Create the grid DM.
-  PetscCall(DMDACreate3d(PETSC_COMM_WORLD, xBC, yBC, zBC, DMDA_STENCIL_BOX, Nx, Ny, Nz, PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE, dof, width, NULL, NULL, NULL, grid));
+  // Create the DM.
+  PetscCall(DMDACreate3d(PETSC_COMM_WORLD, xBC, yBC, zBC, DMDA_STENCIL_BOX, Nx, Ny, Nz, PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE, dof, width, NULL, NULL, NULL, dm));
   // Perform basic setup.
-  PetscCall(PetscObjectSetOptionsPrefix((PetscObject)(*grid), "vlasov_"));
-  PetscCall(DMDASetElementType(*grid, DMDA_ELEMENT_Q1));
-  PetscCall(DMSetFromOptions(*grid));
-  PetscCall(DMSetUp(*grid));
-  PetscCall(PetscObjectSetName((PetscObject)(*grid), "Vlasov"));
+  PetscCall(PetscObjectSetOptionsPrefix((PetscObject)(*dm), "vlasov_"));
+  PetscCall(DMDASetElementType(*dm, DMDA_ELEMENT_Q1));
+  PetscCall(DMSetFromOptions(*dm));
+  PetscCall(DMSetUp(*dm));
+  PetscCall(PetscObjectSetName((PetscObject)(*dm), "Vlasov"));
   // Synchronize values of Nx, Ny, and Nz passed via -n{x,y,z} or
   // -da_grid_{x,y,z}. Note that this gives precedence to the latter.
-  PetscCall(DMDAGetInfo(*grid, NULL, &Nx, &Ny, &Nz, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
+  PetscCall(DMDAGetInfo(*dm, NULL, &Nx, &Ny, &Nz, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
   if (ctx->grid.N.x == -1) {
     ctx->grid.N.x = Nx;
   }
@@ -584,17 +584,17 @@ InitializeVlasovDM(DM *grid, Context *ctx)
   ctx->grid.d.x = dx;
   ctx->grid.d.y = dy;
   ctx->grid.d.z = dz;
-  // Set uniform coordinates on the grid DM.
-  PetscCall(DMDASetUniformCoordinates(*grid, ctx->grid.p0.x, ctx->grid.p1.x+dx, ctx->grid.p0.y, ctx->grid.p1.y+dy, ctx->grid.p0.z, ctx->grid.p1.z+dz));
+  // Set uniform coordinates on the DM.
+  PetscCall(DMDASetUniformCoordinates(*dm, ctx->grid.p0.x, ctx->grid.p1.x+dx, ctx->grid.p0.y, ctx->grid.p1.y+dy, ctx->grid.p0.z, ctx->grid.p1.z+dz));
   // Declare grid-quantity names.
-  PetscCall(DMDASetFieldName(*grid, 0, "density"));
-  PetscCall(DMDASetFieldName(*grid, 1, "x flux"));
-  PetscCall(DMDASetFieldName(*grid, 2, "y flux"));
-  PetscCall(DMDASetFieldName(*grid, 3, "z flux"));
-  // Associate the user context with the grid DM.
-  PetscCall(DMSetApplicationContext(*grid, &ctx));
-  // View information about the grid DM.
-  PetscCall(DMView(*grid, PETSC_VIEWER_STDOUT_WORLD));
+  PetscCall(DMDASetFieldName(*dm, 0, "density"));
+  PetscCall(DMDASetFieldName(*dm, 1, "x flux"));
+  PetscCall(DMDASetFieldName(*dm, 2, "y flux"));
+  PetscCall(DMDASetFieldName(*dm, 3, "z flux"));
+  // Associate the user context with the DM.
+  PetscCall(DMSetApplicationContext(*dm, &ctx));
+  // View information about the DM.
+  PetscCall(DMView(*dm, PETSC_VIEWER_STDOUT_WORLD));
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
