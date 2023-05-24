@@ -6,4 +6,6 @@
 
 extern PetscErrorCode ProcessOptions(Context *ctx);
 
+extern PetscErrorCode EchoSetup(Context ctx);
+
 #endif // PARAMETERS_H
