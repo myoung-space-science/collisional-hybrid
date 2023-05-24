@@ -160,6 +160,13 @@ case "${1}" in
         show_cases
         exit
         ;;
+    --clean )
+        pushd "${projdir}/src" &> /dev/null \
+        && make clean \
+        && popd &> /dev/null \
+        && echo "All clean!"
+        exit
+        ;;
     * )
         run_case "${1}"
         exit
