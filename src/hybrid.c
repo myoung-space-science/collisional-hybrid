@@ -634,7 +634,7 @@ InitializePotentialDM(DM *dm, Context *ctx)
 
 
 static PetscErrorCode
-InitializeSwarmDM(DM grid, Context *ctx)
+InitializeIonsDM(DM grid, Context *ctx)
 {
   DM       swarm;
   PetscInt dim;
@@ -1883,7 +1883,7 @@ int main(int argc, char **args)
   PetscCall(VecZeroEntries(ctx.vlasov));
 
   /* Set up particle swarm. */
-  PetscCall(InitializeSwarmDM(grid, &ctx));
+  PetscCall(InitializeIonsDM(grid, &ctx));
 
   /* Set initial particle positions. */
   PetscCall(InitializePositions(&ctx));
