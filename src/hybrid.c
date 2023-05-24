@@ -1615,7 +1615,7 @@ CollideIons(Context *ctx)
   PetscReal  mi=ctx->ions.m;                          // the ion-species mass
   PetscReal  mn=ctx->neutrals.m;                      // the neutral-species mass
   PetscReal  M=mn+mi;                                 // the total mass (mi+mn)
-  DM         swarm=ctx->ionsDM;
+  DM         ionsDM=ctx->ionsDM;
   RealVector *vel;
   PetscReal  vnx, vny, vnz;                           // neutral-particle velocity components
   PetscReal  vix, viy, viz;                           // ion velocity components
@@ -1644,8 +1644,8 @@ CollideIons(Context *ctx)
     Nc = 0;
   }
 
-  // Get an array representation of the particle velocities.
-  PetscCall(DMSwarmGetField(swarm, "velocity", NULL, NULL, (void **)&vel));
+  // Get an array representation of the ion velocities.
+  PetscCall(DMSwarmGetField(ionsDM, "velocity", NULL, NULL, (void **)&vel));
 
   // Report number of collisions.
   PRINT_WORLD("Colliding %d particles out of %d ...\n", Nc, Np);
@@ -1739,8 +1739,8 @@ CollideIons(Context *ctx)
     }
   }
 
-  // Restore the particle-velocities array.
-  PetscCall(DMSwarmRestoreField(swarm, "velocity", NULL, NULL, (void **)&vel));
+  // Restore the ion-velocities array.
+  PetscCall(DMSwarmRestoreField(ionsDM, "velocity", NULL, NULL, (void **)&vel));
 
   // Report the number of actual collisions.
   PRINT_WORLD("Collision efficiency: %6.4f.\n", (PetscReal)Ns/(PetscReal)(Ns+Nf));
