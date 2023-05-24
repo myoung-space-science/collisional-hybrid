@@ -839,7 +839,7 @@ static PetscErrorCode
 Rejection(DistributionFunction density, Context *ctx)
 {
   PetscRandom random;
-  DM          ions=ctx->ionsDM;
+  DM          ionsDM=ctx->ionsDM;
   PetscInt    np, ip;
   DM          vlasov;
   PetscInt    i0, ni, i;
@@ -858,7 +858,7 @@ Rejection(DistributionFunction density, Context *ctx)
   ECHO_FUNCTION_ENTER;
 
   // Get a representation of the ion coordinates.
-  PetscCall(DMSwarmGetField(ions, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
+  PetscCall(DMSwarmGetField(ionsDM, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
   // Create a random number generator.
   PetscCall(PetscRandomCreate(PETSC_COMM_WORLD, &random));
@@ -867,7 +867,7 @@ Rejection(DistributionFunction density, Context *ctx)
   PetscCall(PetscRandomSeed(random));
 
   // Compute local maximum density.
-  PetscCall(DMSwarmGetCellDM(ions, &vlasov));
+  PetscCall(DMSwarmGetCellDM(ionsDM, &vlasov));
   PetscCall(DMDAGetCorners(vlasov, &i0, &j0, &k0, &ni, &nj, &nk));
   for (i=i0; i<i0+ni; i++) {
     for (j=j0; j<j0+nj; j++) {
@@ -880,7 +880,7 @@ Rejection(DistributionFunction density, Context *ctx)
   PRINT_RANKS("[%d] Local maximum density: %g\n", ctx->mpi.rank, localMax);
 
   // Get the local number of ions.
-  PetscCall(DMSwarmGetLocalSize(ions, &np));
+  PetscCall(DMSwarmGetLocalSize(ionsDM, &np));
 
   // Loop over all local ions.
   ip = 0;
@@ -905,7 +905,7 @@ Rejection(DistributionFunction density, Context *ctx)
   PRINT_RANKS("[%d] Rejection efficiency: %f\n", ctx->mpi.rank, (PetscReal)ip/it);
 
   // Restore the coordinates array.
-  PetscCall(DMSwarmRestoreField(ions, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
+  PetscCall(DMSwarmRestoreField(ionsDM, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
   // Destroy the random-number generator.
   PetscCall(PetscRandomDestroy(&random));
