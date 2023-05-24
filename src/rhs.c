@@ -236,7 +236,6 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *_ctx)
   PetscScalar  cth=ctx->electrons.gamma*KB*ctx->electrons.T/Q;
   PetscScalar  cG=ctx->electrons.m*ctx->electrons.nu/Q;
   PetscScalar  Eterm=0.0, Pterm=0.0, Gterm=0.0;
-  PetscScalar  val;
   // the operator nullspace
   MatNullSpace nullspace;
 
