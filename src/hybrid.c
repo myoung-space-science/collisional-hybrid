@@ -1009,7 +1009,7 @@ InitializePositions(Context *ctx)
 static PetscErrorCode
 InitializeVelocities(Context *ctx)
 {
-  DM          swarm=ctx->ionsDM;
+  DM          ionsDM=ctx->ionsDM;
   PetscInt    np, ip;
   RealVector  *vel;
   PetscReal   dvx, dvy, dvz;
@@ -1018,13 +1018,13 @@ InitializeVelocities(Context *ctx)
   PetscFunctionBeginUser;
   ECHO_FUNCTION_ENTER;
 
-  // Get the number of local particles.
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  // Get the number of local ions.
+  PetscCall(DMSwarmGetLocalSize(ionsDM, &np));
 
-  // Get an array representation of the particle velocities.
-  PetscCall(DMSwarmGetField(swarm, "velocity", NULL, NULL, (void **)&vel));
+  // Get an array representation of the ion velocities.
+  PetscCall(DMSwarmGetField(ionsDM, "velocity", NULL, NULL, (void **)&vel));
 
-  // Loop over particles and assign parameter values.
+  // Loop over ions and assign parameter values.
   for (ip=0; ip<np; ip++) {
     PetscCall(Gasdev(&seed, &dvx));
     PetscCall(Gasdev(&seed, &dvy));
@@ -1034,8 +1034,8 @@ InitializeVelocities(Context *ctx)
     vel[ip].z = ctx->ions.vT.z*dvz + ctx->ions.v0.z;
   }
 
-  // Restore the particle-velocities array.
-  PetscCall(DMSwarmRestoreField(swarm, "velocity", NULL, NULL, (void **)&vel));
+  // Restore the ion-velocities array.
+  PetscCall(DMSwarmRestoreField(ionsDM, "velocity", NULL, NULL, (void **)&vel));
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
