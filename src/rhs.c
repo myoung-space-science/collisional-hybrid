@@ -83,7 +83,7 @@ PetscErrorCode ComputeConstantRHS(KSP ksp, Vec b, void *_ctx)
   detA = 1 + Kx*Kx + Ky*Ky + Kz*Kz;
 
   // Get the grid DM from the context.
-  PetscCall(DMSwarmGetCellDM(ctx->swarm, &grid));
+  PetscCall(DMSwarmGetCellDM(ctx->ionsDM, &grid));
 
   // Extract the density vector.
   PetscCall(GetFieldVec(grid, ctx->vlasov, "density", &density));
@@ -137,7 +137,7 @@ PetscErrorCode ComputeSinusoidalRHS(KSP ksp, Vec b, void *_ctx)
   detA = 1 + Kx*Kx + Ky*Ky + Kz*Kz;
 
   // Get the grid DM from the context.
-  PetscCall(DMSwarmGetCellDM(ctx->swarm, &grid));
+  PetscCall(DMSwarmGetCellDM(ctx->ionsDM, &grid));
 
   // Zero the incoming vector.
   PetscCall(VecZeroEntries(b));
@@ -262,7 +262,7 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *_ctx)
   rzz = 1 + Kz*Kz;
 
   // Get the grid DM from the context.
-  PetscCall(DMSwarmGetCellDM(ctx->swarm, &grid));
+  PetscCall(DMSwarmGetCellDM(ctx->ionsDM, &grid));
 
   // Extract the density array.
   PetscCall(DMGetLocalVector(grid, &gridvec));
