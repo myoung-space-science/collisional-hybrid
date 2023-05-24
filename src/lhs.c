@@ -426,7 +426,7 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *_ctx)
   // TODO: Pre-compute sij*rij coefficients for efficiency.
 
   // Get the grid DM from the context.
-  PetscCall(DMSwarmGetCellDM(ctx->swarm, &grid));
+  PetscCall(DMSwarmGetCellDM(ctx->ionsDM, &grid));
 
   // Extract the density array.
   PetscCall(DMGetLocalVector(grid, &gridvec));
