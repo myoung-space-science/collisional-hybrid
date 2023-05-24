@@ -839,9 +839,9 @@ static PetscErrorCode
 Rejection(DistributionFunction density, Context *ctx)
 {
   PetscRandom random;
-  DM          swarm=ctx->swarm;
+  DM          ions=ctx->swarm;
   PetscInt    np, ip;
-  DM          grid;
+  DM          vlasov;
   PetscInt    i0, ni, i;
   PetscInt    j0, nj, j;
   PetscInt    k0, nk, k;
@@ -857,8 +857,8 @@ Rejection(DistributionFunction density, Context *ctx)
   PetscFunctionBeginUser;
   ECHO_FUNCTION_ENTER;
 
-  // Get a representation of the particle coordinates.
-  PetscCall(DMSwarmGetField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
+  // Get a representation of the ion coordinates.
+  PetscCall(DMSwarmGetField(ions, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
   // Create a random number generator.
   PetscCall(PetscRandomCreate(PETSC_COMM_WORLD, &random));
@@ -867,8 +867,8 @@ Rejection(DistributionFunction density, Context *ctx)
   PetscCall(PetscRandomSeed(random));
 
   // Compute local maximum density.
-  PetscCall(DMSwarmGetCellDM(swarm, &grid));
-  PetscCall(DMDAGetCorners(grid, &i0, &j0, &k0, &ni, &nj, &nk));
+  PetscCall(DMSwarmGetCellDM(ions, &vlasov));
+  PetscCall(DMDAGetCorners(vlasov, &i0, &j0, &k0, &ni, &nj, &nk));
   for (i=i0; i<i0+ni; i++) {
     for (j=j0; j<j0+nj; j++) {
       for (k=k0; k<k0+nk; k++) {
@@ -879,10 +879,10 @@ Rejection(DistributionFunction density, Context *ctx)
   }
   PRINT_RANKS("[%d] Local maximum density: %g\n", ctx->mpi.rank, localMax);
 
-  // Get the local number of particles.
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  // Get the local number of ions.
+  PetscCall(DMSwarmGetLocalSize(ions, &np));
 
-  // Loop over all local particles.
+  // Loop over all local ions.
   ip = 0;
   while (ip < np) {
     PetscCall(PetscRandomGetValuesReal(random, NDIM, r));
@@ -905,7 +905,7 @@ Rejection(DistributionFunction density, Context *ctx)
   PRINT_RANKS("[%d] Rejection efficiency: %f\n", ctx->mpi.rank, (PetscReal)ip/it);
 
   // Restore the coordinates array.
-  PetscCall(DMSwarmRestoreField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
+  PetscCall(DMSwarmRestoreField(ions, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
   // Destroy the random-number generator.
   PetscCall(PetscRandomDestroy(&random));
