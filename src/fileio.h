@@ -6,6 +6,6 @@
 
 extern PetscErrorCode OutputHDF5(const char *name, Context *ctx);
 
-extern PetscErrorCode ViewReducedLHS(PetscInt Nx, PetscInt Ny, PetscInt Nz, void *_ctx);
+extern PetscErrorCode ViewReducedLHS(PetscInt Nx, PetscInt Ny, PetscInt Nz, void *ctx);
 
 #endif // OUTPUT_H
