@@ -708,7 +708,7 @@ UniformDistribution_FromSwarm(Context *ctx)
 static PetscErrorCode
 UniformDistribution(Context *ctx)
 {
-  DM          ions=ctx->ionsDM;
+  DM          ionsDM=ctx->ionsDM;
   PetscScalar *coords;
   PetscInt    np, np_cell, ip;
   DM          vlasov;
@@ -723,11 +723,11 @@ UniformDistribution(Context *ctx)
   ECHO_FUNCTION_ENTER;
 
   // Get information about the discrete grid.
-  PetscCall(DMSwarmGetCellDM(ions, &vlasov));
+  PetscCall(DMSwarmGetCellDM(ionsDM, &vlasov));
   PetscCall(DMDAGetCorners(vlasov, &i0, &j0, &k0, &ni, &nj, &nk));
 
   // Get the local number of ions.
-  PetscCall(DMSwarmGetLocalSize(ions, &np));
+  PetscCall(DMSwarmGetLocalSize(ionsDM, &np));
 
   // Compute the number of ions per cell. Note that np_cell*nc will not in
   // general be equal to the input value of -Np, if given.
@@ -737,10 +737,10 @@ UniformDistribution(Context *ctx)
   // Reset the local swarm size to avoid a seg fault when accessing the
   // coordinates array. Passing a negative value for the buffer forces the swarm
   // to use its existing buffer size.
-  PetscCall(DMSwarmSetLocalSizes(ions, np_cell*nc, -1));
+  PetscCall(DMSwarmSetLocalSizes(ionsDM, np_cell*nc, -1));
 
   // Get a representation of the particle coordinates.
-  PetscCall(DMSwarmGetField(ions, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
+  PetscCall(DMSwarmGetField(ionsDM, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
   // Loop over cells and place an equal number of particles at the center of
   // each cell in all but the last row of each index. This will result in a
@@ -762,7 +762,7 @@ UniformDistribution(Context *ctx)
   }
 
   // Restore the coordinates array.
-  PetscCall(DMSwarmRestoreField(ions, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
+  PetscCall(DMSwarmRestoreField(ionsDM, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
