@@ -634,9 +634,9 @@ InitializePotentialDM(DM *dm, Context *ctx)
 
 
 static PetscErrorCode
-InitializeIonsDM(DM grid, Context *ctx)
+InitializeIonsDM(DM vlasov, Context *ctx)
 {
-  DM       swarm;
+  DM       ions;
   PetscInt dim;
   PetscInt bufsize=0;
   PetscInt Np, np;
@@ -644,34 +644,34 @@ InitializeIonsDM(DM grid, Context *ctx)
   PetscFunctionBeginUser;
   ECHO_FUNCTION_ENTER;
 
-  // Create the swarm DM.
-  PetscCall(DMCreate(PETSC_COMM_WORLD, &swarm));
+  // Create the ions DM.
+  PetscCall(DMCreate(PETSC_COMM_WORLD, &ions));
   // Perform basic setup.
-  PetscCall(PetscObjectSetOptionsPrefix((PetscObject)swarm, "ions_"));
-  PetscCall(DMSetType(swarm, DMSWARM));
-  PetscCall(PetscObjectSetName((PetscObject)swarm, "Ions"));
-  // Synchronize the swarm DM with the grid DM.
-  PetscCall(DMGetDimension(grid, &dim));
-  PetscCall(DMSetDimension(swarm, dim));
-  PetscCall(DMSwarmSetCellDM(swarm, grid));
+  PetscCall(PetscObjectSetOptionsPrefix((PetscObject)ions, "ions_"));
+  PetscCall(DMSetType(ions, DMSWARM));
+  PetscCall(PetscObjectSetName((PetscObject)ions, "Ions"));
+  // Synchronize the ions DM with the vlasov DM.
+  PetscCall(DMGetDimension(vlasov, &dim));
+  PetscCall(DMSetDimension(ions, dim));
+  PetscCall(DMSwarmSetCellDM(ions, vlasov));
   // Declare this to be a PIC swarm. This must occur after setting `dim`.
-  PetscCall(DMSwarmSetType(swarm, DMSWARM_PIC));
+  PetscCall(DMSwarmSetType(ions, DMSWARM_PIC));
   // Register fields that each particle will have.
-  PetscCall(DMSwarmInitializeFieldRegister(swarm));
+  PetscCall(DMSwarmInitializeFieldRegister(ions));
   // --> (x, y, z) position components
-  PetscCall(DMSwarmRegisterUserStructField(swarm, "position", sizeof(RealVector)));
+  PetscCall(DMSwarmRegisterUserStructField(ions, "position", sizeof(RealVector)));
   // --> (x, y, z) velocity components
-  PetscCall(DMSwarmRegisterUserStructField(swarm, "velocity", sizeof(RealVector)));
-  PetscCall(DMSwarmFinalizeFieldRegister(swarm));
+  PetscCall(DMSwarmRegisterUserStructField(ions, "velocity", sizeof(RealVector)));
+  PetscCall(DMSwarmFinalizeFieldRegister(ions));
   // Set the per-processor swarm size and buffer length for efficient resizing.
   Np = (ctx->plasma.Np > 0) ? ctx->plasma.Np : NPTOTAL;
   np = (PetscInt)(Np / ctx->mpi.size);
   bufsize = (PetscInt)(0.25 * np);
-  PetscCall(DMSwarmSetLocalSizes(swarm, np, bufsize));
-  // View information about the swarm DM.
-  PetscCall(DMView(swarm, PETSC_VIEWER_STDOUT_WORLD));
-  // Assign the swarm to the application context.
-  ctx->swarm = swarm;
+  PetscCall(DMSwarmSetLocalSizes(ions, np, bufsize));
+  // View information about the ions DM.
+  PetscCall(DMView(ions, PETSC_VIEWER_STDOUT_WORLD));
+  // Assign the ions DM to the application context.
+  ctx->swarm = ions;
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
