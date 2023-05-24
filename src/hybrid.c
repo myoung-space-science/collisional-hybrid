@@ -772,7 +772,7 @@ UniformDistribution(Context *ctx)
 static PetscErrorCode
 SobolDistribution(Context *ctx)
 {
-  DM          swarm=ctx->ionsDM;
+  DM          ionsDM=ctx->ionsDM;
   PetscInt    seed=-1, ndim=NDIM;
   PetscReal   *coords, v;
   PetscInt    np, ip;
@@ -787,13 +787,13 @@ SobolDistribution(Context *ctx)
   ECHO_FUNCTION_ENTER;
 
   // Get a representation of the particle coordinates.
-  PetscCall(DMSwarmGetField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
+  PetscCall(DMSwarmGetField(ionsDM, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
   // Initialize the psuedo-random number generator.
   PetscCall(Sobseq(&seed, r-1));
 
   // Get the local number of particles.
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  PetscCall(DMSwarmGetLocalSize(ionsDM, &np));
 
   for (ip=0; ip<np; ip++) {
     PetscCall(Sobseq(&ndim, r-1));
@@ -810,7 +810,7 @@ SobolDistribution(Context *ctx)
   }
 
   // Restore the coordinates array.
-  PetscCall(DMSwarmRestoreField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
+  PetscCall(DMSwarmRestoreField(ionsDM, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
