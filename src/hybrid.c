@@ -9,13 +9,9 @@ static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 #include "hybrid.h"
 #include "parameters.h"
 #include "setup.h"
-#include "random.h"
 #include "distributions.h"
 #include "particles.h"
 #include "potential.h"
-#include "lhs.h"
-#include "rhs.h"
-#include "vectors.h"
 #include "output.h"
 
 
