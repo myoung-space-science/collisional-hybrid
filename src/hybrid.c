@@ -708,10 +708,10 @@ UniformDistribution_FromSwarm(Context *ctx)
 static PetscErrorCode
 UniformDistribution(Context *ctx)
 {
-  DM          swarm=ctx->swarm;
+  DM          ions=ctx->swarm;
   PetscScalar *coords;
   PetscInt    np, np_cell, ip;
-  DM          grid;
+  DM          vlasov;
   PetscInt    i0, j0, k0;
   PetscInt    ni, nj, nk, nc;
   PetscInt    i, j, k, idx;
@@ -722,25 +722,25 @@ UniformDistribution(Context *ctx)
   PetscFunctionBeginUser;
   ECHO_FUNCTION_ENTER;
 
-  // Get information about the grid.
-  PetscCall(DMSwarmGetCellDM(swarm, &grid));
-  PetscCall(DMDAGetCorners(grid, &i0, &j0, &k0, &ni, &nj, &nk));
+  // Get information about the discrete grid.
+  PetscCall(DMSwarmGetCellDM(ions, &vlasov));
+  PetscCall(DMDAGetCorners(vlasov, &i0, &j0, &k0, &ni, &nj, &nk));
 
-  // Get the local number of particles.
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  // Get the local number of ions.
+  PetscCall(DMSwarmGetLocalSize(ions, &np));
 
-  // Compute the number of particles per cell. Note that np_cell*nc will
-  // not in general be equal to the input value of -Np, if given.
+  // Compute the number of ions per cell. Note that np_cell*nc will not in
+  // general be equal to the input value of -Np, if given.
   nc = ni*nj*nk;
   np_cell = (PetscInt)(np / nc);
 
   // Reset the local swarm size to avoid a seg fault when accessing the
   // coordinates array. Passing a negative value for the buffer forces the swarm
   // to use its existing buffer size.
-  PetscCall(DMSwarmSetLocalSizes(swarm, np_cell*nc, -1));
+  PetscCall(DMSwarmSetLocalSizes(ions, np_cell*nc, -1));
 
   // Get a representation of the particle coordinates.
-  PetscCall(DMSwarmGetField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
+  PetscCall(DMSwarmGetField(ions, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
   // Loop over cells and place an equal number of particles at the center of
   // each cell in all but the last row of each index. This will result in a
@@ -762,7 +762,7 @@ UniformDistribution(Context *ctx)
   }
 
   // Restore the coordinates array.
-  PetscCall(DMSwarmRestoreField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
+  PetscCall(DMSwarmRestoreField(ions, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
