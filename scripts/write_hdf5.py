@@ -58,17 +58,23 @@ def main(filepath, verbose: bool=False, **user):
     yflux = opts.get('Vy', 0.0) * density
     zflux = opts.get('Vz', 0.0) * density
 
+    vlasov = {
+        'density': density,
+        'x flux': xflux,
+        'y flux': yflux,
+        'z flux': zflux,
+    }
+
     path = pathlib.Path(filepath).resolve().expanduser().with_suffix('.h5')
     with h5py.File(path, 'w') as f:
-        if verbose:
-            print(f"Writing density to {path}")
-        dset = f.create_dataset('density', data=density)
-        f.create_dataset('x flux', data=xflux)
-        f.create_dataset('y flux', data=yflux)
-        f.create_dataset('z flux', data=zflux)
-        for k, v in opts.items():
-            dset.attrs[k] = v
-        print(dset)
+        arrays = f.create_group('arrays')
+        for name, array in vlasov.items():
+            if verbose:
+                print(f"Writing {name} to {path}")
+            dset = arrays.create_dataset(name, data=array)
+            for k, v in opts.items():
+                dset.attrs[k] = v
+            print(dset)
     if dset:
         raise IOError("Dataset was not properly closed.")
 
