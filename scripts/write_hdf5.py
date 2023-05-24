@@ -98,34 +98,9 @@ def main(filepath, verbose: bool=False, **user):
     
     All axis lengths are 1.0.
     """
-
     opts = DEFAULTS.copy()
     opts.update({k: v for k, v in user.items() if v})
-
-    grid = Grid(nx=opts['nx'], ny=opts['ny'], nz=opts['nz'])
-
-    sinusoids = grid.sinusoidal(mx=opts['Mx'], my=opts['My'], mz=opts['Mz'])
-    gaussian = grid.gaussian(
-        sx=opts['Sx'],
-        sy=opts['Sy'],
-        sz=opts['Sz'],
-        x0=opts['x0'],
-        y0=opts['y0'],
-        z0=opts['z0'],
-    )
-
-    density = opts['n0'] + opts['dn']*sinusoids*gaussian
-    xflux = opts.get('Vx', 0.0) * density
-    yflux = opts.get('Vy', 0.0) * density
-    zflux = opts.get('Vz', 0.0) * density
-
-    vlasov = {
-        'density': density,
-        'x flux': xflux,
-        'y flux': yflux,
-        'z flux': zflux,
-    }
-
+    vlasov = compute_vlasov_quantities(opts)
     path = pathlib.Path(filepath).resolve().expanduser().with_suffix('.h5')
     with h5py.File(path, 'w') as f:
         arrays = f.create_group('arrays')
@@ -138,6 +113,30 @@ def main(filepath, verbose: bool=False, **user):
             print(dset)
     if dset:
         raise IOError("Dataset was not properly closed.")
+
+
+def compute_vlasov_quantities(opts: dict):
+    """Compute density and fluxes from options."""
+    grid = Grid(nx=opts['nx'], ny=opts['ny'], nz=opts['nz'])
+    sinusoids = grid.sinusoidal(mx=opts['Mx'], my=opts['My'], mz=opts['Mz'])
+    gaussian = grid.gaussian(
+        sx=opts['Sx'],
+        sy=opts['Sy'],
+        sz=opts['Sz'],
+        x0=opts['x0'],
+        y0=opts['y0'],
+        z0=opts['z0'],
+    )
+    density = opts['n0'] + opts['dn']*sinusoids*gaussian
+    xflux = opts.get('Vx', 0.0) * density
+    yflux = opts.get('Vy', 0.0) * density
+    zflux = opts.get('Vz', 0.0) * density
+    return {
+        'density': density,
+        'x flux': xflux,
+        'y flux': yflux,
+        'z flux': zflux,
+    }
 
 
 if __name__ == '__main__':
