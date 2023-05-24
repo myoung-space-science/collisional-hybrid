@@ -646,7 +646,7 @@ InitializeIonsDM(DM grid, Context *ctx)
   // Create the swarm DM.
   PetscCall(DMCreate(PETSC_COMM_WORLD, &swarm));
   // Perform basic setup.
-  PetscCall(PetscObjectSetOptionsPrefix((PetscObject)(swarm), "ions_"));
+  PetscCall(PetscObjectSetOptionsPrefix((PetscObject)swarm, "ions_"));
   PetscCall(DMSetType(swarm, DMSWARM));
   PetscCall(PetscObjectSetName((PetscObject)swarm, "Ions"));
   // Synchronize the swarm DM with the grid DM.
