@@ -1130,7 +1130,7 @@ EchoSetup(Context ctx)
 
 
 static PetscErrorCode
-CollectParticles(Context *ctx)
+CollectIons(Context *ctx)
 {
   DM          vlasov, ions=ctx->swarm;
   Vec         gridvec;
@@ -1902,7 +1902,7 @@ int main(int argc, char **args)
   PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
 
   /* Compute initial density and flux. */
-  PetscCall(CollectParticles(&ctx));
+  PetscCall(CollectIons(&ctx));
 
   /* Set up the discrete grid for the electrostatic potential. */
   PetscCall(InitializePotentialDM(&pdm, &ctx));
@@ -1951,7 +1951,7 @@ int main(int argc, char **args)
     PetscCall(UpdatePositions(&ctx));
 
     /* Compute density and flux from ion positions. */
-    PetscCall(CollectParticles(&ctx));
+    PetscCall(CollectIons(&ctx));
 
     /* Compute potential from density. */
     PetscCall(ComputePotential(ksp, &ctx));
