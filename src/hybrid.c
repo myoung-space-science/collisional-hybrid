@@ -93,12 +93,12 @@ int main(int argc, char **args)
   sprintf(itfmt, "%%0%dd", itwidth);
 
   /* Create a template for time-dependent filenames. */
-  PetscCall(PetscStrcat(pathfmt, "arrays-"));
+  PetscCall(PetscStrcat(pathfmt, "hybrid-"));
   PetscCall(PetscStrcat(pathfmt, itfmt));
   PetscCall(PetscStrcat(pathfmt, ".hdf"));
 
   /* Output initial conditions. */
-  sprintf(pathstr, "arrays-initial.hdf");
+  sprintf(pathstr, "hybrid-initial.hdf");
   PetscCall(OutputHDF5(pathstr, &ctx));
 
   /* Create a template for the time-step string. */
