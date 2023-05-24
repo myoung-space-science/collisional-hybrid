@@ -1132,7 +1132,7 @@ EchoSetup(Context ctx)
 static PetscErrorCode
 CollectIons(Context *ctx)
 {
-  DM          vlasov, ions=ctx->ionsDM;
+  DM          vlasovDM, ionsDM=ctx->ionsDM;
   Vec         gridvec;
   GridNode    ***array;
   PetscInt    dim;
@@ -1148,26 +1148,26 @@ CollectIons(Context *ctx)
   ECHO_FUNCTION_ENTER;
 
   // Get the vlasov DM from the ions DM.
-  PetscCall(DMSwarmGetCellDM(ions, &vlasov));
+  PetscCall(DMSwarmGetCellDM(ionsDM, &vlasovDM));
 
   // Get a vector for the local portion of the grid.
-  PetscCall(DMGetLocalVector(vlasov, &gridvec));
+  PetscCall(DMGetLocalVector(vlasovDM, &gridvec));
 
   // Make sure the local grid vector has zeroes everywhere.
   PetscCall(VecZeroEntries(gridvec));
 
   // Get an array corresponding to the local vlasov quantities. Creating this
   // array from the local vector causes it to have room for the ghost points.
-  PetscCall(DMDAVecGetArray(vlasov, gridvec, &array));
+  PetscCall(DMDAVecGetArray(vlasovDM, gridvec, &array));
 
   // Get an array representation of the ion positions.
-  PetscCall(DMSwarmGetField(ions, "position", NULL, NULL, (void **)&pos));
+  PetscCall(DMSwarmGetField(ionsDM, "position", NULL, NULL, (void **)&pos));
 
   // Get an array representation of the ion velocities.
-  PetscCall(DMSwarmGetField(ions, "velocity", NULL, NULL, (void **)&vel));
+  PetscCall(DMSwarmGetField(ionsDM, "velocity", NULL, NULL, (void **)&vel));
 
   // Get the number of ions on this rank.
-  PetscCall(DMSwarmGetLocalSize(ions, &np));
+  PetscCall(DMSwarmGetLocalSize(ionsDM, &np));
 
   // Extract cell widths.
   dx = ctx->grid.d.x;
@@ -1233,19 +1233,19 @@ CollectIons(Context *ctx)
   }
 
   // Restore the local grid array.
-  PetscCall(DMDAVecRestoreArray(vlasov, gridvec, &array));
+  PetscCall(DMDAVecRestoreArray(vlasovDM, gridvec, &array));
 
   // Communicate local information to the persistent global grid vector.
-  PetscCall(DMLocalToGlobal(vlasov, gridvec, ADD_VALUES, ctx->vlasov));
+  PetscCall(DMLocalToGlobal(vlasovDM, gridvec, ADD_VALUES, ctx->vlasov));
 
   // Restore the local grid vector.
-  PetscCall(DMRestoreLocalVector(vlasov, &gridvec));
+  PetscCall(DMRestoreLocalVector(vlasovDM, &gridvec));
 
   // Restore the ion-positions array.
-  PetscCall(DMSwarmRestoreField(ions, "position", NULL, NULL, (void **)&pos));
+  PetscCall(DMSwarmRestoreField(ionsDM, "position", NULL, NULL, (void **)&pos));
 
   // Restore the ion-velocities array.
-  PetscCall(DMSwarmRestoreField(ions, "velocity", NULL, NULL, (void **)&vel));
+  PetscCall(DMSwarmRestoreField(ionsDM, "velocity", NULL, NULL, (void **)&vel));
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
