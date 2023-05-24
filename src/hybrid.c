@@ -592,14 +592,14 @@ int main(int argc, char **args)
   ctx.seed = (long)(-(mpi.rank + 1)*12345);
 
   /* Set up the discrete grid of Vlasov quantities. */
-  PetscCall(InitializeVlasovDM(&vdm, &ctx));
+  PetscCall(SetUpVlasovDM(&vdm, &ctx));
 
   /* Create a persistent vector for outputing Vlasov quantities. */
   PetscCall(DMCreateGlobalVector(vdm, &ctx.vlasov));
   PetscCall(VecZeroEntries(ctx.vlasov));
 
   /* Set up the particle swarm for ions. */
-  PetscCall(InitializeIonsDM(vdm, &ctx));
+  PetscCall(SetUpIonsDM(vdm, &ctx));
 
   /* Set initial particle positions. */
   PetscCall(InitializePositions(&ctx));
@@ -617,7 +617,7 @@ int main(int argc, char **args)
   PetscCall(CollectVlasovQuantities(&ctx));
 
   /* Set up the discrete grid for the electrostatic potential. */
-  PetscCall(InitializePotentialDM(&pdm, &ctx));
+  PetscCall(SetUpPotentialDM(&pdm, &ctx));
 
   /* Set up the Krylov-solver context for the electrostatic potential. */
   PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));

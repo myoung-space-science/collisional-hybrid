@@ -3,7 +3,7 @@
 
 
 /* Set parameter values for the vlasov-quantities data manager. */
-PetscErrorCode InitializeVlasovDM(DM *dm, Context *ctx)
+PetscErrorCode SetUpVlasovDM(DM *dm, Context *ctx)
 {
   PetscInt       Nx=(ctx->grid.N.x > 0 ? ctx->grid.N.x : 7);
   PetscInt       Ny=(ctx->grid.N.y > 0 ? ctx->grid.N.y : 7);
@@ -68,7 +68,7 @@ PetscErrorCode InitializeVlasovDM(DM *dm, Context *ctx)
 
 
 /* Set parameter values for the electrostatic-potential data manager. */
-PetscErrorCode InitializePotentialDM(DM *dm, Context *ctx)
+PetscErrorCode SetUpPotentialDM(DM *dm, Context *ctx)
 {
   PetscInt       Nx=ctx->grid.N.x;
   PetscInt       Ny=ctx->grid.N.y;
@@ -100,7 +100,7 @@ PetscErrorCode InitializePotentialDM(DM *dm, Context *ctx)
 
 
 /* Set parameter values for the ion-swarm data manager. */
-PetscErrorCode InitializeIonsDM(DM vlasovDM, Context *ctx)
+PetscErrorCode SetUpIonsDM(DM vlasovDM, Context *ctx)
 {
   DM       ionsDM;
   PetscInt dim;
