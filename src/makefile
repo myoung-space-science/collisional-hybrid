@@ -3,8 +3,8 @@ localbin = ../bin
 
 hybrid: hybrid.o \
 		distributions.o \
+		fileio.o \
 		lhs.o \
-		output.o \
 		parameters.o \
 		particles.o \
 		potential.o \
