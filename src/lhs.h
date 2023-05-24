@@ -2,6 +2,7 @@
 #define LHS_H
 
 #include <petsc.h>
+#include "constants.h"
 
 extern PetscErrorCode ComputeIdentityLHS(KSP ksp, Mat J, Mat A, void *_ctx);
 

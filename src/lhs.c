@@ -1,4 +1,5 @@
 #include <petsc.h>
+#include "constants.h"
 #include "hybrid.h"
 #include "lhs.h"
 

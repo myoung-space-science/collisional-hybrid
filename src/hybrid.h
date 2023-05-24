@@ -2,6 +2,7 @@
 #define HYBRID_H
 
 #include <petsc.h>
+#include "constants.h"
 
 #define ECHO_FUNCTION_ENTER {PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n--> Entering %s(...) <--\n\n", __func__));}
 #define ECHO_FUNCTION_EXIT {PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n--> Exiting %s(...) <--\n\n", __func__));}
@@ -23,20 +24,10 @@
 #define NEWLINE {PRINT_WORLD("\n");}
 #define PRINTLINE {PRINT_WORLD("%d\n", __LINE__);}
 
-#define NDIM 3
-#define Q 1.6022e-19   // fundamental charge in C
-#define MP 1.6726e-27  // proton mass in kg
-#define ME 9.1094e-31  // electron mass in kg
-#define KB  1.3807e-23 // Boltzmann constant
-
 // Temporary declaration of number of particles per cell, per dimension.
 #define NPPCELL 1
 // Temporary declaration of total number of particles per distribution.
 #define NPTOTAL 32768
-
-// The number of non-null values in the LHS-operator matrix stencil. This is
-// equivalent to the standard box stencil with the corners removed.
-#define NVALUES 19
 
 typedef struct {
   PetscInt x; // x component
