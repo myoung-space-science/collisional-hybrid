@@ -7,7 +7,7 @@ hybrid: hybrid.o \
 		rhs.o \
 		output.o \
 		parameters.o \
-		initialize.o \
+		setup.o \
 		distributions.o \
 		potential.o \
 		particles.o
