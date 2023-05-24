@@ -1481,7 +1481,7 @@ BorisMover(KSP ksp, Context *ctx)
   PetscReal   h[NDIM]={1.0/dx, 1.0/dy, 1.0/dz};
   PetscReal   t[NDIM], s[NDIM], t_dot_t;
   PetscReal   tscale, Escale[NDIM];
-  DM          swarm=ctx->swarm;
+  DM          ionsDM=ctx->swarm;
   DM          phiDM;
   Vec         phiGlobal, phiLocal;
   PetscReal   ***phi;
@@ -1526,14 +1526,14 @@ BorisMover(KSP ksp, Context *ctx)
   /* Get a temporary array representing the local electrostatic potential. */
   PetscCall(DMDAVecGetArray(phiDM, phiLocal, &phi));
 
-  /* Get the number of local particles. */
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  /* Get the number of local ions. */
+  PetscCall(DMSwarmGetLocalSize(ionsDM, &np));
 
-  /* Get an array representation of the particle positions. */
-  PetscCall(DMSwarmGetField(swarm, "position", NULL, NULL, (void **)&pos));
+  /* Get an array representation of the ion positions. */
+  PetscCall(DMSwarmGetField(ionsDM, "position", NULL, NULL, (void **)&pos));
 
-  /* Get an array representation of the particle velocities. */
-  PetscCall(DMSwarmGetField(swarm, "velocity", NULL, NULL, (void **)&vel));
+  /* Get an array representation of the ion velocities. */
+  PetscCall(DMSwarmGetField(ionsDM, "velocity", NULL, NULL, (void **)&vel));
 
   /* Loop over particles and interpolate E to grid points. */
   for (ip=0; ip<np; ip++) {
@@ -1572,11 +1572,11 @@ BorisMover(KSP ksp, Context *ctx)
     vel[ip] = v;
   }
 
-  // Restore the particle-positions array.
-  PetscCall(DMSwarmRestoreField(swarm, "position", NULL, NULL, (void **)&pos));
+  // Restore the ion-positions array.
+  PetscCall(DMSwarmRestoreField(ionsDM, "position", NULL, NULL, (void **)&pos));
 
-  // Restore the particle-velocities array.
-  PetscCall(DMSwarmRestoreField(swarm, "velocity", NULL, NULL, (void **)&vel));
+  // Restore the ion-velocities array.
+  PetscCall(DMSwarmRestoreField(ionsDM, "velocity", NULL, NULL, (void **)&vel));
 
   // Restore the borrowed potential array.
   PetscCall(DMDAVecRestoreArray(phiDM, phiLocal, &phi));
