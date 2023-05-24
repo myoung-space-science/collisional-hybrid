@@ -1850,7 +1850,7 @@ int main(int argc, char **args)
   MPIContext  mpi;
   time_t      startTime, endTime;
   Context     ctx;
-  DM          grid, solve;
+  DM          vdm, pdm;
   KSP         ksp;
   PetscInt    it;
   char        itfmt[5];
@@ -1879,13 +1879,15 @@ int main(int argc, char **args)
   /* Define a rank-specific random-number seed. */
   ctx.seed = (long)(-(mpi.rank + 1)*12345);
 
-  /* Set up discrete grid. */
-  PetscCall(InitializeVlasovDM(&grid, &ctx));
-  PetscCall(DMCreateGlobalVector(grid, &ctx.vlasov));
+  /* Set up the discrete grid of Vlasov quantities. */
+  PetscCall(InitializeVlasovDM(&vdm, &ctx));
+
+  /* Create a persistent vector for outputing Vlasov quantities. */
+  PetscCall(DMCreateGlobalVector(vdm, &ctx.vlasov));
   PetscCall(VecZeroEntries(ctx.vlasov));
 
-  /* Set up particle swarm. */
-  PetscCall(InitializeIonsDM(grid, &ctx));
+  /* Set up the particle swarm for ions. */
+  PetscCall(InitializeIonsDM(vdm, &ctx));
 
   /* Set initial particle positions. */
   PetscCall(InitializePositions(&ctx));
@@ -1902,14 +1904,18 @@ int main(int argc, char **args)
   /* Compute initial density and flux. */
   PetscCall(CollectParticles(&ctx));
 
-  /* Compute initial electrostatic potential. */
+  /* Set up the discrete grid for the electrostatic potential. */
+  PetscCall(InitializePotentialDM(&pdm, &ctx));
+
+  /* Set up the Krylov-solver context for the electrostatic potential. */
   PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
-  PetscCall(InitializePotentialDM(&solve, &ctx));
-  PetscCall(KSPSetDM(ksp, solve));
+  PetscCall(KSPSetDM(ksp, pdm));
   PetscCall(KSPSetFromOptions(ksp));
   PetscCall(KSPSetComputeInitialGuess(ksp, ComputeInitialPhi, &ctx));
   PetscCall(KSPSetComputeRHS(ksp, ComputeRHS, &ctx));
   PetscCall(KSPSetComputeOperators(ksp, ComputeLHS, &ctx));
+
+  /* Compute initial electrostatic potential. */
   PetscCall(ComputePotential(ksp, &ctx));
 
   /* Create a format string for the time step. */
@@ -1959,9 +1965,9 @@ int main(int argc, char **args)
   /* Free memory. */
   PetscCall(KSPDestroy(&ksp));
   PetscCall(VecDestroy(&ctx.vlasov));
-  PetscCall(DMDestroy(&grid));
+  PetscCall(DMDestroy(&vdm));
   PetscCall(DMDestroy(&ctx.swarm));
-  PetscCall(DMDestroy(&solve));
+  PetscCall(DMDestroy(&pdm));
 
   /* Write time information. */
   if (mpi.rank == 0) {
