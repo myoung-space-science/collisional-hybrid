@@ -602,12 +602,33 @@ InitializeGridDM(DM *grid, Context *ctx)
 
 
 static PetscErrorCode
-InitializePotentialDM(DM grid, DM *solve)
+InitializePotentialDM(DM *dm, Context *ctx)
 {
+  PetscInt       Nx=ctx->grid.N.x;
+  PetscInt       Ny=ctx->grid.N.y;
+  PetscInt       Nz=ctx->grid.N.z;
+  DMBoundaryType xBC=ctx->xDMBC;
+  DMBoundaryType yBC=ctx->yDMBC;
+  DMBoundaryType zBC=ctx->zDMBC;
+  PetscInt       dof=1;
+  PetscInt       width=1;
   PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
 
-  PetscCall(DMDACreateCompatibleDMDA(grid, 1, solve));
+  // Create the DM object.
+  PetscCall(DMDACreate3d(PETSC_COMM_WORLD, xBC, yBC, zBC, DMDA_STENCIL_BOX, Nx, Ny, Nz, PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE, dof, width, NULL, NULL, NULL, dm));
+  // Perform basic setup.
+  PetscCall(PetscObjectSetOptionsPrefix((PetscObject)(*dm), "potential_"));
+  PetscCall(DMDASetElementType(*dm, DMDA_ELEMENT_Q1));
+  PetscCall(DMSetFromOptions(*dm));
+  PetscCall(DMSetUp(*dm));
+  PetscCall(PetscObjectSetName((PetscObject)(*dm), "Potential"));
+  // Assign the field name.
+  PetscCall(DMDASetFieldName(*dm, 0, "potential"));
+  // Echo information about the DM.
+  PetscCall(DMView(*dm, PETSC_VIEWER_STDOUT_WORLD));
 
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -1881,7 +1902,7 @@ int main(int argc, char **args)
 
   /* Compute initial electrostatic potential. */
   PetscCall(KSPCreate(PETSC_COMM_WORLD, &ksp));
-  PetscCall(InitializePotentialDM(grid, &solve));
+  PetscCall(InitializePotentialDM(&solve, &ctx));
   PetscCall(KSPSetDM(ksp, solve));
   PetscCall(KSPSetFromOptions(ksp));
   PetscCall(KSPSetComputeInitialGuess(ksp, ComputeInitialPhi, &ctx));
