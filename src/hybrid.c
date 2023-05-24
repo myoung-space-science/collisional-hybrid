@@ -918,7 +918,7 @@ Rejection(DistributionFunction density, Context *ctx)
 static PetscErrorCode
 InitializePositions(Context *ctx)
 {
-  DM          swarm=ctx->ionsDM;
+  DM          ionsDM=ctx->ionsDM;
   PetscInt    np, Np, ip;
   PetscScalar *coords;
   RealVector  *pos;
@@ -927,13 +927,13 @@ InitializePositions(Context *ctx)
   ECHO_FUNCTION_ENTER;
 
   // Echo sizes.
-  PetscCall(DMSwarmGetSize(swarm, &Np));
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  PetscCall(DMSwarmGetSize(ionsDM, &Np));
+  PetscCall(DMSwarmGetLocalSize(ionsDM, &np));
   NEWLINE;
-  PRINT_RANKS("[%d] Local # of particles before placement: %d\n", ctx->mpi.rank, np);
-  PRINT_WORLD("   Global # of particles before placement: %d\n", Np);
+  PRINT_RANKS("[%d] Local # of ions before placement: %d\n", ctx->mpi.rank, np);
+  PRINT_WORLD("   Global # of ions before placement: %d\n", Np);
 
-  // Initialize coordinates in the particle DM.
+  // Initialize coordinates in the ions DM.
   switch(ctx->densityType) {
     case DENSITY_FLAT_NORMAL:
       SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Not implemented: %s density", DensityTypes[DENSITY_FLAT_NORMAL]);
@@ -956,50 +956,50 @@ InitializePositions(Context *ctx)
   }
 
   // Echo sizes.
-  PetscCall(DMSwarmGetSize(swarm, &Np));
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  PetscCall(DMSwarmGetSize(ionsDM, &Np));
+  PetscCall(DMSwarmGetLocalSize(ionsDM, &np));
   NEWLINE;
-  PRINT_RANKS("[%d] Local # of particles after placement: %d\n", ctx->mpi.rank, np);
-  PRINT_WORLD("   Global # of particles after placement: %d\n", Np);
+  PRINT_RANKS("[%d] Local # of ions after placement: %d\n", ctx->mpi.rank, np);
+  PRINT_WORLD("   Global # of ions after placement: %d\n", Np);
 
-  // Migrate particles between ranks.
-  PetscCall(DMSwarmMigrate(swarm, PETSC_TRUE));
+  // Migrate ions between ranks.
+  PetscCall(DMSwarmMigrate(ionsDM, PETSC_TRUE));
 
   // Echo sizes.
-  PetscCall(DMSwarmGetSize(swarm, &Np));
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  PetscCall(DMSwarmGetSize(ionsDM, &Np));
+  PetscCall(DMSwarmGetLocalSize(ionsDM, &np));
   NEWLINE;
-  PRINT_RANKS("[%d] Local # of particles after migration: %d\n", ctx->mpi.rank, np);
-  PRINT_WORLD("   Global # of particles after migration: %d\n", Np);
+  PRINT_RANKS("[%d] Local # of ions after migration: %d\n", ctx->mpi.rank, np);
+  PRINT_WORLD("   Global # of ions after migration: %d\n", Np);
 
-  // Get the number of particles on this rank.
-  PetscCall(DMSwarmGetLocalSize(swarm, &np));
+  // Get the number of ions on this rank.
+  PetscCall(DMSwarmGetLocalSize(ionsDM, &np));
 
   // Get an array representation of the swarm coordinates.
-  PetscCall(DMSwarmGetField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
+  PetscCall(DMSwarmGetField(ionsDM, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
-  // Get an array representation of the particle positions.
-  PetscCall(DMSwarmGetField(swarm, "position", NULL, NULL, (void **)&pos));
+  // Get an array representation of the ions positions.
+  PetscCall(DMSwarmGetField(ionsDM, "position", NULL, NULL, (void **)&pos));
 
-  // Loop over particles and assign parameter values.
+  // Loop over ions and assign parameter values.
   for (ip=0; ip<np; ip++) {
     pos[ip].x = coords[ip*NDIM + 0];
     pos[ip].y = coords[ip*NDIM + 1];
     pos[ip].z = coords[ip*NDIM + 2];
   }
 
-  // Restore the particle-positions array.
-  PetscCall(DMSwarmRestoreField(swarm, "position", NULL, NULL, (void **)&pos));
+  // Restore the ion-positions array.
+  PetscCall(DMSwarmRestoreField(ionsDM, "position", NULL, NULL, (void **)&pos));
 
   // Restore the swarm-coordinates array.
-  PetscCall(DMSwarmRestoreField(swarm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
+  PetscCall(DMSwarmRestoreField(ionsDM, DMSwarmPICField_coor, NULL, NULL, (void **)&coords));
 
-  // Display information about the particle DM.
+  // Display information about the ions DM.
   NEWLINE;
-  PetscCall(DMView(swarm, PETSC_VIEWER_STDOUT_WORLD));
+  PetscCall(DMView(ionsDM, PETSC_VIEWER_STDOUT_WORLD));
 
   // Update the parameter context.
-  PetscCall(DMSwarmGetSize(swarm, &ctx->plasma.Np));
+  PetscCall(DMSwarmGetSize(ionsDM, &ctx->plasma.Np));
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
