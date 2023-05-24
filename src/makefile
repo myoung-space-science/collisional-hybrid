@@ -2,15 +2,15 @@ petscdir ?= ~/petsc
 localbin = ../bin
 
 hybrid: hybrid.o \
-		random.o \
+		distributions.o \
 		lhs.o \
-		rhs.o \
 		output.o \
 		parameters.o \
-		setup.o \
-		distributions.o \
-		potential.o \
 		particles.o \
+		potential.o \
+		random.o \
+		rhs.o \
+		setup.o \
 		vectors.o
 	-$(CLINKER) -o ${localbin}/$@ $^ $(LDLIBS)
 
