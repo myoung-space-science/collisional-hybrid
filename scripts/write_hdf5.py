@@ -50,6 +50,33 @@ class Grid:
         self._y = yc
         self._z = zc
 
+    def sinusoidal(
+        self,
+        mx: int=None,
+        my: int=None,
+        mz: int=None,
+    ) -> numpy.ndarray:
+        """Project a sinusoidal function onto this grid."""
+        fx = numpy.cos((mx or 0)*numpy.pi*self.x)
+        fy = numpy.cos((my or 0)*numpy.pi*self.y)
+        fz = numpy.cos((mz or 0)*numpy.pi*self.z)
+        return fx * fy * fz
+
+    def gaussian(
+        self,
+        sx: float=None,
+        sy: float=None,
+        sz: float=None,
+        x0: float=None,
+        y0: float=None,
+        z0: float=None,
+    ) -> numpy.ndarray:
+        """Project a Gaussian function onto this grid."""
+        gx = (self.x - (x0 or 0.0)) / sx if sx else 0.0
+        gy = (self.y - (y0 or 0.0)) / sy if sy else 0.0
+        gz = (self.z - (z0 or 0.0)) / sz if sz else 0.0
+        return numpy.exp(-0.5 * (gx**2 + gy**2 + gz**2))
+
     @property
     def x(self):
         """The x coordinates."""
@@ -77,15 +104,15 @@ def main(filepath, verbose: bool=False, **user):
 
     grid = Grid(nx=opts['nx'], ny=opts['ny'], nz=opts['nz'])
 
-    sinusoids = (
-          numpy.cos(opts['Mx']*numpy.pi*grid.x)
-        * numpy.cos(opts['My']*numpy.pi*grid.y)
-        * numpy.cos(opts['Mz']*numpy.pi*grid.z)
+    sinusoids = grid.sinusoidal(mx=opts['Mx'], my=opts['My'], mz=opts['Mz'])
+    gaussian = grid.gaussian(
+        sx=opts['Sx'],
+        sy=opts['Sy'],
+        sz=opts['Sz'],
+        x0=opts['x0'],
+        y0=opts['y0'],
+        z0=opts['z0'],
     )
-    gx = (grid.x - opts['x0']) / opts['Sx'] if opts['Sx'] else 0.0
-    gy = (grid.y - opts['y0']) / opts['Sy'] if opts['Sy'] else 0.0
-    gz = (grid.z - opts['z0']) / opts['Sz'] if opts['Sz'] else 0.0
-    gaussian = numpy.exp(-0.5 * (gx**2 + gy**2 + gz**2))
 
     density = opts['n0'] + opts['dn']*sinusoids*gaussian
     xflux = opts.get('Vx', 0.0) * density
