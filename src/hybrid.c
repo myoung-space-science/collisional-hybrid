@@ -1594,7 +1594,7 @@ BorisMover(KSP ksp, Context *ctx)
 This function is based on, but not identical to, EPPIC elastic_scatter.
 */
 static PetscErrorCode
-CollideIons(Context *ctx)
+ComputeCollisions(Context *ctx)
 {
   PetscInt   Nc;                                      // the number of collisions to attempt
   PetscInt   Ns=0;                                    // the number of successful collision attempts
@@ -1761,7 +1761,7 @@ UpdateVelocities(KSP ksp, Context *ctx)
 
   // Apply the appropriate collision algorithm.
   if (ctx->neutrals.m > 0.0) {
-    PetscCall(CollideIons(ctx));
+    PetscCall(ComputeCollisions(ctx));
   }
 
   ECHO_FUNCTION_EXIT;
