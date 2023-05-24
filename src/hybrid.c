@@ -671,7 +671,7 @@ InitializeIonsDM(DM vlasov, Context *ctx)
   // View information about the ions DM.
   PetscCall(DMView(ions, PETSC_VIEWER_STDOUT_WORLD));
   // Assign the ions DM to the application context.
-  ctx->swarm = ions;
+  ctx->ionsDM = ions;
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -681,7 +681,7 @@ InitializeIonsDM(DM vlasov, Context *ctx)
 static PetscErrorCode
 UniformDistribution_FromSwarm(Context *ctx)
 {
-  DM          swarm=ctx->swarm;
+  DM          swarm=ctx->ionsDM;
   PetscReal   min[NDIM], max[NDIM];
   PetscInt    npoints[NDIM];
 
@@ -708,7 +708,7 @@ UniformDistribution_FromSwarm(Context *ctx)
 static PetscErrorCode
 UniformDistribution(Context *ctx)
 {
-  DM          ions=ctx->swarm;
+  DM          ions=ctx->ionsDM;
   PetscScalar *coords;
   PetscInt    np, np_cell, ip;
   DM          vlasov;
@@ -772,7 +772,7 @@ UniformDistribution(Context *ctx)
 static PetscErrorCode
 SobolDistribution(Context *ctx)
 {
-  DM          swarm=ctx->swarm;
+  DM          swarm=ctx->ionsDM;
   PetscInt    seed=-1, ndim=NDIM;
   PetscReal   *coords, v;
   PetscInt    np, ip;
@@ -839,7 +839,7 @@ static PetscErrorCode
 Rejection(DistributionFunction density, Context *ctx)
 {
   PetscRandom random;
-  DM          ions=ctx->swarm;
+  DM          ions=ctx->ionsDM;
   PetscInt    np, ip;
   DM          vlasov;
   PetscInt    i0, ni, i;
@@ -918,7 +918,7 @@ Rejection(DistributionFunction density, Context *ctx)
 static PetscErrorCode
 InitializePositions(Context *ctx)
 {
-  DM          swarm=ctx->swarm;
+  DM          swarm=ctx->ionsDM;
   PetscInt    np, Np, ip;
   PetscScalar *coords;
   RealVector  *pos;
@@ -1009,7 +1009,7 @@ InitializePositions(Context *ctx)
 static PetscErrorCode
 InitializeVelocities(Context *ctx)
 {
-  DM          swarm=ctx->swarm;
+  DM          swarm=ctx->ionsDM;
   PetscInt    np, ip;
   RealVector  *vel;
   PetscReal   dvx, dvy, dvz;
@@ -1132,7 +1132,7 @@ EchoSetup(Context ctx)
 static PetscErrorCode
 CollectIons(Context *ctx)
 {
-  DM          vlasov, ions=ctx->swarm;
+  DM          vlasov, ions=ctx->ionsDM;
   Vec         gridvec;
   GridNode    ***array;
   PetscInt    dim;
@@ -1481,7 +1481,7 @@ BorisMover(KSP ksp, Context *ctx)
   PetscReal   h[NDIM]={1.0/dx, 1.0/dy, 1.0/dz};
   PetscReal   t[NDIM], s[NDIM], t_dot_t;
   PetscReal   tscale, Escale[NDIM];
-  DM          ionsDM=ctx->swarm;
+  DM          ionsDM=ctx->ionsDM;
   DM          phiDM;
   Vec         phiGlobal, phiLocal;
   PetscReal   ***phi;
@@ -1615,7 +1615,7 @@ CollideIons(Context *ctx)
   PetscReal  mi=ctx->ions.m;                          // the ion-species mass
   PetscReal  mn=ctx->neutrals.m;                      // the neutral-species mass
   PetscReal  M=mn+mi;                                 // the total mass (mi+mn)
-  DM         swarm=ctx->swarm;
+  DM         swarm=ctx->ionsDM;
   RealVector *vel;
   PetscReal  vnx, vny, vnz;                           // neutral-particle velocity components
   PetscReal  vix, viy, viz;                           // ion velocity components
@@ -1773,7 +1773,7 @@ UpdateVelocities(KSP ksp, Context *ctx)
 static PetscErrorCode
 UpdatePositions(Context *ctx)
 {
-  DM          swarm=ctx->swarm;
+  DM          swarm=ctx->ionsDM;
   RealVector  *pos, *vel;
   PetscInt    ip, np;
   PetscReal   x, y, z;
@@ -1966,7 +1966,7 @@ int main(int argc, char **args)
   PetscCall(KSPDestroy(&ksp));
   PetscCall(VecDestroy(&ctx.vlasov));
   PetscCall(DMDestroy(&vdm));
-  PetscCall(DMDestroy(&ctx.swarm));
+  PetscCall(DMDestroy(&ctx.ionsDM));
   PetscCall(DMDestroy(&pdm));
 
   /* Write time information. */
