@@ -93,7 +93,7 @@ class Grid:
         return self._z
 
 
-def main(filepath, verbose: bool=False, **user):
+def main(filepath=None, verbose: bool=False, **user):
     """Create 3-D density and flux arrays from an analytic form.
     
     All axis lengths are 1.0.
@@ -101,18 +101,8 @@ def main(filepath, verbose: bool=False, **user):
     opts = DEFAULTS.copy()
     opts.update({k: v for k, v in user.items() if v})
     vlasov = compute_vlasov_quantities(opts)
-    path = pathlib.Path(filepath).resolve().expanduser().with_suffix('.h5')
-    with h5py.File(path, 'w') as f:
-        arrays = f.create_group('arrays')
-        for name, array in vlasov.items():
-            if verbose:
-                print(f"Writing {name} to {path}")
-            dset = arrays.create_dataset(name, data=array)
-            for k, v in opts.items():
-                dset.attrs[k] = v
-            print(dset)
-    if dset:
-        raise IOError("Dataset was not properly closed.")
+    path = pathlib.Path(filepath or 'vlasov').resolve().expanduser()
+    write_arrays(path, vlasov, opts, verbose=verbose)
 
 
 def compute_vlasov_quantities(opts: dict):
@@ -139,6 +129,27 @@ def compute_vlasov_quantities(opts: dict):
     }
 
 
+def write_arrays(
+    filepath: pathlib.Path,
+    vlasov: typing.Dict[str, numpy.ndarray],
+    opts: dict,
+    verbose: bool=False,
+) -> None:
+    """Write the computed arrays to disk."""
+    path = filepath.with_suffix('.h5')
+    with h5py.File(path, 'w') as f:
+        arrays = f.create_group('arrays')
+        for name, array in vlasov.items():
+            if verbose:
+                print(f"Writing {name} to {path}")
+            dset = arrays.create_dataset(name, data=array)
+            for k, v in opts.items():
+                dset.attrs[k] = v
+            print(dset)
+    if dset:
+        raise IOError("Dataset was not properly closed.")
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         __file__,
@@ -146,7 +157,9 @@ if __name__ == '__main__':
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
-        'filepath',
+        '-o',
+        '--output',
+        dest='filepath',
         help="output path (this program will force an HDF5 suffix)",
     )
     parser.add_argument(
