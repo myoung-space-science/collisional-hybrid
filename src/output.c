@@ -12,13 +12,13 @@ PetscErrorCode OutputHDF5(const char *name, Context *ctx)
 
   PetscFunctionBeginUser;
 
-  // Get the grid DM from the swarm DM.
-  PetscCall(DMSwarmGetCellDM(ctx->swarm, &gridDM));
+  // Get the vlasov DM from the ions DM.
+  PetscCall(DMSwarmGetCellDM(ctx->ionsDM, &gridDM));
 
   // Create the HDF5 viewer.
   PetscCall(PetscViewerHDF5Open(PETSC_COMM_WORLD, name, FILE_MODE_WRITE, &viewer));
 
-  // Write grid quantities to the file.
+  // Write vlasov quantities to the HDF5 file.
   PetscCall(DMCreateFieldDecomposition(gridDM, &Nf, &keys, NULL, &dms));
   for (field=0; field<Nf; field++) {
     dm = dms[field];
@@ -37,11 +37,11 @@ PetscErrorCode OutputHDF5(const char *name, Context *ctx)
   PetscFree(keys);
   PetscFree(dms);
 
-  // Write the forcing vector to the file.
+  // Write the forcing vector to the HDF5 file.
   PetscCall(PetscObjectSetName((PetscObject)rhs, "rhs"));
   PetscCall(VecView(rhs, viewer));
 
-  // Write the solution vector to the file.
+  // Write the electrostatic potential to the HDF5 file.
   PetscCall(PetscObjectSetName((PetscObject)phi, "potential"));
   PetscCall(VecView(phi, viewer));
 
