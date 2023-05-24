@@ -681,7 +681,7 @@ InitializeIonsDM(DM vlasovDM, Context *ctx)
 static PetscErrorCode
 UniformDistribution_FromSwarm(Context *ctx)
 {
-  DM          swarm=ctx->ionsDM;
+  DM          ionsDM=ctx->ionsDM;
   PetscReal   min[NDIM], max[NDIM];
   PetscInt    npoints[NDIM];
 
@@ -698,7 +698,7 @@ UniformDistribution_FromSwarm(Context *ctx)
   npoints[1] = 4 * ctx->grid.N.y;
   npoints[2] = 4 * ctx->grid.N.z;
 
-  PetscCall(DMSwarmSetPointsUniformCoordinates(swarm, min, max, npoints, INSERT_VALUES));
+  PetscCall(DMSwarmSetPointsUniformCoordinates(ionsDM, min, max, npoints, INSERT_VALUES));
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
