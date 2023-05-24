@@ -555,9 +555,11 @@ InitializeGridDM(DM *grid, Context *ctx)
   // Create the grid DM.
   PetscCall(DMDACreate3d(PETSC_COMM_WORLD, xBC, yBC, zBC, DMDA_STENCIL_BOX, Nx, Ny, Nz, PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE, dof, width, NULL, NULL, NULL, grid));
   // Perform basic setup.
+  PetscCall(PetscObjectSetOptionsPrefix((PetscObject)(*grid), "vlasov_"));
   PetscCall(DMDASetElementType(*grid, DMDA_ELEMENT_Q1));
   PetscCall(DMSetFromOptions(*grid));
   PetscCall(DMSetUp(*grid));
+  PetscCall(PetscObjectSetName((PetscObject)(*grid), "Vlasov"));
   // Synchronize values of Nx, Ny, and Nz passed via -n{x,y,z} or
   // -da_grid_{x,y,z}. Note that this gives precedence to the latter.
   PetscCall(DMDAGetInfo(*grid, NULL, &Nx, &Ny, &Nz, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
