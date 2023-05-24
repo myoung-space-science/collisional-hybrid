@@ -10,7 +10,8 @@ hybrid: hybrid.o \
 		setup.o \
 		distributions.o \
 		potential.o \
-		particles.o
+		particles.o \
+		vectors.o
 	-$(CLINKER) -o ${localbin}/$@ $^ $(LDLIBS)
 
 include ${petscdir}/lib/petsc/conf/variables
