@@ -537,7 +537,7 @@ ProcessOptions(Context *ctx)
 
 
 static PetscErrorCode
-InitializeGridDM(DM *grid, Context *ctx)
+InitializeVlasovDM(DM *grid, Context *ctx)
 {
   PetscInt       Nx=(ctx->grid.N.x > 0 ? ctx->grid.N.x : 7);
   PetscInt       Ny=(ctx->grid.N.y > 0 ? ctx->grid.N.y : 7);
@@ -1878,7 +1878,7 @@ int main(int argc, char **args)
   ctx.seed = (long)(-(mpi.rank + 1)*12345);
 
   /* Set up discrete grid. */
-  PetscCall(InitializeGridDM(&grid, &ctx));
+  PetscCall(InitializeVlasovDM(&grid, &ctx));
   PetscCall(DMCreateGlobalVector(grid, &ctx.vlasov));
   PetscCall(VecZeroEntries(ctx.vlasov));
 
