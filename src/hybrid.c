@@ -642,6 +642,7 @@ InitializeIonsDM(DM grid, Context *ctx)
   PetscInt Np, np;
 
   PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
 
   // Create the swarm DM.
   PetscCall(DMCreate(PETSC_COMM_WORLD, &swarm));
@@ -672,6 +673,7 @@ InitializeIonsDM(DM grid, Context *ctx)
   // Assign the swarm to the application context.
   ctx->swarm = swarm;
 
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
