@@ -5,3 +5,4 @@ petsc-tutorials
 **/__pycache__/*
 dev
 *.o
+test-data
