@@ -550,6 +550,7 @@ InitializeGridDM(DM *grid, Context *ctx)
   PetscInt       width=1;
 
   PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
 
   // Create the grid DM.
   PetscCall(DMDACreate3d(PETSC_COMM_WORLD, xBC, yBC, zBC, DMDA_STENCIL_BOX, Nx, Ny, Nz, PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE, dof, width, NULL, NULL, NULL, grid));
@@ -593,6 +594,7 @@ InitializeGridDM(DM *grid, Context *ctx)
   // View information about the grid DM.
   PetscCall(DMView(*grid, PETSC_VIEWER_STDOUT_WORLD));
 
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
