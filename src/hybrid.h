@@ -3,6 +3,8 @@
 
 #include <petsc.h>
 #include "constants.h"
+#include "lhs.h"
+#include "rhs.h"
 
 #define ECHO_FUNCTION_ENTER {PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n--> Entering %s(...) <--\n\n", __func__));}
 #define ECHO_FUNCTION_EXIT {PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n--> Exiting %s(...) <--\n\n", __func__));}
@@ -80,22 +82,6 @@ typedef struct {
   PetscMPIInt size; // total number of processors
 } MPIContext;
 
-extern const char *RHSTypes[];
-
-typedef enum {
-  RHS_CONSTANT,
-  RHS_SINUSOIDAL,
-  RHS_FULL,
-} RHSType;
-
-extern const char *LHSTypes[];
-
-typedef enum {
-  LHS_IDENTITY,
-  LHS_LAPLACIAN,
-  LHS_FULL,
-} LHSType;
-
 extern const char *DensityTypes[];
 
 typedef enum {
@@ -116,10 +102,6 @@ typedef enum {
   BC_DIRICHLET,
   BC_NEUMANN,
 } BCType;
-
-typedef PetscErrorCode (*StencilFunc)(PetscInt i, PetscInt j, PetscInt k, PetscReal ***f, MatStencil cols[NVALUES], PetscReal vals[NVALUES], void *ctx);
-typedef PetscErrorCode (*LHSFunc)(KSP ksp, Mat J, Mat A, void *_ctx);
-typedef PetscErrorCode (*RHSFunc)(KSP ksp, Vec b, void *_ctx);
 
 typedef struct {
   Grid           grid;         // grid information

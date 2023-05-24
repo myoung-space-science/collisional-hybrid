@@ -3,10 +3,18 @@
 
 #include <petsc.h>
 
-extern PetscErrorCode ComputeConstantRHS(KSP ksp, Vec b, void *_ctx);
+extern const char *RHSTypes[];
 
-extern PetscErrorCode ComputeSinusoidalRHS(KSP ksp, Vec b, void *_ctx);
+typedef enum {
+  RHS_CONSTANT,
+  RHS_SINUSOIDAL,
+  RHS_FULL,
+} RHSType;
 
-extern PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *_ctx);
+extern PetscErrorCode ComputeConstantRHS(KSP ksp, Vec b, void *ctx);
+extern PetscErrorCode ComputeSinusoidalRHS(KSP ksp, Vec b, void *ctx);
+extern PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *ctx);
+
+typedef PetscErrorCode (*RHSFunc)(KSP ksp, Vec b, void *_ctx);
 
 #endif // RHS_H
