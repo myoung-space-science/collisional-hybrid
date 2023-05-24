@@ -8,7 +8,8 @@ hybrid: hybrid.o \
 		output.o \
 		parameters.o \
 		initialize.o \
-		distributions.o
+		distributions.o \
+		potential.o
 	-$(CLINKER) -o ${localbin}/$@ $^ $(LDLIBS)
 
 include ${petscdir}/lib/petsc/conf/variables

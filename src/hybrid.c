@@ -11,6 +11,7 @@ static char help[] = "A 3D hybrid particle-in-cell (PIC) simulation.";
 #include "initialize.h"
 #include "random.h"
 #include "distributions.h"
+#include "potential.h"
 #include "lhs.h"
 #include "rhs.h"
 #include "output.h"
@@ -135,60 +136,6 @@ CollectVlasovQuantities(Context *ctx)
   PetscCall(DMSwarmRestoreField(ionsDM, "velocity", NULL, NULL, (void **)&vel));
 
   ECHO_FUNCTION_EXIT;
-  PetscFunctionReturn(PETSC_SUCCESS);
-}
-
-
-static PetscErrorCode
-ComputePotential(KSP ksp, Context *ctx)
-{
-  PetscFunctionBeginUser;
-  ECHO_FUNCTION_ENTER;
-
-  PetscCall(KSPSolve(ksp, NULL, NULL));
-  PetscCall(KSPGetSolution(ksp, &ctx->phi));
-
-  ECHO_FUNCTION_EXIT;
-  PetscFunctionReturn(PETSC_SUCCESS);
-}
-
-
-static PetscErrorCode
-ComputeInitialPhi(KSP ksp, Vec phi, void *_ctx)
-{
-  // Note that this function requires this signature for use with
-  // `KSPSetComputeInitialGuess`.
-
-  PetscFunctionBeginUser;
-
-  PetscCall(VecSet(phi, 0.0));
-
-  PetscFunctionReturn(PETSC_SUCCESS);
-}
-
-
-static PetscErrorCode
-ComputeRHS(KSP ksp, Vec b, void *ctx)
-{
-  Context      *user=(Context *)ctx;
-
-  PetscFunctionBeginUser;
-
-  PetscCall(user->rhsFunc(ksp, b, ctx));
-
-  PetscFunctionReturn(PETSC_SUCCESS);
-}
-
-
-static PetscErrorCode
-ComputeLHS(KSP ksp, Mat J, Mat A, void *ctx)
-{
-  Context      *user=(Context *)ctx;
-
-  PetscFunctionBeginUser;
-
-  PetscCall(user->lhsFunc(ksp, J, A, ctx));
-
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
