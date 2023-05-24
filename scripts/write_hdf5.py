@@ -1,5 +1,6 @@
 import argparse
 import pathlib
+import typing
 
 import h5py
 import numpy
@@ -28,6 +29,43 @@ DEFAULTS = {
     'Vz': 0.0,
 }
 
+
+class Grid:
+    """Representation of the 3D logical grid."""
+
+    def __init__(
+        self,
+        nx: int,
+        ny: int,
+        nz: int,
+        lx: float=None,
+        ly: float=None,
+        lz: float=None,
+    ) -> None:
+        x = numpy.linspace(0.0, (lx or 1.0), nx)
+        y = numpy.linspace(0.0, (ly or 1.0), ny)
+        z = numpy.linspace(0.0, (lz or 1.0), nz)
+        xc, yc, zc = numpy.meshgrid(x, y, z)
+        self._x = xc
+        self._y = yc
+        self._z = zc
+
+    @property
+    def x(self):
+        """The x coordinates."""
+        return self._x
+
+    @property
+    def y(self):
+        """The y coordinates."""
+        return self._y
+
+    @property
+    def z(self):
+        """The z coordinates."""
+        return self._z
+
+
 def main(filepath, verbose: bool=False, **user):
     """Create 3-D density and flux arrays from an analytic form.
     
@@ -37,20 +75,16 @@ def main(filepath, verbose: bool=False, **user):
     opts = DEFAULTS.copy()
     opts.update({k: v for k, v in user.items() if v})
 
-    x = numpy.linspace(0, 1, opts['nx'])
-    y = numpy.linspace(0, 1, opts['ny'])
-    z = numpy.linspace(0, 1, opts['nz'])
-
-    xx, yy, zz = numpy.meshgrid(x, y, z)
+    grid = Grid(nx=opts['nx'], ny=opts['ny'], nz=opts['nz'])
 
     sinusoids = (
-          numpy.cos(opts['Mx']*numpy.pi*xx)
-        * numpy.cos(opts['My']*numpy.pi*yy)
-        * numpy.cos(opts['Mz']*numpy.pi*zz)
+          numpy.cos(opts['Mx']*numpy.pi*grid.x)
+        * numpy.cos(opts['My']*numpy.pi*grid.y)
+        * numpy.cos(opts['Mz']*numpy.pi*grid.z)
     )
-    gx = (xx - opts['x0']) / opts['Sx'] if opts['Sx'] else 0.0
-    gy = (yy - opts['y0']) / opts['Sy'] if opts['Sy'] else 0.0
-    gz = (zz - opts['z0']) / opts['Sz'] if opts['Sz'] else 0.0
+    gx = (grid.x - opts['x0']) / opts['Sx'] if opts['Sx'] else 0.0
+    gy = (grid.y - opts['y0']) / opts['Sy'] if opts['Sy'] else 0.0
+    gz = (grid.z - opts['z0']) / opts['Sz'] if opts['Sz'] else 0.0
     gaussian = numpy.exp(-0.5 * (gx**2 + gy**2 + gz**2))
 
     density = opts['n0'] + opts['dn']*sinusoids*gaussian
