@@ -60,9 +60,9 @@ RestoreFieldVec(DM dm, Vec full, const char *name, Vec *vec)
 }
 
 
-PetscErrorCode ComputeConstantRHS(KSP ksp, Vec b, void *_ctx)
+PetscErrorCode ComputeConstantRHS(KSP ksp, Vec b, void *user)
 {
-  Context      *ctx=(Context *)_ctx;
+  Context      *ctx=(Context *)user;
   PetscScalar  Kx, Ky, Kz;
   PetscReal    detA;
   DM           grid;
@@ -105,9 +105,9 @@ PetscErrorCode ComputeConstantRHS(KSP ksp, Vec b, void *_ctx)
 }
 
 
-PetscErrorCode ComputeSinusoidalRHS(KSP ksp, Vec b, void *_ctx)
+PetscErrorCode ComputeSinusoidalRHS(KSP ksp, Vec b, void *user)
 {
-  Context      *ctx=(Context *)_ctx;
+  Context      *ctx=(Context *)user;
   PetscScalar  Kx, Ky, Kz;
   PetscReal    detA;
   PetscReal    dx=ctx->grid.d.x;
@@ -189,10 +189,10 @@ PetscErrorCode ComputeSinusoidalRHS(KSP ksp, Vec b, void *_ctx)
 }
 
 
-PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *_ctx)
+PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
 {
   // the problem context
-  Context      *ctx=(Context *)_ctx;
+  Context      *ctx=(Context *)user;
   // components of magnetization vector
   PetscScalar  Kx, Ky, Kz;
   // matrix determinant

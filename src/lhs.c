@@ -140,9 +140,9 @@ PetscErrorCode ComputeNeumannStencil(PetscInt i, PetscInt j, PetscInt k, PetscRe
 }
 
 
-PetscErrorCode ComputeIdentityLHS(KSP ksp, Mat J, Mat A, void *_ctx)
+PetscErrorCode ComputeIdentityLHS(KSP ksp, Mat J, Mat A, void *user)
 {
-  Context      *ctx=(Context *)_ctx;
+  Context      *ctx=(Context *)user;
 
   PetscFunctionBeginUser;
 
@@ -162,10 +162,10 @@ PetscErrorCode ComputeIdentityLHS(KSP ksp, Mat J, Mat A, void *_ctx)
 
 // Note: This is more complex than necessary because it arose as a
 // simplification of ComputeFullLHS. It could be further simplified.
-PetscErrorCode ComputeLaplacianLHS(KSP ksp, Mat J, Mat A, void *_ctx)
+PetscErrorCode ComputeLaplacianLHS(KSP ksp, Mat J, Mat A, void *user)
 {
   // the problem context
-  Context      *ctx=(Context *)_ctx;
+  Context      *ctx=(Context *)user;
   // geometric scale factors
   PetscScalar  sxx, syy, szz;
   // the DM of the KSP
@@ -342,10 +342,10 @@ PetscErrorCode ComputeLaplacianLHS(KSP ksp, Mat J, Mat A, void *_ctx)
 }
 
 
-PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *_ctx)
+PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *user)
 {
   // the problem context
-  Context      *ctx=(Context *)_ctx;
+  Context      *ctx=(Context *)user;
   // components of magnetization vector
   PetscScalar  Kx, Ky, Kz;
   // matrix determinant
