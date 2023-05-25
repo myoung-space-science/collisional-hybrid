@@ -355,7 +355,7 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *user)
   // geometric scale factors
   PetscScalar  sxx, syx, szx, sxy, syy, szy, sxz, syz, szz;
   // the DM of the grid
-  DM           vlasovDM;
+  DM           vlasovDM=ctx->vlasovDM;
   // local grid vector
   Vec          gridvec;
   // array representation of grid quantities
