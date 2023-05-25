@@ -9,7 +9,7 @@ PetscErrorCode OutputHDF5(const char *name, Context *ctx)
   PetscInt    Nf;
   char        **keys;
   PetscInt    field;
-  Vec         target, current=ctx->vlasov, rhs=ctx->rhs, phi=ctx->phi;
+  Vec         target, vlasov=ctx->vlasov, rhs=ctx->rhs, phi=ctx->phi;
 
   PetscFunctionBeginUser;
 
@@ -24,7 +24,7 @@ PetscErrorCode OutputHDF5(const char *name, Context *ctx)
   for (field=0; field<Nf; field++) {
     dm = dms[field];
     PetscCall(DMGetGlobalVector(dm, &target));
-    PetscCall(VecStrideGather(current, field, target, INSERT_VALUES));
+    PetscCall(VecStrideGather(vlasov, field, target, INSERT_VALUES));
     PetscCall(PetscObjectSetName((PetscObject)target, keys[field]));
     PetscCall(VecView(target, viewer));
     PetscCall(DMRestoreGlobalVector(dm, &target));
