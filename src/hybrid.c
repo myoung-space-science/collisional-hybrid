@@ -20,7 +20,7 @@ int main(int argc, char **args)
   MPIContext  mpi;
   time_t      startTime, endTime;
   Context     ctx;
-  DM          vdm, pdm;
+  DM          pdm;
   KSP         ksp;
   PetscInt    it;
   char        itfmt[5];
@@ -50,14 +50,10 @@ int main(int argc, char **args)
   ctx.seed = (long)(-(mpi.rank + 1)*12345);
 
   /* Set up the discrete grid of Vlasov quantities. */
-  PetscCall(SetUpVlasovDM(&vdm, &ctx));
-
-  /* Create a persistent vector for outputing Vlasov quantities. */
-  PetscCall(DMCreateGlobalVector(vdm, &ctx.vlasov));
-  PetscCall(VecZeroEntries(ctx.vlasov));
+  PetscCall(SetUpVlasovDM(&ctx));
 
   /* Set up the particle swarm for ions. */
-  PetscCall(SetUpIonsDM(vdm, &ctx));
+  PetscCall(SetUpIonsDM(&ctx));
 
   /* Set initial particle positions. */
   PetscCall(InitializePositions(&ctx));
@@ -135,7 +131,7 @@ int main(int argc, char **args)
   /* Free memory. */
   PetscCall(KSPDestroy(&ksp));
   PetscCall(VecDestroy(&ctx.vlasov));
-  PetscCall(DMDestroy(&vdm));
+  PetscCall(DMDestroy(&ctx.vlasovDM));
   PetscCall(DMDestroy(&ctx.ionsDM));
   PetscCall(DMDestroy(&pdm));
 

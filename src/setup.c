@@ -3,8 +3,9 @@
 
 
 /* Set parameter values for the vlasov-quantities data manager. */
-PetscErrorCode SetUpVlasovDM(DM *dm, Context *ctx)
+PetscErrorCode SetUpVlasovDM(Context *ctx)
 {
+  DM             dm;
   PetscInt       Nx=(ctx->grid.N.x > 0 ? ctx->grid.N.x : 7);
   PetscInt       Ny=(ctx->grid.N.y > 0 ? ctx->grid.N.y : 7);
   PetscInt       Nz=(ctx->grid.N.z > 0 ? ctx->grid.N.z : 7);
@@ -19,16 +20,16 @@ PetscErrorCode SetUpVlasovDM(DM *dm, Context *ctx)
   ECHO_FUNCTION_ENTER;
 
   // Create the DM.
-  PetscCall(DMDACreate3d(PETSC_COMM_WORLD, xBC, yBC, zBC, DMDA_STENCIL_BOX, Nx, Ny, Nz, PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE, dof, width, NULL, NULL, NULL, dm));
+  PetscCall(DMDACreate3d(PETSC_COMM_WORLD, xBC, yBC, zBC, DMDA_STENCIL_BOX, Nx, Ny, Nz, PETSC_DECIDE, PETSC_DECIDE, PETSC_DECIDE, dof, width, NULL, NULL, NULL, &dm));
   // Perform basic setup.
-  PetscCall(PetscObjectSetOptionsPrefix((PetscObject)(*dm), "vlasov_"));
-  PetscCall(DMDASetElementType(*dm, DMDA_ELEMENT_Q1));
-  PetscCall(DMSetFromOptions(*dm));
-  PetscCall(DMSetUp(*dm));
-  PetscCall(PetscObjectSetName((PetscObject)(*dm), "Vlasov"));
+  PetscCall(PetscObjectSetOptionsPrefix((PetscObject)dm, "vlasov_"));
+  PetscCall(DMDASetElementType(dm, DMDA_ELEMENT_Q1));
+  PetscCall(DMSetFromOptions(dm));
+  PetscCall(DMSetUp(dm));
+  PetscCall(PetscObjectSetName((PetscObject)(dm), "Vlasov"));
   // Synchronize values of Nx, Ny, and Nz passed via -n{x,y,z} or
   // -da_grid_{x,y,z}. Note that this gives precedence to the latter.
-  PetscCall(DMDAGetInfo(*dm, NULL, &Nx, &Ny, &Nz, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
+  PetscCall(DMDAGetInfo(dm, NULL, &Nx, &Ny, &Nz, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL));
   if (ctx->grid.N.x == -1) {
     ctx->grid.N.x = Nx;
   }
@@ -51,16 +52,19 @@ PetscErrorCode SetUpVlasovDM(DM *dm, Context *ctx)
   ctx->grid.d.y = dy;
   ctx->grid.d.z = dz;
   // Set uniform coordinates on the DM.
-  PetscCall(DMDASetUniformCoordinates(*dm, ctx->grid.p0.x, ctx->grid.p1.x+dx, ctx->grid.p0.y, ctx->grid.p1.y+dy, ctx->grid.p0.z, ctx->grid.p1.z+dz));
+  PetscCall(DMDASetUniformCoordinates(dm, ctx->grid.p0.x, ctx->grid.p1.x+dx, ctx->grid.p0.y, ctx->grid.p1.y+dy, ctx->grid.p0.z, ctx->grid.p1.z+dz));
   // Declare grid-quantity names.
-  PetscCall(DMDASetFieldName(*dm, 0, "density"));
-  PetscCall(DMDASetFieldName(*dm, 1, "x flux"));
-  PetscCall(DMDASetFieldName(*dm, 2, "y flux"));
-  PetscCall(DMDASetFieldName(*dm, 3, "z flux"));
-  // Associate the user context with the DM.
-  PetscCall(DMSetApplicationContext(*dm, &ctx));
+  PetscCall(DMDASetFieldName(dm, 0, "density"));
+  PetscCall(DMDASetFieldName(dm, 1, "x flux"));
+  PetscCall(DMDASetFieldName(dm, 2, "y flux"));
+  PetscCall(DMDASetFieldName(dm, 3, "z flux"));
   // View information about the DM.
-  PetscCall(DMView(*dm, PETSC_VIEWER_STDOUT_WORLD));
+  PetscCall(DMView(dm, PETSC_VIEWER_STDOUT_WORLD));
+  // Create a persistent vector for outputing Vlasov quantities.
+  PetscCall(DMCreateGlobalVector(dm, &ctx->vlasov));
+  PetscCall(VecZeroEntries(ctx->vlasov));
+  // Assign the vlasov DM to the application context.
+  ctx->vlasovDM = dm;
 
   ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
@@ -91,6 +95,8 @@ PetscErrorCode SetUpPotentialDM(DM *dm, Context *ctx)
   PetscCall(PetscObjectSetName((PetscObject)(*dm), "Potential"));
   // Assign the field name.
   PetscCall(DMDASetFieldName(*dm, 0, "potential"));
+  // Associate the user context with this DM.
+  PetscCall(DMSetApplicationContext(*dm, &ctx));
   // Echo information about the DM.
   PetscCall(DMView(*dm, PETSC_VIEWER_STDOUT_WORLD));
 
@@ -100,9 +106,9 @@ PetscErrorCode SetUpPotentialDM(DM *dm, Context *ctx)
 
 
 /* Set parameter values for the ion-swarm data manager. */
-PetscErrorCode SetUpIonsDM(DM vlasovDM, Context *ctx)
+PetscErrorCode SetUpIonsDM(Context *ctx)
 {
-  DM       ionsDM;
+  DM       ionsDM, vlasovDM=ctx->vlasovDM;
   PetscInt dim;
   PetscInt bufsize=0;
   PetscInt Np, np;

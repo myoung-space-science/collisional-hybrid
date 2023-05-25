@@ -4,10 +4,10 @@
 #include <petsc.h>
 #include "hybrid.h"
 
-extern PetscErrorCode SetUpVlasovDM(DM *dm, Context *ctx);
+extern PetscErrorCode SetUpVlasovDM(Context *ctx);
 
 extern PetscErrorCode SetUpPotentialDM(DM *dm, Context *ctx);
 
-extern PetscErrorCode SetUpIonsDM(DM vlasovDM, Context *ctx);
+extern PetscErrorCode SetUpIonsDM(Context *ctx);
 
 #endif // INITIALIZE_H
