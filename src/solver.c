@@ -17,7 +17,7 @@ int main(int argc, char **args)
 {
   MPIContext  mpi;
   Context     ctx;
-  DM          vdm, pdm;
+  DM          pdm;
   KSP         ksp;
 
   PetscFunctionBeginUser;
@@ -34,11 +34,7 @@ int main(int argc, char **args)
   ctx.mpi = mpi;
 
   /* Set up the discrete grid of Vlasov quantities. */
-  PetscCall(SetUpVlasovDM(&vdm, &ctx));
-
-  /* Create a persistent vector for outputing Vlasov quantities. */
-  PetscCall(DMCreateGlobalVector(vdm, &ctx.vlasov));
-  PetscCall(VecZeroEntries(ctx.vlasov));
+  PetscCall(SetUpVlasovDM(&ctx));
 
   /* Echo the initial state. */
   if (mpi.rank == 0) {
