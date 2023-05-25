@@ -154,6 +154,27 @@ run_basic_physics() {
         ${1}
 }
 case_map['basic-physics']=run_basic_physics
+run_solver() {
+    ./run.sh solver \
+        -ksp_type gmres \
+        -ksp_max_it 100 \
+        -pc_type jacobi \
+        -Nx 64 -Ny 64 -Nz 64 \
+        -n 1 \
+        -nue 5e4 \
+        -nui 3e3 \
+        -B0z 5e-5 \
+        -E0y 5e-2 \
+        -mi 5.0e-26 \
+        -mn 4.6e-26 \
+        -Te 600 \
+        -Ti 300 \
+        -Tn 300 \
+        -ksp_monitor_short \
+        -ksp_converged_reason \
+        ${1}
+}
+case_map['solver']=run_solver
 
 # Define a function to print names of registered cases.
 show_cases() {
