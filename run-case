@@ -157,8 +157,11 @@ case_map['basic-physics']=run_basic_physics
 run_solver() {
     ./run.sh solver \
         -ksp_type gmres \
-        -ksp_max_it 100 \
-        -pc_type jacobi \
+        -ksp_max_it 50 \
+        -pc_type gamg \
+        -pc_gamg_type agg \
+        -pc_gamg_agg_nsmooths 0 \
+        -ksp_gmres_modifiedgramschmidt \
         -Nx 64 -Ny 64 -Nz 64 \
         -n 1 \
         -nue 5e4 \
