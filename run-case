@@ -24,13 +24,13 @@ declare -A case_map
 
 # Define the case functions.
 run_default() {
-    ./run.sh \
+    ./run.sh hybrid \
         -Nx 8 -Ny 8 -Nz 8 \
         ${1}
 }
 case_map['default']=run_default
 run_test_collection_8cubed() {
-    ./run.sh \
+    ./run.sh hybrid \
         -Nx 8 -Ny 8 -Nz 8 \
         -Np 1024 \
         -n 1 \
@@ -40,7 +40,7 @@ run_test_collection_8cubed() {
 }
 case_map['test-collection-8cubed']=run_test_collection_8cubed
 run_test_collisions_8cubed() {
-    ./run.sh \
+    ./run.sh hybrid \
         -Nx 8 -Ny 8 -Nz 8 \
         -Np 1024 \
         -n 1 \
@@ -56,7 +56,7 @@ run_test_collisions_8cubed() {
 }
 case_map['test-collisions-8cubed']=run_test_collisions_8cubed
 run_test_collection_asymmetric() {
-    ./run.sh \
+    ./run.sh hybrid \
         -Nx 15 -Ny 10 -Nz 8 \
         -Np 1200 \
         -n 1 \
@@ -65,7 +65,7 @@ run_test_collection_asymmetric() {
 }
 case_map['test-collection-asymmetric']=run_test_collection_asymmetric
 run_test_collection_32cubed() {
-    ./run.sh \
+    ./run.sh hybrid \
         -Nx 64 -Ny 64 -Nz 64 \
         -Np 1048576 \
         -n 1 \
@@ -74,7 +74,7 @@ run_test_collection_32cubed() {
 }
 case_map['test-collection-32cubed']=run_test_collection_32cubed
 run_test_collection_long_x() {
-    ./run.sh \
+    ./run.sh hybrid \
         -Nx 32 -Ny 8 -Nz 8 \
         -x1 4.0 -y1 1.0 -z1 1.0 \
         -Np 1000000 \
@@ -85,7 +85,7 @@ run_test_collection_long_x() {
 }
 case_map['test-collection-long-x']=run_test_collection_long_x
 run_test_rhs_indices() {
-    ./run.sh \
+    ./run.sh hybrid \
         -Nx 64 -Ny 64 -Nz 64 \
         -n 1 \
         -Np 1048576 \
@@ -107,7 +107,7 @@ run_test_rhs_indices() {
 }
 case_map['test-rhs-indices']=run_test_rhs_indices
 run_test_lhs_indices() {
-    ./run.sh \
+    ./run.sh hybrid \
         -Nx 64 -Ny 64 -Nz 64 \
         -n 1 \
         -Np 1048576 \
@@ -121,7 +121,7 @@ run_test_lhs_indices() {
 }
 case_map['test-lhs-indices']=run_test_lhs_indices
 run_gamg_basic() {
-    ./run.sh \
+    ./run.sh hybrid \
         -ksp_monitor_short \
         -ksp_type gmres \
         -ksp_max_it 100 \
@@ -132,7 +132,7 @@ run_gamg_basic() {
 }
 case_map['gamg-basic']=run_gamg_basic
 run_basic_physics() {
-    ./run.sh \
+    ./run.sh hybrid \
         -ksp_type gmres \
         -ksp_max_it 100 \
         -pc_type jacobi \
