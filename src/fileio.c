@@ -53,7 +53,7 @@ PetscErrorCode LoadVlasov(const char *name, Context *ctx)
 PetscErrorCode OutputHDF5(const char *name, Context *ctx)
 {
   PetscViewer viewer;
-  DM          gridDM, *dms, dm;
+  DM          vlasovDM=ctx->vlasovDM, *dms, dm;
   PetscInt    Nf;
   char        **keys;
   PetscInt    field;
@@ -61,14 +61,11 @@ PetscErrorCode OutputHDF5(const char *name, Context *ctx)
 
   PetscFunctionBeginUser;
 
-  // Get the vlasov DM from the ions DM.
-  PetscCall(DMSwarmGetCellDM(ctx->ionsDM, &gridDM));
-
   // Create the HDF5 viewer.
   PetscCall(PetscViewerHDF5Open(PETSC_COMM_WORLD, name, FILE_MODE_WRITE, &viewer));
 
   // Write vlasov quantities to the HDF5 file.
-  PetscCall(DMCreateFieldDecomposition(gridDM, &Nf, &keys, NULL, &dms));
+  PetscCall(DMCreateFieldDecomposition(vlasovDM, &Nf, &keys, NULL, &dms));
   for (field=0; field<Nf; field++) {
     dm = dms[field];
     PetscCall(DMGetGlobalVector(dm, &target));
