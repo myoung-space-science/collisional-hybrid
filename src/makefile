@@ -14,6 +14,15 @@ hybrid: hybrid.o \
 		vectors.o
 	-$(CLINKER) -o ${localbin}/$@ $^ $(LDLIBS)
 
+solver: solver.o \
+		fileio.o \
+		lhs.o \
+		parameters.o \
+		potential.o \
+		rhs.o \
+		setup.o
+	-$(CLINKER) -o ${localbin}/$@ $^ $(LDLIBS)
+
 include ${petscdir}/lib/petsc/conf/variables
 include ${petscdir}/lib/petsc/conf/rules
 
