@@ -10,7 +10,7 @@ static char help[] = "A tool for solving the 3D quasineutral electrostatic-poten
 #include "setup.h"
 #include "particles.h"
 #include "potential.h"
-#include "output.h"
+#include "fileio.h"
 
 
 int main(int argc, char **args)
@@ -47,6 +47,7 @@ int main(int argc, char **args)
   PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
 
   /* Read density and fluxes from disk. */
+  PetscCall(LoadVlasov(vdm, "/home/matthew/sandbox/dmswarm-hybrid/test-data/vlasov.h5", &ctx.vlasov));
 
   /* Set up the discrete grid for the electrostatic potential. */
   PetscCall(SetUpPotentialDM(&pdm, &ctx));

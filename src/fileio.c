@@ -2,6 +2,54 @@
 #include <petscviewerhdf5.h>
 #include "hybrid.h"
 
+
+PetscErrorCode LoadVlasov(DM gridDM, const char *name, Vec *vlasov)
+{
+  PetscViewer viewer;
+  DM          *dms, dm;
+  PetscInt    Nf;
+  char        **keys;
+  PetscInt    field;
+  Vec         current;
+  char        key[2048];
+
+  PetscFunctionBeginUser;
+
+  // Create the HDF5 viewer.
+  PetscCall(PetscViewerHDF5Open(PETSC_COMM_WORLD, name, FILE_MODE_READ, &viewer));
+
+  // Zero the target vlasov vector.
+  PetscCall(VecZeroEntries(*vlasov));
+
+  // Load vlasov quantities from the HDF5 file.
+  PRINT_WORLD("Attempting to load arrays from %s\n", name);
+  PetscCall(DMCreateFieldDecomposition(gridDM, &Nf, &keys, NULL, &dms));
+  for (field=0; field<Nf; field++) {
+    dm = dms[field];
+    PetscCall(DMGetGlobalVector(dm, &current));
+    sprintf(key, "arrays/%s", keys[field]);
+    PetscCall(PetscObjectSetName((PetscObject)current, key));
+    PetscCall(VecLoad(current, viewer));
+    PetscCall(VecStrideScatter(current, field, *vlasov, INSERT_VALUES));
+    PRINT_WORLD("Loaded \"%s\"\n", key);
+    PetscCall(DMRestoreGlobalVector(dm, &current));
+  }
+
+  // Release memory.
+  for (field=0; field<Nf; field++) {
+    PetscFree(keys[field]);
+    PetscCall(DMDestroy(&dms[field]));
+  }
+  PetscFree(keys);
+  PetscFree(dms);
+
+  // Destroy the HDF5 viewer.
+  PetscCall(PetscViewerDestroy(&viewer));
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 PetscErrorCode OutputHDF5(const char *name, Context *ctx)
 {
   PetscViewer viewer;
