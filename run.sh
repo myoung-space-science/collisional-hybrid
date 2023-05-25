@@ -5,7 +5,7 @@
 set -e
 
 # Declare the name of the target program.
-prog=hybrid
+prog=
 progname=${0##*/}
 
 # Declare project-related directories.
@@ -38,17 +38,17 @@ show_help()
 {
     echo "
 ${textbf}NAME${textnm}
-        $progname - Run the hybrid simulation
+        $progname - Run the hybrid simulation or potential solver
 
 ${textbf}SYNOPSIS${textnm}
-        ${textbf}$progname${textnm} [${startul}OPTIONS${endul}]
+        ${textbf}$progname${textnm} TARGET [${startul}OPTIONS${endul}]
 
 ${textbf}DESCRIPTION${textnm}
-        This script will make and execute ${textbf}${prog}${textnm}.
+        This script will make and execute TARGET.
         
         The following options pertain to building and running the executable, 
         and saving the output. All additional options will pass through to 
-        ${textbf}${prog}${textnm}.
+        TARGET.
 
         ${textbf}-h${textnm}, ${textbf}--help${textnm}
                 Display help and exit.
@@ -100,7 +100,11 @@ while [ "${1}" != "" ]; do
             exit
             ;;
         * )
-            extra="${extra} ${1}"
+            if [ -z "${prog}" ]; then
+                prog=${1}
+            else
+                extra="${extra} ${1}"
+            fi
             ;;
     esac
     shift
