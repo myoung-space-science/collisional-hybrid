@@ -111,6 +111,7 @@ typedef struct {
   Plasma         plasma;      // plasma information
   MPIContext     mpi;         // MPI information
   Vec            vlasov;      // full vector of all Vlasov quantities
+  DM             vlasovDM;    // vlasov-grid data manager
   DM             ionsDM;      // PIC-swarm data manager
   Vec            phi;         // electrostatic potential
   Vec            rhs;         // potential-equation forcing vector
