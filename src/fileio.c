@@ -3,14 +3,14 @@
 #include "hybrid.h"
 
 
-PetscErrorCode LoadVlasov(DM gridDM, const char *name, Vec *vlasov)
+PetscErrorCode LoadVlasov(const char *name, Context *ctx)
 {
   PetscViewer viewer;
-  DM          *dms, dm;
+  DM          *dms, dm, vlasovDM=ctx->vlasovDM;
   PetscInt    Nf;
   char        **keys;
   PetscInt    field;
-  Vec         current;
+  Vec         current, vlasov=ctx->vlasov;
   char        key[2048];
 
   PetscFunctionBeginUser;
@@ -19,18 +19,18 @@ PetscErrorCode LoadVlasov(DM gridDM, const char *name, Vec *vlasov)
   PetscCall(PetscViewerHDF5Open(PETSC_COMM_WORLD, name, FILE_MODE_READ, &viewer));
 
   // Zero the target vlasov vector.
-  PetscCall(VecZeroEntries(*vlasov));
+  PetscCall(VecZeroEntries(vlasov));
 
   // Load vlasov quantities from the HDF5 file.
   PRINT_WORLD("Attempting to load arrays from %s\n", name);
-  PetscCall(DMCreateFieldDecomposition(gridDM, &Nf, &keys, NULL, &dms));
+  PetscCall(DMCreateFieldDecomposition(vlasovDM, &Nf, &keys, NULL, &dms));
   for (field=0; field<Nf; field++) {
     dm = dms[field];
     PetscCall(DMGetGlobalVector(dm, &current));
     sprintf(key, "arrays/%s", keys[field]);
     PetscCall(PetscObjectSetName((PetscObject)current, key));
     PetscCall(VecLoad(current, viewer));
-    PetscCall(VecStrideScatter(current, field, *vlasov, INSERT_VALUES));
+    PetscCall(VecStrideScatter(current, field, vlasov, INSERT_VALUES));
     PRINT_WORLD("Loaded \"%s\"\n", key);
     PetscCall(DMRestoreGlobalVector(dm, &current));
   }

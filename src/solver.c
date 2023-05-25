@@ -43,7 +43,7 @@ int main(int argc, char **args)
   PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
 
   /* Read density and fluxes from disk. */
-  PetscCall(LoadVlasov(vdm, "/home/matthew/sandbox/dmswarm-hybrid/test-data/vlasov.h5", &ctx.vlasov));
+  PetscCall(LoadVlasov("/home/matthew/sandbox/dmswarm-hybrid/test-data/vlasov.h5", &ctx));
 
   /* Set up the discrete grid for the electrostatic potential. */
   PetscCall(SetUpPotentialDM(&pdm, &ctx));

@@ -4,7 +4,7 @@
 #include <petsc.h>
 #include "hybrid.h"
 
-extern PetscErrorCode LoadVlasov(DM gridDM, const char *name, Vec *vlasov);
+extern PetscErrorCode LoadVlasov(const char *name, Context *ctx);
 
 extern PetscErrorCode OutputHDF5(const char *name, Context *ctx);
 
