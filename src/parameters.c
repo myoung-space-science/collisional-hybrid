@@ -518,6 +518,9 @@ PetscErrorCode ProcessOptions(Context *ctx)
   // Set neutral thermal velocity from temperature.
   ctx->neutrals.vT = PetscSqrtReal(2.0 * KB * ctx->neutrals.T / ctx->neutrals.m);
 
+  // [DEV] Hard-code the electron thermal coefficient to 1.0 (isothermal).
+  ctx->electrons.gamma = 1.0;
+
   // TODO: Should we set default collision frequencies based on an analytic
   // formulation (e.g., from Schunk & Nagy)?
 
@@ -576,6 +579,7 @@ PetscErrorCode EchoOptions(Context ctx)
   PetscCall(PetscViewerASCIIPrintf(viewer, "veTy = %f [m/s]\n", ctx.electrons.vT.y));
   PetscCall(PetscViewerASCIIPrintf(viewer, "veTz = %f [m/s]\n", ctx.electrons.vT.z));
   PetscCall(PetscViewerASCIIPrintf(viewer, "Te = %f [K]\n", ctx.electrons.T));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "gamma_e = %f\n", ctx.electrons.gamma));
   PetscCall(PetscViewerASCIIPrintf(viewer, "Omega_ex = %g [s^-1]\n", ctx.electrons.Omega.x));
   PetscCall(PetscViewerASCIIPrintf(viewer, "Omega_ey = %g [s^-1]\n", ctx.electrons.Omega.y));
   PetscCall(PetscViewerASCIIPrintf(viewer, "Omega_ez = %g [s^-1]\n", ctx.electrons.Omega.z));
