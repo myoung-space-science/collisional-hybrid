@@ -65,7 +65,7 @@ PetscErrorCode ComputeConstantRHS(KSP ksp, Vec b, void *user)
   Context      *ctx=(Context *)user;
   PetscScalar  Kx, Ky, Kz;
   PetscReal    detA;
-  DM           grid;
+  DM           vlasovDM=ctx->vlasovDM;
   PetscReal    dx=ctx->grid.d.x;
   PetscReal    dy=ctx->grid.d.y;
   PetscReal    dz=ctx->grid.d.z;
@@ -82,11 +82,8 @@ PetscErrorCode ComputeConstantRHS(KSP ksp, Vec b, void *user)
   // Compute the value of the matrix determinant.
   detA = 1 + Kx*Kx + Ky*Ky + Kz*Kz;
 
-  // Get the grid DM from the context.
-  PetscCall(DMSwarmGetCellDM(ctx->ionsDM, &grid));
-
   // Extract the density vector.
-  PetscCall(GetFieldVec(grid, ctx->vlasov, "density", &density));
+  PetscCall(GetFieldVec(vlasovDM, ctx->vlasov, "density", &density));
 
   // Set the RHS vector equal to the global mean density.
   PetscCall(VecMean(density, &mean));
@@ -96,7 +93,7 @@ PetscErrorCode ComputeConstantRHS(KSP ksp, Vec b, void *user)
   PetscCall(VecSet(b, val));
 
   // Restore the density vector.
-  PetscCall(RestoreFieldVec(grid, ctx->vlasov, "density", &density));
+  PetscCall(RestoreFieldVec(vlasovDM, ctx->vlasov, "density", &density));
 
   // Store the RHS vector in the problem context.
   ctx->rhs = b;
@@ -113,7 +110,7 @@ PetscErrorCode ComputeSinusoidalRHS(KSP ksp, Vec b, void *user)
   PetscReal    dx=ctx->grid.d.x;
   PetscReal    dy=ctx->grid.d.y;
   PetscReal    dz=ctx->grid.d.z;
-  DM           grid;
+  DM           vlasovDM=ctx->vlasovDM;
   Vec          density;
   PetscScalar  n0;
   DM           dm;
@@ -136,9 +133,6 @@ PetscErrorCode ComputeSinusoidalRHS(KSP ksp, Vec b, void *user)
   // Compute the value of the matrix determinant.
   detA = 1 + Kx*Kx + Ky*Ky + Kz*Kz;
 
-  // Get the grid DM from the context.
-  PetscCall(DMSwarmGetCellDM(ctx->ionsDM, &grid));
-
   // Zero the incoming vector.
   PetscCall(VecZeroEntries(b));
 
@@ -149,7 +143,7 @@ PetscErrorCode ComputeSinusoidalRHS(KSP ksp, Vec b, void *user)
   PetscCall(DMDAVecGetArray(dm, b, &rhs));
 
   // Extract the density vector and compute its mean.
-  PetscCall(GetFieldVec(grid, ctx->vlasov, "density", &density));
+  PetscCall(GetFieldVec(vlasovDM, ctx->vlasov, "density", &density));
   PetscCall(VecMean(density, &n0));
 
   // Get this processor's indices.
@@ -172,7 +166,7 @@ PetscErrorCode ComputeSinusoidalRHS(KSP ksp, Vec b, void *user)
   }
 
   // Restore the density vector.
-  PetscCall(RestoreFieldVec(grid, ctx->vlasov, "density", &density));
+  PetscCall(RestoreFieldVec(vlasovDM, ctx->vlasov, "density", &density));
 
   // Restore the borrowed arrays.
   PetscCall(DMDAVecRestoreArray(dm, b, &rhs));
@@ -206,7 +200,7 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
   // z-axis cell spacing
   PetscReal    dz=ctx->grid.d.z;
   // the DM of the grid
-  DM           grid;
+  DM           vlasovDM=ctx->vlasovDM;
   // local grid vector
   Vec          gridvec;
   // array representation of grid quantities
@@ -260,14 +254,11 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
   rzy = Ky*Kz + Kx;
   rzz = 1 + Kz*Kz;
 
-  // Get the grid DM from the context.
-  PetscCall(DMSwarmGetCellDM(ctx->ionsDM, &grid));
-
   // Extract the density array.
-  PetscCall(DMGetLocalVector(grid, &gridvec));
-  PetscCall(DMGlobalToLocalBegin(grid, ctx->vlasov, INSERT_VALUES, gridvec));
-  PetscCall(DMGlobalToLocalEnd(grid, ctx->vlasov, INSERT_VALUES, gridvec));
-  PetscCall(DMDAVecGetArray(grid, gridvec, &gridarr));
+  PetscCall(DMGetLocalVector(vlasovDM, &gridvec));
+  PetscCall(DMGlobalToLocalBegin(vlasovDM, ctx->vlasov, INSERT_VALUES, gridvec));
+  PetscCall(DMGlobalToLocalEnd(vlasovDM, ctx->vlasov, INSERT_VALUES, gridvec));
+  PetscCall(DMDAVecGetArray(vlasovDM, gridvec, &gridarr));
 
   // Zero the incoming vector.
   PetscCall(VecZeroEntries(b));
@@ -342,7 +333,7 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
   }
 
   // Restore the borrowed arrays.
-  PetscCall(DMDAVecRestoreArray(grid, gridvec, &gridarr));
+  PetscCall(DMDAVecRestoreArray(vlasovDM, gridvec, &gridarr));
   PetscCall(DMDAVecRestoreArray(dm, b, &rhs));
 
   // Make the RHS vector consistent with the LHS operator.

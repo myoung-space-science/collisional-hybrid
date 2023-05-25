@@ -355,7 +355,7 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *user)
   // geometric scale factors
   PetscScalar  sxx, syx, szx, sxy, syy, szy, sxz, syz, szz;
   // the DM of the grid
-  DM           grid;
+  DM           vlasovDM;
   // local grid vector
   Vec          gridvec;
   // array representation of grid quantities
@@ -426,14 +426,11 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *user)
 
   // TODO: Pre-compute sij*rij coefficients for efficiency.
 
-  // Get the grid DM from the context.
-  PetscCall(DMSwarmGetCellDM(ctx->ionsDM, &grid));
-
   // Extract the density array.
-  PetscCall(DMGetLocalVector(grid, &gridvec));
-  PetscCall(DMGlobalToLocalBegin(grid, ctx->vlasov, INSERT_VALUES, gridvec));
-  PetscCall(DMGlobalToLocalEnd(grid, ctx->vlasov, INSERT_VALUES, gridvec));
-  PetscCall(DMDAVecGetArray(grid, gridvec, &array));
+  PetscCall(DMGetLocalVector(vlasovDM, &gridvec));
+  PetscCall(DMGlobalToLocalBegin(vlasovDM, ctx->vlasov, INSERT_VALUES, gridvec));
+  PetscCall(DMGlobalToLocalEnd(vlasovDM, ctx->vlasov, INSERT_VALUES, gridvec));
+  PetscCall(DMDAVecGetArray(vlasovDM, gridvec, &array));
 
   // Get the DM associated with the KSP.
   PetscCall(KSPGetDM(ksp, &dm));
@@ -496,8 +493,8 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *user)
   PetscCall(DMDAVecRestoreArray(dm, F, &f));
   PetscCall(DMRestoreLocalVector(dm, &F));
 
-  PetscCall(DMDAVecRestoreArray(grid, gridvec, &array));
-  PetscCall(DMRestoreLocalVector(grid, &gridvec));
+  PetscCall(DMDAVecRestoreArray(vlasovDM, gridvec, &array));
+  PetscCall(DMRestoreLocalVector(vlasovDM, &gridvec));
 
   PetscCall(MatAssemblyBegin(A, MAT_FINAL_ASSEMBLY));
   PetscCall(MatAssemblyEnd(A, MAT_FINAL_ASSEMBLY));
