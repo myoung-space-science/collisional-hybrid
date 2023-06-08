@@ -125,6 +125,7 @@ int main(int argc, char **args)
   PetscCall(DMDestroy(&pdm));
 
   /* Finalize SLEPc. */
+  PetscCall(SlepcFinalize());
 
   /* Finalize PETSc and MPI. */
   PetscCall(PetscFinalize());
