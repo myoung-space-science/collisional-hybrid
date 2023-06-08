@@ -1,4 +1,3 @@
-petscdir ?= ~/petsc
 localbin = ../bin
 
 default: hybrid
@@ -25,7 +24,7 @@ solver: solver.o \
 		setup.o
 	-$(CLINKER) -o ${localbin}/$@ $^ $(LDLIBS) $(SLEPC_EPS_LIB)
 
-include ${petscdir}/lib/petsc/conf/variables
-include ${petscdir}/lib/petsc/conf/rules
+include ${PETSC_DIR}/lib/petsc/conf/variables
+include ${PETSC_DIR}/lib/petsc/conf/rules
 include ${SLEPC_DIR}/lib/slepc/conf/slepc_common
 
