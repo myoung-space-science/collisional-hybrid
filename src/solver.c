@@ -5,6 +5,7 @@ static char help[] = "A tool for solving the 3D quasineutral electrostatic-poten
 #include <petscdm.h>
 #include <petscdmda.h>
 #include <petscdmswarm.h>
+#include <slepceps.h>
 #include "hybrid.h"
 #include "parameters.h"
 #include "setup.h"
@@ -26,6 +27,9 @@ int main(int argc, char **args)
   PetscCall(PetscInitialize(&argc, &args, (char *)0, help));
   PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &mpi.rank));
   PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &mpi.size));
+
+  /* Initialize SLEPc. */
+  PetscCall(SlepcInitialize(&argc, &args, (char *)0, help));
 
   /* Assign parameter values from user arguments or defaults. */
   PetscCall(ProcessOptions(&ctx));
@@ -66,6 +70,8 @@ int main(int argc, char **args)
   PetscCall(KSPDestroy(&ksp));
   PetscCall(VecDestroy(&ctx.vlasov));
   PetscCall(DMDestroy(&pdm));
+
+  /* Finalize SLEPc. */
 
   /* Finalize PETSc and MPI. */
   PetscCall(PetscFinalize());
