@@ -23,8 +23,9 @@ solver: solver.o \
 		potential.o \
 		rhs.o \
 		setup.o
-	-$(CLINKER) -o ${localbin}/$@ $^ $(LDLIBS)
+	-$(CLINKER) -o ${localbin}/$@ $^ $(LDLIBS) $(SLEPC_EPS_LIB)
 
 include ${petscdir}/lib/petsc/conf/variables
 include ${petscdir}/lib/petsc/conf/rules
+include ${SLEPC_DIR}/lib/slepc/conf/slepc_common
 
