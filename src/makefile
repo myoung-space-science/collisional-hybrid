@@ -1,6 +1,8 @@
 petscdir ?= ~/petsc
 localbin = ../bin
 
+default: hybrid
+
 hybrid: hybrid.o \
 		distributions.o \
 		fileio.o \
