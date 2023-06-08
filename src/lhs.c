@@ -1,4 +1,5 @@
 #include <petsc.h>
+#include <slepceps.h>
 #include "constants.h"
 #include "hybrid.h"
 #include "lhs.h"
@@ -514,3 +515,80 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *user)
 }
 
 
+/* Compute the eigenvalues of the operator matrix.
+
+This is essentially a distilled version of ${SLEPC_DIR}/src/eps/tutorials/ex1.c
+*/
+PetscErrorCode ComputeLHSEigenvalues(KSP ksp)
+{
+  EPS         eps;
+  EPSType     type;
+  Mat         A;
+  PetscInt    i, its, maxit, nev, nconv;
+  PetscReal   tol, error, re, im;
+  PetscScalar kr, ki;
+  Vec         xr, xi;
+
+  PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
+
+  /* Set up eigenvalue solver. */
+  PetscCall(EPSCreate(PETSC_COMM_WORLD, &eps));
+
+  /* Get the LHS operator from the Krylov context. */
+  PetscCall(KSPGetOperators(ksp, &A, NULL));
+
+  /* Create vectors for holding the real and imaginary parts. */
+  PetscCall(MatCreateVecs(A, NULL, &xr));
+  PetscCall(MatCreateVecs(A, NULL, &xi));
+
+  /* Associate the LHS operator with the eigenvalue solver. */
+  PetscCall(EPSSetOperators(eps, A, NULL));
+
+  /* Set up the problem type and read CLI options. */
+  PetscCall(EPSSetProblemType(eps, EPS_HEP));
+  PetscCall(EPSSetFromOptions(eps));
+
+  /* Compute eigenvalues. */
+  PetscCall(EPSSolve(eps));
+
+  /* Print results. */
+  PetscCall(EPSGetIterationNumber(eps, &its));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, " Number of iterations of the method: %d\n", its));
+  PetscCall(EPSGetType(eps, &type));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, " Solution method: %s\n\n", type));
+  PetscCall(EPSGetDimensions(eps, &nev, NULL, NULL));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, " Number of requested eigenvalues: %d\n", nev));
+  PetscCall(EPSGetTolerances(eps, &tol, &maxit));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, " Stopping condition: tol=%.4g, maxit=%d\n", (double)tol, maxit));
+  PetscCall(EPSGetConverged(eps, &nconv));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, " Number of converged eigenpairs: %d\n\n", nconv));
+  if (nconv > 0) {
+    PetscCall(PetscPrintf(PETSC_COMM_WORLD,
+         "           k          ||Ax-kx||/||kx||\n"
+         "   ----------------- ------------------\n"));
+
+    for (i=0; i<nconv; i++) {
+      PetscCall(EPSGetEigenpair(eps, i, &kr, &ki, xr, xi));
+      PetscCall(EPSComputeError(eps, i, EPS_ERROR_RELATIVE, &error));
+#if defined(PETSC_USE_COMPLEX)
+      re = PetscRealPart(kr);
+      im = PetscImaginaryPart(kr);
+#else
+      re = kr;
+      im = ki;
+#endif
+      if (im!=0.0) PetscCall(PetscPrintf(PETSC_COMM_WORLD, " %9f%+9fi %12g\n", (double)re, (double)im, (double)error));
+      else PetscCall(PetscPrintf(PETSC_COMM_WORLD, "   %12f       %12g\n", (double)re, (double)error));
+    }
+    PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n"));
+  }
+
+  /* Free memory. */
+  PetscCall(EPSDestroy(&eps));
+  PetscCall(VecDestroy(&xr));
+  PetscCall(VecDestroy(&xi));
+
+  ECHO_FUNCTION_EXIT;
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
