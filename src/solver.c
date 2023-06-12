@@ -21,6 +21,7 @@ int main(int argc, char **args)
   DM          pdm;
   KSP         ksp;
 
+
   PetscFunctionBeginUser;
 
   /* Initialize PETSc and MPI. */
@@ -44,7 +45,7 @@ int main(int argc, char **args)
   PetscCall(EchoOptions(ctx));
 
   /* Read density and fluxes from disk. */
-  PetscCall(LoadVlasov("/home/matthew/sandbox/dmswarm-hybrid/test-data/vlasov.h5", &ctx));
+  PetscCall(LoadVlasov(&ctx));
 
   /* Set up the discrete grid for the electrostatic potential. */
   PetscCall(SetUpPotentialDM(&pdm, &ctx));
@@ -61,7 +62,7 @@ int main(int argc, char **args)
   PetscCall(ComputePotential(ksp, &ctx));
 
   /* Output arrays. */
-  PetscCall(OutputHDF5("solver.hdf", &ctx));
+  PetscCall(OutputHDF5("", &ctx));
 
   /* Compute LHS eigenvalues. */
   PetscCall(ComputeLHSEigenvalues(ksp));

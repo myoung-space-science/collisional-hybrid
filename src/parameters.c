@@ -27,6 +27,7 @@ const char *BCTypes[] = {
 /* Read runtime arguments from the command line or a file. */
 PetscErrorCode ProcessOptions(Context *ctx)
 {
+  char      path[PETSC_MAX_PATH_LEN]="";
   PetscInt  intArg;
   PetscReal realArg;
   PetscBool boolArg;
@@ -41,6 +42,17 @@ PetscErrorCode ProcessOptions(Context *ctx)
   ctx->electrons.m = ME;
 
   // Read optional parameter values from user input.
+  PetscCall(PetscOptionsGetString(NULL, NULL, "--input", path, sizeof(path), &found));
+  if (found) {
+    PetscCall(PetscStrcat(ctx->inpath, path));
+  }
+  sprintf(ctx->outstem, "");
+  PetscCall(PetscOptionsGetString(NULL, NULL, "--output", path, sizeof(path), &found));
+  if (found) {
+    PetscCall(PetscStrcat(ctx->outstem, path));
+  } else {
+    PetscCall(PetscStrcat(ctx->outstem, "results"));
+  }
   PetscCall(PetscOptionsGetBool(NULL, NULL, "--view-lhs", &boolArg, &found));
   if (found) {
     ctx->viewLHS = boolArg;

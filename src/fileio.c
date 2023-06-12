@@ -3,8 +3,9 @@
 #include "hybrid.h"
 
 
-PetscErrorCode LoadVlasov(const char *name, Context *ctx)
+PetscErrorCode LoadVlasov(Context *ctx)
 {
+  PetscBool   nullPath;
   PetscViewer viewer;
   DM          *dms, dm, vlasovDM=ctx->vlasovDM;
   PetscInt    Nf;
@@ -15,14 +16,20 @@ PetscErrorCode LoadVlasov(const char *name, Context *ctx)
 
   PetscFunctionBeginUser;
 
+  // Raise an error if the user did not provide an input file.
+  PetscCall(PetscStrcmp(ctx->inpath, "", &nullPath));
+  if (nullPath) {
+    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Missing input file.");
+  }
+
   // Create the HDF5 viewer.
-  PetscCall(PetscViewerHDF5Open(PETSC_COMM_WORLD, name, FILE_MODE_READ, &viewer));
+  PetscCall(PetscViewerHDF5Open(PETSC_COMM_WORLD, ctx->inpath, FILE_MODE_READ, &viewer));
 
   // Zero the target vlasov vector.
   PetscCall(VecZeroEntries(vlasov));
 
   // Load vlasov quantities from the HDF5 file.
-  PRINT_WORLD("Attempting to load arrays from %s\n", name);
+  PRINT_WORLD("Attempting to load arrays from %s\n", ctx->inpath);
   PetscCall(DMCreateFieldDecomposition(vlasovDM, &Nf, &keys, NULL, &dms));
   for (field=0; field<Nf; field++) {
     dm = dms[field];
@@ -50,8 +57,9 @@ PetscErrorCode LoadVlasov(const char *name, Context *ctx)
 }
 
 
-PetscErrorCode OutputHDF5(const char *name, Context *ctx)
+PetscErrorCode OutputHDF5(const char *insert, Context *ctx)
 {
+  char        name[PETSC_MAX_PATH_LEN]="";
   PetscViewer viewer;
   DM          vlasovDM=ctx->vlasovDM, *dms, dm;
   PetscInt    Nf;
@@ -60,6 +68,11 @@ PetscErrorCode OutputHDF5(const char *name, Context *ctx)
   Vec         target, vlasov=ctx->vlasov, rhs=ctx->rhs, phi=ctx->phi;
 
   PetscFunctionBeginUser;
+
+  // Build the full file name.
+  PetscCall(PetscStrcat(name, ctx->outstem));
+  PetscCall(PetscStrcat(name, insert));
+  PetscCall(PetscStrcat(name, ".hdf"));
 
   // Create the HDF5 viewer.
   PetscCall(PetscViewerHDF5Open(PETSC_COMM_WORLD, name, FILE_MODE_WRITE, &viewer));

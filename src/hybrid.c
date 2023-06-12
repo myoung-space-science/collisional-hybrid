@@ -86,13 +86,11 @@ int main(int argc, char **args)
   sprintf(itfmt, "%%0%dd", itwidth);
 
   /* Create a template for time-dependent filenames. */
-  PetscCall(PetscStrcat(pathfmt, "hybrid-"));
+  PetscCall(PetscStrcat(pathfmt, "-"));
   PetscCall(PetscStrcat(pathfmt, itfmt));
-  PetscCall(PetscStrcat(pathfmt, ".hdf"));
 
   /* Output initial conditions. */
-  sprintf(pathstr, "hybrid-initial.hdf");
-  PetscCall(OutputHDF5(pathstr, &ctx));
+  PetscCall(OutputHDF5("-initial", &ctx));
 
   /* Create a template for the time-step string. */
   PetscCall(PetscStrcat(stepfmt, "Time step "));

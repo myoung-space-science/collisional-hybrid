@@ -4,9 +4,9 @@
 #include <petsc.h>
 #include "hybrid.h"
 
-extern PetscErrorCode LoadVlasov(const char *name, Context *ctx);
+extern PetscErrorCode LoadVlasov(Context *ctx);
 
-extern PetscErrorCode OutputHDF5(const char *name, Context *ctx);
+extern PetscErrorCode OutputHDF5(const char *insert, Context *ctx);
 
 extern PetscErrorCode ViewReducedLHS(PetscInt Nx, PetscInt Ny, PetscInt Nz, void *ctx);
 

@@ -132,6 +132,8 @@ typedef struct {
   PetscReal      dt;          // time-step width
   PetscInt       it;          // time-step counter
   long           seed;        // random-number seed
+  char           inpath[PETSC_MAX_PATH_LEN];  // path to input file (solver only)
+  char           outstem[PETSC_MAX_PATH_LEN]; // name, without extension, of output file
 } Context;
 
 typedef struct {

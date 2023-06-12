@@ -177,6 +177,7 @@ run_solver() {
         -Tn 300 \
         -ksp_monitor_short \
         -ksp_converged_reason \
+        --input ${projdir}/test-data/cos_x.h5 \
         ${1}
 }
 case_map['solver']=run_solver
