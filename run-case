@@ -26,6 +26,8 @@ declare -A case_map
 run_default() {
     ./run.sh hybrid \
         -Nx 8 -Ny 8 -Nz 8 \
+        -n 1 \
+        --lhs-type laplacian --rhs-type sinusoidal \
         ${1}
 }
 case_map['default']=run_default
