@@ -41,10 +41,7 @@ int main(int argc, char **args)
   PetscCall(SetUpVlasovDM(&ctx));
 
   /* Echo the initial state. */
-  if (mpi.rank == 0) {
-    PetscCall(EchoOptions(ctx));
-  }
-  PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
+  PetscCall(EchoOptions(ctx));
 
   /* Read density and fluxes from disk. */
   PetscCall(LoadVlasov("/home/matthew/sandbox/dmswarm-hybrid/test-data/vlasov.h5", &ctx));

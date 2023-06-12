@@ -62,10 +62,7 @@ int main(int argc, char **args)
   PetscCall(InitializeVelocities(&ctx));
 
   /* Echo the initial state. */
-  if (mpi.rank == 0) {
-    PetscCall(EchoOptions(ctx));
-  }
-  PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
+  PetscCall(EchoOptions(ctx));
 
   /* Compute initial density and flux. */
   PetscCall(CollectVlasovQuantities(&ctx));
