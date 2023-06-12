@@ -18,9 +18,8 @@ bindir=${rootdir}/bin
 verbose=0
 np=2
 debug=0
+outname="results"
 outdir=
-outname=vectors
-outtype=hdf
 extra=
 
 # Define text formatting commands.
@@ -58,7 +57,7 @@ ${textbf}DESCRIPTION${textnm}
                 Name of the output directory within ${rundir}.
                 The default name is generated from the current date and time.
         ${textbf}--outname${textnm} ${startul}F${endul}
-                Name of the file, without extension, that will contain vectors 
+                Name of the file, without extension, that will contain arrays 
                 of simulated quantities.
                 (default: '${outname}')
         ${textbf}--debug${textnm}
@@ -135,9 +134,6 @@ mark_stage() {
 # Mark this stage.
 mark_stage "Setup"
 
-# Set the output file name.
-outfile="${outname}.${outtype}"
-
 # Set the local name of the output directory.
 if [ -z "${outdir}" ]; then
     outdir=$(date +'%Y-%m-%d-%H%M%S')
@@ -182,7 +178,7 @@ if [ ${debug} == 1 ]; then
         ${extra}
 else
     mpiexec -n ${np} ${bindir}/${prog} \
-        --outname ${outname} \
+        --output ${outname} \
         ${extra} &> run.log
 fi
 
