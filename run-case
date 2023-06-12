@@ -185,7 +185,7 @@ case_map['solver']=run_solver
 run_solver_test() {
     ./run.sh solver \
         -Nx 64 -Ny 64 -Nz 64 \
-        -n 2 \
+        -n 1 \
         -ksp_max_it 10 \
         -ksp_type gmres \
         -pc_type gamg \
