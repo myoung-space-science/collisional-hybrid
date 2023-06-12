@@ -534,6 +534,7 @@ PetscErrorCode EchoOptions(Context ctx)
   PetscViewer viewer;
 
   PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
 
   // Open the viewer.
   PetscCall(PetscViewerASCIIOpen(PETSC_COMM_WORLD, "options.txt", &viewer));
@@ -612,6 +613,7 @@ PetscErrorCode EchoOptions(Context ctx)
   // Free memory.
   PetscCall(PetscViewerDestroy(&viewer));
 
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
