@@ -52,7 +52,7 @@ PetscErrorCode SetUpVlasovDM(Context *ctx)
   ctx->grid.d.y = dy;
   ctx->grid.d.z = dz;
   // Set uniform coordinates on the DM.
-  PetscCall(DMDASetUniformCoordinates(dm, ctx->grid.p0.x, ctx->grid.p1.x+dx, ctx->grid.p0.y, ctx->grid.p1.y+dy, ctx->grid.p0.z, ctx->grid.p1.z+dz));
+  PetscCall(DMDASetUniformCoordinates(dm, ctx->grid.p0.x, ctx->grid.p1.x, ctx->grid.p0.y, ctx->grid.p1.y, ctx->grid.p0.z, ctx->grid.p1.z));
   // Declare grid-quantity names.
   PetscCall(DMDASetFieldName(dm, 0, "density"));
   PetscCall(DMDASetFieldName(dm, 1, "x flux"));
