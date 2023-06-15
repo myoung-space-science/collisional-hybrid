@@ -584,6 +584,8 @@ PetscErrorCode EchoOptions(Context ctx)
   PetscCall(PetscViewerASCIIPrintf(viewer, "E0x = %g [N/C]\n", ctx.plasma.E0.x));
   PetscCall(PetscViewerASCIIPrintf(viewer, "E0y = %g [N/C]\n", ctx.plasma.E0.y));
   PetscCall(PetscViewerASCIIPrintf(viewer, "E0z = %g [N/C]\n", ctx.plasma.E0.z));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "qe = %e [C]\n", ctx.electrons.q));
+  PetscCall(PetscViewerASCIIPrintf(viewer, "me = %e [kg]\n", ctx.electrons.m));
   PetscCall(PetscViewerASCIIPrintf(viewer, "nue = %g [s^-1]\n", ctx.electrons.nu));
   PetscCall(PetscViewerASCIIPrintf(viewer, "ve0x = %f [m/s]\n", ctx.electrons.v0.x));
   PetscCall(PetscViewerASCIIPrintf(viewer, "ve0y = %f [m/s]\n", ctx.electrons.v0.y));
