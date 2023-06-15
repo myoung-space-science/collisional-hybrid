@@ -415,15 +415,15 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *user)
   Off-diagonal factors have the form
   - `sij = 2*di*dj*dk / (8*di*dj*|A|) = dk / (4*|A|)`
   */
-  sxx = ctx->grid.d.y * ctx->grid.d.z / ctx->grid.d.x / detA;
-  syx = 0.25*ctx->grid.d.z  / detA;
-  szx = 0.25*ctx->grid.d.y  / detA;
-  sxy = 0.25*ctx->grid.d.z  / detA;
-  syy = ctx->grid.d.x * ctx->grid.d.z / ctx->grid.d.y / detA;
-  szy = 0.25*ctx->grid.d.x  / detA;
-  sxz = 0.25*ctx->grid.d.y  / detA;
-  syz = 0.25*ctx->grid.d.x  / detA;
-  szz = ctx->grid.d.x * ctx->grid.d.y / ctx->grid.d.z / detA;
+  sxx = (ctx->grid.d.y * ctx->grid.d.z / ctx->grid.d.x) / detA;
+  syx = 0.25 * ctx->grid.d.z / detA;
+  szx = 0.25 * ctx->grid.d.y / detA;
+  sxy = 0.25 * ctx->grid.d.z / detA;
+  syy = (ctx->grid.d.x * ctx->grid.d.z / ctx->grid.d.y) / detA;
+  szy = 0.25 * ctx->grid.d.x / detA;
+  sxz = 0.25 * ctx->grid.d.y / detA;
+  syz = 0.25 * ctx->grid.d.x / detA;
+  szz = (ctx->grid.d.x * ctx->grid.d.y / ctx->grid.d.z) / detA;
 
   // TODO: Pre-compute sij*rij coefficients for efficiency.
 
