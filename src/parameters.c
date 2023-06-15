@@ -194,43 +194,6 @@ PetscErrorCode ProcessOptions(Context *ctx)
   } else {
     ctx->plasma.Np = -1;
   }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-mn", &realArg, &found));
-  if (found) {
-    ctx->neutrals.m = realArg;
-  } else {
-    ctx->neutrals.m = 0.0;
-  }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Tn", &realArg, &found));
-  if (found) {
-    ctx->neutrals.T = realArg;
-  } else {
-    ctx->neutrals.T = -1.0;
-  }
-  // The user may provide a single neutral-species drift speed for all
-  // components, as well as a drift speed for each component. Any component
-  // value not explicitly set will have the common value, which defaults to 0.
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vn0", &realArg, &found));
-  if (found) {
-    ctx->neutrals.v0.x = realArg;
-    ctx->neutrals.v0.y = realArg;
-    ctx->neutrals.v0.z = realArg;
-  } else {
-    ctx->neutrals.v0.x = 0.0;
-    ctx->neutrals.v0.y = 0.0;
-    ctx->neutrals.v0.z = 0.0;
-  }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vn0x", &realArg, &found));
-  if (found) {
-    ctx->neutrals.v0.x = realArg;
-  }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vn0y", &realArg, &found));
-  if (found) {
-    ctx->neutrals.v0.y = realArg;
-  }
-  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vn0z", &realArg, &found));
-  if (found) {
-    ctx->neutrals.v0.z = realArg;
-  }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-qi", &realArg, &found));
   if (found) {
     ctx->ions.q = realArg;
@@ -366,6 +329,43 @@ PetscErrorCode ProcessOptions(Context *ctx)
     ctx->ions.T = realArg;
   } else {
     ctx->ions.T = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-mn", &realArg, &found));
+  if (found) {
+    ctx->neutrals.m = realArg;
+  } else {
+    ctx->neutrals.m = ctx->ions.m;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-Tn", &realArg, &found));
+  if (found) {
+    ctx->neutrals.T = realArg;
+  } else {
+    ctx->neutrals.T = -1.0;
+  }
+  // The user may provide a single neutral-species drift speed for all
+  // components, as well as a drift speed for each component. Any component
+  // value not explicitly set will have the common value, which defaults to 0.
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vn0", &realArg, &found));
+  if (found) {
+    ctx->neutrals.v0.x = realArg;
+    ctx->neutrals.v0.y = realArg;
+    ctx->neutrals.v0.z = realArg;
+  } else {
+    ctx->neutrals.v0.x = 0.0;
+    ctx->neutrals.v0.y = 0.0;
+    ctx->neutrals.v0.z = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vn0x", &realArg, &found));
+  if (found) {
+    ctx->neutrals.v0.x = realArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vn0y", &realArg, &found));
+  if (found) {
+    ctx->neutrals.v0.y = realArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "-vn0z", &realArg, &found));
+  if (found) {
+    ctx->neutrals.v0.z = realArg;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "-B0x", &realArg, &found));
   if (found) {
