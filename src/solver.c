@@ -65,7 +65,13 @@ int main(int argc, char **args)
   PetscCall(OutputHDF5("", &ctx));
 
   /* Compute LHS eigenvalues. */
-  PetscCall(ComputeLHSEigenvalues(ksp));
+  {
+    PetscBool found, true;
+    PetscCall(PetscOptionsGetBool(NULL, NULL, "--lhs-eigenvalues", &true, &found));
+    if (found && true) {
+      PetscCall(ComputeLHSEigenvalues(ksp));
+    }
+  }
 
   /* Free memory. */
   PetscCall(KSPDestroy(&ksp));
