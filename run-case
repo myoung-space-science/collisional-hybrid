@@ -188,11 +188,12 @@ run_solver_test() {
         -n 1 \
         -ksp_max_it 10 \
         -ksp_type gmres \
+        -ksp_gmres_modifiedgramschmidt \
         -pc_type gamg \
         -ksp_view \
         -ksp_monitor_short \
         -ksp_converged_reason \
-        --lhs-type laplacian --rhs-type sinusoidal \
+        --lhs-type laplacian --rhs-type full \
         --input ${projdir}/test-data/cos_x.h5 \
         ${1}
 }
