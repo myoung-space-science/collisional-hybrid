@@ -216,17 +216,15 @@ run_solver_gmres_gamg() {
     ./run.sh solver \
         -ksp_type gmres \
         -ksp_gmres_modifiedgramschmidt \
-        -ksp_gmres_cgs_refinement_type refine_always \
         -pc_type gamg \
         -pc_gamg_type agg \
         -pc_gamg_agg_nsmooths 0 \
         -pc_gamg_threshold -1 \
         -pc_gamg_threshold_scale 1 \
-        -pc_gamg_aggressive_coarsening 1 \
+        -pc_gamg_aggressive_coarsening 0 \
         -pc_gamg_asm_use_agg false \
         -pc_mg_type multiplicative \
-        -pc_mg_cycle_type w \
-        -ksp_view \
+        -pc_mg_cycle_type v \
         -ksp_max_it 20 \
         -ksp_monitor_short \
         -ksp_converged_reason \
