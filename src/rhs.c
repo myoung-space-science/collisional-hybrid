@@ -199,6 +199,11 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
   PetscReal    dy=ctx->grid.d.y;
   // z-axis cell spacing
   PetscReal    dz=ctx->grid.d.z;
+  // geometric scale factors
+  PetscScalar  hx, hy, hz;
+  PetscScalar  hxx, hyx, hzx, hxy, hyy, hzy, hxz, hyz, hzz;
+  // global scale factor
+  PetscReal    scale;
   // the DM of the grid
   DM           vlasovDM=ctx->vlasovDM;
   // local grid vector
@@ -254,6 +259,24 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
   rzy = Ky*Kz + Kx;
   rzz = 1 + Kz*Kz;
 
+  // Compute geometric scale factors.
+  hx  = 1.0 / (2.0 * dx);
+  hy  = 1.0 / (2.0 * dy);
+  hz  = 1.0 / (2.0 * dz);
+  hxx = 4.0 * hx*hx;
+  hyy = 4.0 * hy*hy;
+  hzz = 4.0 * hz*hz;
+  hxy = hyx = hx*hy;
+  hxz = hzx = hx*hz;
+  hzy = hyz = hz*hy;
+
+  // Assign the global scale factor. Separating this out makes it easier to
+  // rescale the operator, for example while debugging.
+  //
+  // TODO: Ensure that we scale LHS and RHS values by the same factor, possibly
+  // by storing `scale` in the context.
+  scale = 2.0 * dx*dy*dz;
+
   // Extract the density array.
   PetscCall(DMGetLocalVector(vlasovDM, &gridvec));
   PetscCall(DMGlobalToLocalBegin(vlasovDM, ctx->vlasov, INSERT_VALUES, gridvec));
@@ -308,26 +331,26 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
 
         /* Assign the RHS value at (i, j, k). */
         Eterm = // div(n R E0)
-          (rxx*E0x + rxy*E0y + rxz*E0z)*(npjk - nmjk)*dy*dz +
-          (ryx*E0x + ryy*E0y + ryz*E0z)*(nipk - nimk)*dx*dz +
-          (rzx*E0x + rzy*E0y + rzz*E0z)*(nijp - nijm)*dx*dy;
+          (rxx*E0x + rxy*E0y + rxz*E0z)*(npjk - nmjk)*hx +
+          (ryx*E0x + ryy*E0y + ryz*E0z)*(nipk - nimk)*hy +
+          (rzx*E0x + rzy*E0y + rzz*E0z)*(nijp - nijm)*hz;
         Pterm = // div(R div(P)) / e
           cth * (
-            rxx * (npjk - 2.0*nijk + nmjk) * (2.0*dy*dz/dx) +
-            rxy * (nppk - npmk - nmpk + nmmk) * (0.5*dz) +
-            rxz * (npjp - npjm - nmjp + nmjm) * (0.5*dy) +
-            ryx * (nppk - npmk - nmpk + nmmk) * (0.5*dz) +
-            ryy * (nipk - 2.0*nijk + nimk) * (2.0*dx*dz/dy) +
-            ryz * (nipp - nipm - nimp + nimm) * (0.5*dx) +
-            rzx * (npjp - npjm - nmjp + nmjm) * (0.5*dy) +
-            rzy * (nipp - nipm - nimp + nimm) * (0.5*dx) +
-            rzz * (nijp - 2.0*nijk + nijm) * (2.0*dx*dy/dz));
+            hxx * rxx * (npjk - 2.0*nijk + nmjk) +
+            hxy * rxy * (nppk - npmk - nmpk + nmmk) +
+            hxz * rxz * (npjp - npjm - nmjp + nmjm) +
+            hyx * ryx * (nppk - npmk - nmpk + nmmk) +
+            hyy * ryy * (nipk - 2.0*nijk + nimk) +
+            hyz * ryz * (nipp - nipm - nimp + nimm) +
+            hzx * rzx * (npjp - npjm - nmjp + nmjm) +
+            hzy * rzy * (nipp - nipm - nimp + nimm) +
+            hzz * rzz * (nijp - 2.0*nijk + nijm));
         Gterm = // (1+kappa^2) (me nue / e) div(flux)
           detA * cG * (
-            (gridarr[k][j][ip1].flux[0]-gridarr[k][j][im1].flux[0])*(dy*dz) +
-            (gridarr[k][jp1][i].flux[1]-gridarr[k][jm1][i].flux[1])*(dx*dz) +
-            (gridarr[kp1][j][i].flux[2]-gridarr[km1][j][i].flux[2])*(dx*dy));
-        rhs[k][j][i] = (Eterm + Pterm + Gterm) / detA;
+            (gridarr[k][j][ip1].flux[0] - gridarr[k][j][im1].flux[0])*hx +
+            (gridarr[k][jp1][i].flux[1] - gridarr[k][jm1][i].flux[1])*hy +
+            (gridarr[kp1][j][i].flux[2] - gridarr[km1][j][i].flux[2])*hz);
+        rhs[k][j][i] = scale * (Eterm + Pterm + Gterm);
       }
     }
   }
