@@ -182,7 +182,9 @@ run_solver() {
 }
 case_map['solver']=run_solver
 
-run_solver_test() {
+# This is intended mostly for checking if the stand-alone solver compiles and
+# solves a toy problem, and for printing options via `-ksp_view`.
+run_solver_view() {
     ./run.sh solver \
         -Nx 64 -Ny 64 -Nz 64 \
         -n 1 \
@@ -190,14 +192,15 @@ run_solver_test() {
         -ksp_type gmres \
         -ksp_gmres_modifiedgramschmidt \
         -pc_type gamg \
-        -ksp_view \
         -ksp_monitor_short \
         -ksp_converged_reason \
-        --lhs-type laplacian --rhs-type full \
+        -ksp_view \
+        --lhs-type laplacian --rhs-type sinusoidal \
         --input ${projdir}/test-data/cos_x.h5 \
         ${1}
 }
-case_map['solver-test']=run_solver_test
+case_map['solver-view']=run_solver_view
+
 # Define a function to print names of registered cases.
 show_cases() {
     echo
