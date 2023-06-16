@@ -172,9 +172,9 @@ run_solver_view_lhs() {
         -Nx 8 -Ny 8 -Nz 8 \
         -n 1 \
         --lhs-type full \
-        --rhs-type sinusoidal \
+        --rhs-type full \
         --view-lhs \
-        --input ${projdir}/test-data/cos_x.h5 \
+        --input ${projdir}/test-data/cos_xyz_small.h5 \
         -nue 5e4 \
         -nui 3e3 \
         -B0z 5e-5 \
