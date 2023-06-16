@@ -183,6 +183,10 @@ run_solver_view_lhs() {
     ./run.sh solver \
         -Nx 8 -Ny 8 -Nz 8 \
         -n 1 \
+        -ksp_type preonly \
+        -pc_type lu \
+        -ksp_monitor_short \
+        -ksp_converged_reason \
         --lhs-type full \
         --rhs-type full \
         --view-lhs \
