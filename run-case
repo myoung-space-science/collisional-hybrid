@@ -157,6 +157,34 @@ run_basic_physics() {
 }
 case_map['basic-physics']=run_basic_physics
 
+# This is intended to test FGMRES with the options given by
+# https://petsc.org/release/manualpages/KSP/KSPFGMRES/
+run_solver_fgmres() {
+    ./run.sh solver \
+        -ksp_type fgmres \
+        -pc_type ksp \
+        -ksp_ksp_type bcgs \
+        -ksp_pc_type jacobi \
+        -ksp_max_it 20 \
+        -ksp_monitor_short \
+        -ksp_converged_reason \
+        --lhs-type full \
+        --input ${projdir}/test-data/cos_x.h5 \
+        -Nx 64 -Ny 64 -Nz 64 \
+        -n 1 \
+        -nue 5e4 \
+        -nui 3e3 \
+        -B0z 5e-5 \
+        -E0y 5e-2 \
+        -mi 5.0e-26 \
+        -mn 4.6e-26 \
+        -Te 600 \
+        -Ti 300 \
+        -Tn 300 \
+        ${1}
+}
+case_map['solver-fgmres']=run_solver_fgmres
+
 # This is intended for testing options for KSPGMRES + PCGAMG.
 run_solver_gmres_gamg() {
     ./run.sh solver \
