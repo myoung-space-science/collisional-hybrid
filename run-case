@@ -236,11 +236,11 @@ run_solver_gmres_gamg() {
         -n 1 \
         -nue 5e4 \
         -nui 3e3 \
-        -B0z 5e-5 \
-        -E0y 5e-2 \
+        -B0z 2.5e-5 \
+        -E0y 1e-2 \
         -mi 5.0e-26 \
         -mn 4.6e-26 \
-        -Te 600 \
+        -Te 300 \
         -Ti 300 \
         -Tn 300 \
         ${1}
