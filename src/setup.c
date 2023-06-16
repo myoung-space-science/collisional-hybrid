@@ -12,7 +12,6 @@ PetscErrorCode SetUpVlasovDM(Context *ctx)
   DMBoundaryType xBC=DM_BOUNDARY_GHOSTED;
   DMBoundaryType yBC=DM_BOUNDARY_GHOSTED;
   DMBoundaryType zBC=DM_BOUNDARY_GHOSTED;
-  PetscReal      dx, dy, dz;
   PetscInt       dof=4;
   PetscInt       width=1;
 
@@ -45,12 +44,9 @@ PetscErrorCode SetUpVlasovDM(Context *ctx)
     ctx->plasma.Np = ctx->grid.N.x * ctx->grid.N.y * ctx->grid.N.z;
   }
   // Define the physical grid-cell spacing.
-  dx = ctx->grid.L.x / (PetscReal)ctx->grid.N.x;
-  dy = ctx->grid.L.y / (PetscReal)ctx->grid.N.y;
-  dz = ctx->grid.L.z / (PetscReal)ctx->grid.N.z;
-  ctx->grid.d.x = dx;
-  ctx->grid.d.y = dy;
-  ctx->grid.d.z = dz;
+  ctx->grid.d.x = ctx->grid.L.x / (PetscReal)ctx->grid.N.x;
+  ctx->grid.d.y = ctx->grid.L.y / (PetscReal)ctx->grid.N.y;
+  ctx->grid.d.z = ctx->grid.L.z / (PetscReal)ctx->grid.N.z;
   // Set uniform coordinates on the DM.
   PetscCall(DMDASetUniformCoordinates(dm, ctx->grid.p0.x, ctx->grid.p1.x, ctx->grid.p0.y, ctx->grid.p1.y, ctx->grid.p0.z, ctx->grid.p1.z));
   // Declare grid-quantity names.
