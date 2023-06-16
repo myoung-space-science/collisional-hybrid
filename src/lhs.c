@@ -351,9 +351,17 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *user)
   PetscScalar  Kx, Ky, Kz;
   // matrix determinant
   PetscReal    detA;
+  // cell sizes
+  PetscReal     dx=ctx->grid.d.x;
+  PetscReal     dy=ctx->grid.d.y;
+  PetscReal     dz=ctx->grid.d.z;
   // components of magnetization tensor
   PetscScalar  rxx, ryx, rzx, rxy, ryy, rzy, rxz, ryz, rzz;
   // geometric scale factors
+  PetscScalar  hxx, hyx, hzx, hxy, hyy, hzy, hxz, hyz, hzz;
+  // global scale factor
+  PetscScalar  scale;
+  // coefficient scale factors
   PetscScalar  sxx, syx, szx, sxy, syy, szy, sxz, syz, szz;
   // the DM of the grid
   DM           vlasovDM=ctx->vlasovDM;
@@ -369,6 +377,10 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *user)
   PetscInt     ni, nj, nk;
   // grid indices
   PetscInt     i, j, k;
+  PetscInt     im1, ip1, jm1, jp1, km1, kp1;
+  PetscInt     Nx=ctx->grid.N.x;
+  PetscInt     Ny=ctx->grid.N.y;
+  PetscInt     Nz=ctx->grid.N.z;
   // the density value at the current and neighboring grid points
   PetscScalar  nijk, npjk, nmjk, nipk, nimk, nijp, nijm;
   // discretization coefficients
@@ -406,26 +418,33 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *user)
   rzy = Ky*Kz + Kx;
   rzz = 1 + Kz*Kz;
 
-  /* Compute geometric scale factors for stencil values. Note that there is some
-  redundancy for the sake of organization.
+  // Compute geometric scale factors for stencil values.
+  hxx = 1.0 / (2.0 * dx*dx);
+  hyy = 1.0 / (2.0 * dy*dy);
+  hzz = 1.0 / (2.0 * dz*dz);
+  hxy = hyx = 1.0 / (8.0 * dy*dx);
+  hxz = hzx = 1.0 / (8.0 * dz*dx);
+  hyz = hzy = 1.0 / (8.0 * dy*dz);
 
-  Diagonal factors have the form
-  - `sii = 2*di*dj*dk / (2*di^2*|A|) = dj*dk / (di*|A|)`
+  // Assign the global scale factor. Separating this out makes it easier to
+  // rescale the operator, for example while debugging.
+  //
+  // TODO: Ensure that we scale LHS and RHS values by the same factor, possibly
+  // by storing `scale` in the context.
+  scale = 2.0 * dx*dy*dz;
 
-  Off-diagonal factors have the form
-  - `sij = 2*di*dj*dk / (8*di*dj*|A|) = dk / (4*|A|)`
-  */
-  sxx = (ctx->grid.d.y * ctx->grid.d.z / ctx->grid.d.x) / detA;
-  syx = 0.25 * ctx->grid.d.z / detA;
-  szx = 0.25 * ctx->grid.d.y / detA;
-  sxy = 0.25 * ctx->grid.d.z / detA;
-  syy = (ctx->grid.d.x * ctx->grid.d.z / ctx->grid.d.y) / detA;
-  szy = 0.25 * ctx->grid.d.x / detA;
-  sxz = 0.25 * ctx->grid.d.y / detA;
-  syz = 0.25 * ctx->grid.d.x / detA;
-  szz = (ctx->grid.d.x * ctx->grid.d.y / ctx->grid.d.z) / detA;
+  // Compute coefficient scale factors;
+  sxx = scale * rxx*hxx;
+  syy = scale * ryy*hyy;
+  szz = scale * rzz*hzz;
+  sxy = scale * rxy*hxy;
+  sxz = scale * rxz*hxz;
+  syz = scale * ryz*hyz;
+  syx = scale * ryx*hyx;
+  szx = scale * rzx*hzx;
+  szy = scale * rzy*hzy;
 
-  // TODO: Pre-compute sij*rij coefficients for efficiency.
+  PRINT_WORLD("%g, %g, %g, %g, %g, %g, %g, %g, %g\n", sxx, syy, szz, sxy, sxz, syz, syx, szx, szy);
 
   // Extract the density array.
   PetscCall(DMGetLocalVector(vlasovDM, &gridvec));
@@ -449,39 +468,47 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *user)
     for (j=j0; j<j0+nj; j++) {
       for (i=i0; i<i0+ni; i++) {
 
+        // Define backward and forward indices. [DEV] Use periodic BC for now.
+        im1 = (i == 0) ? Nx-1 : i-1;
+        ip1 = (i == Nx-1) ? 0 : i+1;
+        jm1 = (j == 0) ? Ny-1 : j-1;
+        jp1 = (j == Ny-1) ? 0 : j+1;
+        km1 = (k == 0) ? Nz-1 : k-1;
+        kp1 = (k == Nz-1) ? 0 : k+1;
+
         // Assign density values.
         nijk = array[k][j][i].n;
-        nmjk = array[k][j][i-1].n;
-        npjk = array[k][j][i+1].n;
-        nimk = array[k][j-1][i].n;
-        nipk = array[k][j+1][i].n;
-        nijm = array[k-1][j][i].n;
-        nijp = array[k+1][j][i].n;
+        nmjk = array[k][j][im1].n;
+        npjk = array[k][j][ip1].n;
+        nimk = array[k][jm1][i].n;
+        nipk = array[k][jp1][i].n;
+        nijm = array[km1][j][i].n;
+        nijp = array[kp1][j][i].n;
 
         /* x-y corner coefficients */
-        f[k][j+1][i+1] =  sxy*rxy*(npjk + nijk) + syx*ryx*(nipk + nijk);
-        f[k][j-1][i+1] = -sxy*rxy*(npjk + nijk) - syx*ryx*(nijk + nimk);
-        f[k][j+1][i-1] = -sxy*rxy*(nijk + nmjk) - syx*ryx*(nipk + nijk);
-        f[k][j-1][i-1] =  sxy*rxy*(nijk + nmjk) + syx*ryx*(nijk + nimk);
+        f[k][j+1][i+1] =  sxy*(npjk + nijk) + syx*(nipk + nijk);
+        f[k][j-1][i+1] = -sxy*(npjk + nijk) - syx*(nijk + nimk);
+        f[k][j+1][i-1] = -sxy*(nijk + nmjk) - syx*(nipk + nijk);
+        f[k][j-1][i-1] =  sxy*(nijk + nmjk) + syx*(nijk + nimk);
         /* x-z corner coefficients */
-        f[k+1][j][i+1] =  sxz*rxz*(npjk + nijk) + szx*rzx*(nijp + nijk);
-        f[k-1][j][i+1] = -sxz*rxz*(npjk + nijk) - szx*rzx*(nijk + nijm);
-        f[k+1][j][i-1] = -sxz*rxz*(nijk + nmjk) - szx*rzx*(nijp + nijk);
-        f[k-1][j][i-1] =  sxz*rxz*(nijk + nmjk) + szx*rzx*(nijk + nijm);
+        f[k+1][j][i+1] =  sxz*(npjk + nijk) + szx*(nijp + nijk);
+        f[k-1][j][i+1] = -sxz*(npjk + nijk) - szx*(nijk + nijm);
+        f[k+1][j][i-1] = -sxz*(nijk + nmjk) - szx*(nijp + nijk);
+        f[k-1][j][i-1] =  sxz*(nijk + nmjk) + szx*(nijk + nijm);
         /* y-z corner coefficients */
-        f[k+1][j+1][i] =  syz*ryz*(nipk + nijk) + szy*rzy*(nijp + nijk);
-        f[k-1][j+1][i] = -syz*ryz*(nipk + nijk) - szy*rzy*(nijk + nijm);
-        f[k+1][j-1][i] = -syz*ryz*(nijk + nimk) - szy*rzy*(nijp + nijk);
-        f[k-1][j-1][i] =  syz*ryz*(nijk + nimk) + szy*rzy*(nijk + nijm);
+        f[k+1][j+1][i] =  syz*(nipk + nijk) + szy*(nijp + nijk);
+        f[k-1][j+1][i] = -syz*(nipk + nijk) - szy*(nijk + nijm);
+        f[k+1][j-1][i] = -syz*(nijk + nimk) - szy*(nijp + nijk);
+        f[k-1][j-1][i] =  syz*(nijk + nimk) + szy*(nijk + nijm);
         /* star-stencil coefficients */
-        f[k][j][i+1] =  sxx*rxx*(npjk + nijk) + syx*ryx*(nipk - nimk) + szx*rzx*(nijp - nijm);
-        f[k][j][i-1] =  sxx*rxx*(nijk + nmjk) - syx*ryx*(nipk - nimk) - szx*rzx*(nijp - nijm);
-        f[k][j+1][i] =  syy*ryy*(nipk + nijk) + sxy*rxy*(npjk - nmjk) + szy*rzy*(nijp - nijm);
-        f[k][j-1][i] =  syy*ryy*(nijk + nimk) - sxy*rxy*(npjk - nmjk) - szy*rzy*(nijp - nijm);
-        f[k+1][j][i] =  szz*rzz*(nijp + nijk) + sxz*rxz*(npjk - nmjk) + syz*ryz*(nipk - nimk);
-        f[k-1][j][i] =  szz*rzz*(nijk + nijm) - sxz*rxz*(npjk - nmjk) - syz*ryz*(nipk - nimk);
+        f[k][j][i+1] =  sxx*(npjk + nijk) + syx*(nipk - nimk) + szx*(nijp - nijm);
+        f[k][j][i-1] =  sxx*(nijk + nmjk) - syx*(nipk - nimk) - szx*(nijp - nijm);
+        f[k][j+1][i] =  syy*(nipk + nijk) + sxy*(npjk - nmjk) + szy*(nijp - nijm);
+        f[k][j-1][i] =  syy*(nijk + nimk) - sxy*(npjk - nmjk) - szy*(nijp - nijm);
+        f[k+1][j][i] =  szz*(nijp + nijk) + sxz*(npjk - nmjk) + syz*(nipk - nimk);
+        f[k-1][j][i] =  szz*(nijk + nijm) - sxz*(npjk - nmjk) - syz*(nipk - nimk);
         /* diagonal coefficient */
-        f[k][j][i] = -(sxx*rxx*(npjk + 2*nijk + nmjk) + syy*ryy*(nipk + 2*nijk + nimk) + szz*rzz*(nijp + 2*nijk + nijm));
+        f[k][j][i] = -(sxx*(npjk + 2*nijk + nmjk) + syy*(nipk + 2*nijk + nimk) + szz*(nijp + 2*nijk + nijm));
 
         // Compute the stencil values.
         PetscCall(ComputeStencil(i, j, k, f, cols, vals, (void *)ctx));
