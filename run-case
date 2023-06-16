@@ -156,14 +156,28 @@ run_basic_physics() {
         ${1}
 }
 case_map['basic-physics']=run_basic_physics
-run_solver() {
+
+# This is intended for testing options for KSPGMRES + PCGAMG.
+run_solver_gmres_gamg() {
     ./run.sh solver \
         -ksp_type gmres \
-        -ksp_max_it 50 \
+        -ksp_gmres_modifiedgramschmidt \
+        -ksp_gmres_cgs_refinement_type refine_always \
         -pc_type gamg \
         -pc_gamg_type agg \
         -pc_gamg_agg_nsmooths 0 \
-        -ksp_gmres_modifiedgramschmidt \
+        -pc_gamg_threshold -1 \
+        -pc_gamg_threshold_scale 1 \
+        -pc_gamg_aggressive_coarsening 1 \
+        -pc_gamg_asm_use_agg false \
+        -pc_mg_type multiplicative \
+        -pc_mg_cycle_type w \
+        -ksp_view \
+        -ksp_max_it 20 \
+        -ksp_monitor_short \
+        -ksp_converged_reason \
+        --lhs-type full \
+        --input ${projdir}/test-data/cos_x.h5 \
         -Nx 64 -Ny 64 -Nz 64 \
         -n 1 \
         -nue 5e4 \
@@ -175,12 +189,9 @@ run_solver() {
         -Te 600 \
         -Ti 300 \
         -Tn 300 \
-        -ksp_monitor_short \
-        -ksp_converged_reason \
-        --input ${projdir}/test-data/cos_x.h5 \
         ${1}
 }
-case_map['solver']=run_solver
+case_map['solver-gmres-gamg']=run_solver_gmres_gamg
 
 # This is intended mostly for checking if the stand-alone solver compiles and
 # solves a toy problem, and for printing options via PETSc `-*_view` flags.
