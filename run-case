@@ -260,13 +260,17 @@ run_solver_gmres_gamg() {
         -ksp_monitor_short \
         -ksp_converged_reason \
         --lhs-type full \
-        --input ${projdir}/test-data/cos_x.h5 \
+        --input ${projdir}/test-data/cos_xyz_large.h5 \
         -Nx 64 -Ny 64 -Nz 64 \
         -n 1 \
         -nue 5e4 \
         -nui 3e3 \
+        -B0x 0.0 \
+        -B0y 0.0 \
         -B0z 2.5e-5 \
-        -E0y 1e-2 \
+        -E0x 0.0 \
+        -E0y -10e-3 \
+        -E0z 0.0 \
         -mi 5.0e-26 \
         -mn 4.6e-26 \
         -Te 300 \
