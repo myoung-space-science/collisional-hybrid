@@ -185,6 +185,32 @@ run_solver_fgmres() {
 }
 case_map['solver-fgmres']=run_solver_fgmres
 
+# This is intended for testing biconjugate-gradient methods (e.g., KSPBICG,
+# KSPBCGS, KSPIBCGS, KSPBCGSL).
+run_solver_bicg() {
+    ./run.sh solver \
+        -ksp_type bcgsl \
+        -pc_type gamg \
+        -ksp_max_it 20 \
+        -ksp_monitor_short \
+        -ksp_converged_reason \
+        --lhs-type full \
+        --input ${projdir}/test-data/cos_x.h5 \
+        -Nx 64 -Ny 64 -Nz 64 \
+        -n 1 \
+        -nue 5e4 \
+        -nui 3e3 \
+        -B0z 5e-5 \
+        -E0y 5e-2 \
+        -mi 5.0e-26 \
+        -mn 4.6e-26 \
+        -Te 600 \
+        -Ti 300 \
+        -Tn 300 \
+        ${1}
+}
+case_map['solver-bicg']=run_solver_bicg
+
 # This is intended for testing options for KSPGMRES + PCGAMG.
 run_solver_gmres_gamg() {
     ./run.sh solver \
