@@ -167,6 +167,18 @@ run_basic_physics() {
 case_map['basic-physics']=run_basic_physics
 
 # This is intended for examining the non-zero structure of the LHS operator.
+# Note that the values
+# - B0x = 2.843e-7
+# - B0y = 2.843e-7
+# - B0z = 2.843e-7
+#
+# with nue = 5e4 will approximately produce
+# - \kappa_x = 1.0
+# - \kappa_y = 1.0
+# - \kappa_z = 1.0
+#
+# This can be useful for testing the effect of \vec{\kappa} on the stencil.
+
 run_solver_view_lhs() {
     ./run.sh solver \
         -Nx 8 -Ny 8 -Nz 8 \
@@ -177,11 +189,15 @@ run_solver_view_lhs() {
         --input ${projdir}/test-data/cos_xyz_small.h5 \
         -nue 5e4 \
         -nui 3e3 \
-        -B0z 5e-5 \
-        -E0y 5e-2 \
+        -B0x 0.0 \
+        -B0y 0.0 \
+        -B0z 2.5e-5 \
+        -E0x 0.0 \
+        -E0y -10e-3 \
+        -E0z 0.0 \
         -mi 5.0e-26 \
         -mn 4.6e-26 \
-        -Te 600.0 \
+        -Te 300.0 \
         -Ti 300.0 \
         -Tn 300.0 \
         ${1}
