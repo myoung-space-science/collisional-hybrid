@@ -183,7 +183,7 @@ run_solver() {
 case_map['solver']=run_solver
 
 # This is intended mostly for checking if the stand-alone solver compiles and
-# solves a toy problem, and for printing options via `-ksp_view`.
+# solves a toy problem, and for printing options via PETSc `-*_view` flags.
 run_solver_view() {
     ./run.sh solver \
         -Nx 64 -Ny 64 -Nz 64 \
@@ -195,6 +195,8 @@ run_solver_view() {
         -ksp_monitor_short \
         -ksp_converged_reason \
         -ksp_view \
+        -vlasov_dm_view \
+        -potential_dm_view \
         --lhs-type laplacian --rhs-type sinusoidal \
         --input ${projdir}/test-data/cos_x.h5 \
         ${1}
