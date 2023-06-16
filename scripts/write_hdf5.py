@@ -25,6 +25,9 @@ DEFAULTS = {
     'Mx': 0,
     'My': 0,
     'Mz': 0,
+    'Px': 0.0,
+    'Py': 0.0,
+    'Pz': 0.0,
     'n0': 1.0,
     'dn': 0.0,
     'Vx': 0.0,
@@ -58,11 +61,14 @@ class Grid:
         mx: int=None,
         my: int=None,
         mz: int=None,
+        px: float=None,
+        py: float=None,
+        pz: float=None,
     ) -> numpy.ndarray:
         """Project a sinusoidal function onto this grid."""
-        fx = numpy.cos((mx or 0)*numpy.pi*self.x)
-        fy = numpy.cos((my or 0)*numpy.pi*self.y)
-        fz = numpy.cos((mz or 0)*numpy.pi*self.z)
+        fx = numpy.cos((mx or 0)*numpy.pi*self.x - (px or 0.0)*numpy.pi)
+        fy = numpy.cos((my or 0)*numpy.pi*self.y - (py or 0.0)*numpy.pi)
+        fz = numpy.cos((mz or 0)*numpy.pi*self.z - (pz or 0.0)*numpy.pi)
         return fx * fy * fz
 
     def gaussian(
@@ -111,7 +117,14 @@ def main(filepath=None, verbose: bool=False, **user):
 def compute_vlasov_quantities(opts: dict):
     """Compute density and fluxes from options."""
     grid = Grid(nx=opts['nx'], ny=opts['ny'], nz=opts['nz'])
-    sinusoids = grid.sinusoidal(mx=opts['Mx'], my=opts['My'], mz=opts['Mz'])
+    sinusoids = grid.sinusoidal(
+        mx=opts['Mx'],
+        my=opts['My'],
+        mz=opts['Mz'],
+        px=opts['Px'],
+        py=opts['Py'],
+        pz=opts['Pz'],
+    )
     gaussian = grid.gaussian(
         sx=opts['Sx'],
         sy=opts['Sy'],
@@ -271,6 +284,21 @@ if __name__ == '__main__':
         '-Mz',
         help="sinusoidal wave number along the z axis (default: 0)",
         type=int,
+    )
+    parser.add_argument(
+        '-Px',
+        help="sinusoidal phase shift along the x axis (default: 0.0)",
+        type=float,
+    )
+    parser.add_argument(
+        '-Py',
+        help="sinusoidal phase shift along the y axis (default: 0.0)",
+        type=float,
+    )
+    parser.add_argument(
+        '-Pz',
+        help="sinusoidal phase shift along the z axis (default: 0.0)",
+        type=float,
     )
     parser.add_argument(
         '-n0',
