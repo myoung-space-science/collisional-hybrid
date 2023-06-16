@@ -31,6 +31,7 @@ run_default() {
         ${1}
 }
 case_map['default']=run_default
+
 run_test_collection_8cubed() {
     ./run.sh hybrid \
         -Nx 8 -Ny 8 -Nz 8 \
@@ -41,6 +42,7 @@ run_test_collection_8cubed() {
         ${1}
 }
 case_map['test-collection-8cubed']=run_test_collection_8cubed
+
 run_test_collisions_8cubed() {
     ./run.sh hybrid \
         -Nx 8 -Ny 8 -Nz 8 \
@@ -57,6 +59,7 @@ run_test_collisions_8cubed() {
         ${1}
 }
 case_map['test-collisions-8cubed']=run_test_collisions_8cubed
+
 run_test_collection_asymmetric() {
     ./run.sh hybrid \
         -Nx 15 -Ny 10 -Nz 8 \
@@ -66,6 +69,7 @@ run_test_collection_asymmetric() {
         ${1}
 }
 case_map['test-collection-asymmetric']=run_test_collection_asymmetric
+
 run_test_collection_32cubed() {
     ./run.sh hybrid \
         -Nx 64 -Ny 64 -Nz 64 \
@@ -75,6 +79,7 @@ run_test_collection_32cubed() {
         ${1}
 }
 case_map['test-collection-32cubed']=run_test_collection_32cubed
+
 run_test_collection_long_x() {
     ./run.sh hybrid \
         -Nx 32 -Ny 8 -Nz 8 \
@@ -86,6 +91,7 @@ run_test_collection_long_x() {
         ${1}
 }
 case_map['test-collection-long-x']=run_test_collection_long_x
+
 run_test_rhs_indices() {
     ./run.sh hybrid \
         -Nx 64 -Ny 64 -Nz 64 \
@@ -108,6 +114,7 @@ run_test_rhs_indices() {
         ${1}
 }
 case_map['test-rhs-indices']=run_test_rhs_indices
+
 run_test_lhs_indices() {
     ./run.sh hybrid \
         -Nx 64 -Ny 64 -Nz 64 \
@@ -122,6 +129,7 @@ run_test_lhs_indices() {
         ${1}
 }
 case_map['test-lhs-indices']=run_test_lhs_indices
+
 run_gamg_basic() {
     ./run.sh hybrid \
         -ksp_monitor_short \
@@ -133,6 +141,7 @@ run_gamg_basic() {
         ${1}
 }
 case_map['gamg-basic']=run_gamg_basic
+
 run_basic_physics() {
     ./run.sh hybrid \
         -ksp_type gmres \
