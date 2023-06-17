@@ -45,7 +45,7 @@ int main(int argc, char **args)
   PetscCall(EchoOptions(ctx));
 
   /* Read density and fluxes from disk. */
-  PetscCall(LoadVlasov(&ctx));
+  PetscCall(LoadVlasovQuantities(&ctx));
 
   /* Set up the discrete grid for the electrostatic potential. */
   PetscCall(SetUpPotentialDM(&pdm, &ctx));

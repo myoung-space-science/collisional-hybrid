@@ -3,7 +3,7 @@
 #include "hybrid.h"
 
 
-PetscErrorCode LoadVlasov(Context *ctx)
+PetscErrorCode LoadVlasovQuantities(Context *ctx)
 {
   PetscBool   nullPath;
   PetscViewer viewer;
