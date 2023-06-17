@@ -51,7 +51,7 @@ class Grid:
         x = numpy.linspace(0.0, (lx or 1.0), nx)
         y = numpy.linspace(0.0, (ly or 1.0), ny)
         z = numpy.linspace(0.0, (lz or 1.0), nz)
-        xc, yc, zc = numpy.meshgrid(x, y, z)
+        xc, yc, zc = numpy.meshgrid(x, y, z, indexing='ij')
         self._x = xc
         self._y = yc
         self._z = zc
