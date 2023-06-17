@@ -262,6 +262,31 @@ run_solver_bicg() {
 }
 case_map['solver-bicg']=run_solver_bicg
 
+# This is intended for testing direct solutions with MUMPS.
+run_solver_mumps() {
+    ./run.sh solver \
+        -ksp_type preonly \
+        -pc_type lu \
+        -pc_factor_mat_solver_type mumps \
+        -ksp_monitor_short \
+        -ksp_converged_reason \
+        --lhs-type full \
+        --input ${projdir}/test-data/cos_xyz_large.h5 \
+        -Nx 64 -Ny 64 -Nz 64 \
+        -n 1 \
+        -nue 5e4 \
+        -nui 3e3 \
+        -B0z 2.5e-5 \
+        -E0y 1e-2 \
+        -mi 5.0e-26 \
+        -mn 4.6e-26 \
+        -Te 600 \
+        -Ti 300 \
+        -Tn 300 \
+        ${1}
+}
+case_map['solver-mumps']=run_solver_mumps
+
 # This is intended for testing options for KSPGMRES + PCGAMG.
 run_solver_gmres_gamg() {
     ./run.sh solver \
