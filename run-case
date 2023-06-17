@@ -190,7 +190,7 @@ run_solver_view_lhs() {
         --lhs-type full \
         --rhs-type full \
         --view-lhs \
-        --input ${projdir}/test-data/cos_xyz_small.h5 \
+        --input ${projdir}/test-data/cos_xyz_8x8x8.h5 \
         -nue 5e4 \
         -nui 3e3 \
         -B0x 0.0 \
@@ -271,7 +271,7 @@ run_solver_mumps() {
         -ksp_monitor_short \
         -ksp_converged_reason \
         --lhs-type full \
-        --input ${projdir}/test-data/cos_xyz_large.h5 \
+        --input ${projdir}/test-data/cos_xyz_64x64x64.h5 \
         -Nx 64 -Ny 64 -Nz 64 \
         -n 1 \
         -nue 5e4 \
@@ -305,7 +305,7 @@ run_solver_gmres_gamg() {
         -ksp_monitor_short \
         -ksp_converged_reason \
         --lhs-type full \
-        --input ${projdir}/test-data/cos_xyz_large.h5 \
+        --input ${projdir}/test-data/cos_xyz_64x64x64.h5 \
         -Nx 64 -Ny 64 -Nz 64 \
         -n 1 \
         -nue 5e4 \
