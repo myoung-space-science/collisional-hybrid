@@ -355,8 +355,9 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
     }
   }
 
-  // Restore the borrowed arrays.
+  // Restore the borrowed objects.
   PetscCall(DMDAVecRestoreArray(vlasovDM, gridvec, &gridarr));
+  PetscCall(DMRestoreLocalVector(vlasovDM, &gridvec));
   PetscCall(DMDAVecRestoreArray(dm, b, &rhs));
 
   // Make the RHS vector consistent with the LHS operator.
