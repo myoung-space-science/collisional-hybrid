@@ -134,11 +134,12 @@ def compute_vlasov_quantities(opts: dict):
         z0=opts['z0'],
     )
     density = opts['n0'] + opts['dn']*sinusoids*gaussian
-    xflux = opts.get('Vx', 0.0) * density
-    yflux = opts.get('Vy', 0.0) * density
-    zflux = opts.get('Vz', 0.0) * density
+    den = numpy.transpose(density) if opts.get('transpose') else density
+    xflux = opts.get('Vx', 0.0) * den
+    yflux = opts.get('Vy', 0.0) * den
+    zflux = opts.get('Vz', 0.0) * den
     return {
-        'density': density,
+        'density': den,
         'x flux': xflux,
         'y flux': yflux,
         'z flux': zflux,
@@ -324,6 +325,10 @@ if __name__ == '__main__':
         '-Vz',
         help="bulk velocity [m/s] along the z axis (default: 0.0)",
         type=float,
+    )
+    parser.add_argument(
+        '--transpose',
+        help="convert (x, y, z) arrays to (z, y, x) arrays",
     )
     parser.add_argument(
         '-v',
