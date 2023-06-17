@@ -220,7 +220,7 @@ run_solver_fgmres() {
         -ksp_monitor_short \
         -ksp_converged_reason \
         --lhs-type full \
-        --input ${projdir}/test-data/cos_x.h5 \
+        --input ${projdir}/test-data/cos_x_64x64x64.h5 \
         -Nx 64 -Ny 64 -Nz 64 \
         -n 1 \
         -nue 5e4 \
@@ -246,7 +246,7 @@ run_solver_bicg() {
         -ksp_monitor_short \
         -ksp_converged_reason \
         --lhs-type full \
-        --input ${projdir}/test-data/cos_x.h5 \
+        --input ${projdir}/test-data/cos_x_64x64x64.h5 \
         -Nx 64 -Ny 64 -Nz 64 \
         -n 1 \
         -nue 5e4 \
@@ -341,7 +341,7 @@ run_solver_view() {
         -vlasov_dm_view \
         -potential_dm_view \
         --lhs-type laplacian --rhs-type sinusoidal \
-        --input ${projdir}/test-data/cos_x.h5 \
+        --input ${projdir}/test-data/cos_x_64x64x64.h5 \
         ${1}
 }
 case_map['solver-view']=run_solver_view
