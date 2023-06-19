@@ -67,6 +67,9 @@ int main(int argc, char **args)
   /* Compute initial density and flux. */
   PetscCall(CollectVlasovQuantities(&ctx));
 
+  /* Distribute boundary values. */
+  PetscCall(ApplyVlasovBC(&ctx));
+
   /* Set up the discrete grid for the electrostatic potential. */
   PetscCall(SetUpPotentialDM(&pdm, &ctx));
 
@@ -113,6 +116,9 @@ int main(int argc, char **args)
 
     /* Compute density and flux from ion positions. */
     PetscCall(CollectVlasovQuantities(&ctx));
+
+    /* Distribute boundary values. */
+    PetscCall(ApplyVlasovBC(&ctx));
 
     /* Compute potential from density. */
     PetscCall(ComputePotential(ksp, &ctx));

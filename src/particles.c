@@ -255,6 +255,95 @@ PetscErrorCode CollectVlasovQuantities(Context *ctx)
 }
 
 
+/* Insert boundary values into Vlasov quantities. */
+PetscErrorCode ApplyVlasovBC(Context *ctx)
+{
+  DM             vlasovDM=ctx->vlasovDM;
+  DMBoundaryType xBC=ctx->xDMBC;
+  DMBoundaryType yBC=ctx->yDMBC;
+  DMBoundaryType zBC=ctx->zDMBC;
+  PetscInt       i0, j0, k0;
+  PetscInt       ni, nj, nk;
+  PetscInt       i, j, k;
+  PetscInt       Nx=ctx->grid.N.x;
+  PetscInt       Ny=ctx->grid.N.y;
+  PetscInt       Nz=ctx->grid.N.z;
+  Vec            gridvec;
+  GridNode       ***gridarr;
+
+  PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
+
+  // Extract the density and flux arrays.
+  PetscCall(DMGetLocalVector(vlasovDM, &gridvec));
+  PetscCall(DMGlobalToLocalBegin(vlasovDM, ctx->vlasov, INSERT_VALUES, gridvec));
+  PetscCall(DMGlobalToLocalEnd(vlasovDM, ctx->vlasov, INSERT_VALUES, gridvec));
+  PetscCall(DMDAVecGetArray(vlasovDM, gridvec, &gridarr));
+
+  // Get this processor's indices.
+  PetscCall(DMDAGetCorners(vlasovDM, &i0, &j0, &k0, &ni, &nj, &nk));
+
+  // Insert x-axis boundary values. DEV: periodic.
+  for (k=k0; k<k0+nk; k++) {
+    for (j=j0; j<j0+nj; j++) {
+      // lower boundary
+      gridarr[k][j][-1].n       = gridarr[k][j][Nx-1].n;
+      gridarr[k][j][-1].flux[0] = gridarr[k][j][Nx-1].flux[0];
+      gridarr[k][j][-1].flux[1] = gridarr[k][j][Nx-1].flux[1];
+      gridarr[k][j][-1].flux[2] = gridarr[k][j][Nx-1].flux[2];
+      // upper boundary
+      gridarr[k][j][Nx].n       = gridarr[k][j][0].n;
+      gridarr[k][j][Nx].flux[0] = gridarr[k][j][0].flux[0];
+      gridarr[k][j][Nx].flux[1] = gridarr[k][j][0].flux[1];
+      gridarr[k][j][Nx].flux[2] = gridarr[k][j][0].flux[2];
+    }
+  }
+  // Insert y-axis boundary values. DEV: periodic.
+  for (k=k0; k<k0+nk; k++) {
+    for (i=i0; i<i0+ni; i++) {
+      // lower boundary
+      gridarr[k][-1][i].n       = gridarr[k][Ny-1][i].n;
+      gridarr[k][-1][i].flux[0] = gridarr[k][Ny-1][i].flux[0];
+      gridarr[k][-1][i].flux[1] = gridarr[k][Ny-1][i].flux[1];
+      gridarr[k][-1][i].flux[2] = gridarr[k][Ny-1][i].flux[2];
+      // upper boundary
+      gridarr[k][Ny][i].n       = gridarr[k][0][i].n;
+      gridarr[k][Ny][i].flux[0] = gridarr[k][0][i].flux[0];
+      gridarr[k][Ny][i].flux[1] = gridarr[k][0][i].flux[1];
+      gridarr[k][Ny][i].flux[2] = gridarr[k][0][i].flux[2];
+    }
+  }
+  // Insert z-axis boundary values. DEV: periodic.
+  for (j=j0; j<j0+nj; j++) {
+    for (i=i0; i<i0+ni; i++) {
+      // lower boundary
+      gridarr[-1][j][i].n       = gridarr[Nz-1][j][i].n;
+      gridarr[-1][j][i].flux[0] = gridarr[Nz-1][j][i].flux[0];
+      gridarr[-1][j][i].flux[1] = gridarr[Nz-1][j][i].flux[1];
+      gridarr[-1][j][i].flux[2] = gridarr[Nz-1][j][i].flux[2];
+      // upper boundary
+      gridarr[Nz][j][i].n       = gridarr[0][j][i].n;
+      gridarr[Nz][j][i].flux[0] = gridarr[0][j][i].flux[0];
+      gridarr[Nz][j][i].flux[1] = gridarr[0][j][i].flux[1];
+      gridarr[Nz][j][i].flux[2] = gridarr[0][j][i].flux[2];
+    }
+  }
+
+  // Restore the borrowed array.
+  PetscCall(DMDAVecRestoreArray(vlasovDM, gridvec, &gridarr));
+
+  // Broadcast the values.
+  PetscCall(DMLocalToGlobalBegin(vlasovDM, gridvec, INSERT_VALUES, ctx->vlasov));
+  PetscCall(DMLocalToGlobalEnd(vlasovDM, gridvec, INSERT_VALUES, ctx->vlasov));
+
+  // Restore the borrowed vector.
+  PetscCall(DMRestoreLocalVector(vlasovDM, &gridvec));
+
+  ECHO_FUNCTION_EXIT;
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
 /* Apply the standard Boris-mover algorithm to ion velocities. */
 PetscErrorCode BorisMover(KSP ksp, Context *ctx)
 {

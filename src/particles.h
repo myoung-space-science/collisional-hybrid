@@ -10,6 +10,8 @@ extern PetscErrorCode InitializeVelocities(Context *ctx);
 
 extern PetscErrorCode CollectVlasovQuantities(Context *ctx);
 
+extern PetscErrorCode ApplyVlasovBC(Context *ctx);
+
 extern PetscErrorCode BorisMover(KSP ksp, Context *ctx);
 
 extern PetscErrorCode ComputeCollisions(Context *ctx);

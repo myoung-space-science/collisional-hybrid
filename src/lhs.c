@@ -382,9 +382,6 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *user)
   // grid indices
   PetscInt     i, j, k;
   PetscInt     im1, ip1, jm1, jp1, km1, kp1;
-  PetscInt     Nx=ctx->grid.N.x;
-  PetscInt     Ny=ctx->grid.N.y;
-  PetscInt     Nz=ctx->grid.N.z;
   // the density value at the current and neighboring grid points
   PetscScalar  nijk, npjk, nmjk, nipk, nimk, nijp, nijm;
   // discretization coefficients
@@ -449,8 +446,6 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *user)
   szx = scale * rzx*hzx;
   szy = scale * rzy*hzy;
 
-  PRINT_WORLD("%g, %g, %g, %g, %g, %g, %g, %g, %g\n", sxx, syy, szz, sxy, sxz, syz, syx, szx, szy);
-
   // Extract the density array.
   PetscCall(DMGetLocalVector(vlasovDM, &gridvec));
   PetscCall(DMGlobalToLocalBegin(vlasovDM, ctx->vlasov, INSERT_VALUES, gridvec));
@@ -473,13 +468,13 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *user)
     for (j=j0; j<j0+nj; j++) {
       for (i=i0; i<i0+ni; i++) {
 
-        // Define backward and forward indices. [DEV] Use periodic BC for now.
-        im1 = (i == 0) ? Nx-1 : i-1;
-        ip1 = (i == Nx-1) ? 0 : i+1;
-        jm1 = (j == 0) ? Ny-1 : j-1;
-        jp1 = (j == Ny-1) ? 0 : j+1;
-        km1 = (k == 0) ? Nz-1 : k-1;
-        kp1 = (k == Nz-1) ? 0 : k+1;
+        // Define backward and forward indices.
+        im1 = i-1;
+        ip1 = i+1;
+        jm1 = j-1;
+        jp1 = j+1;
+        km1 = k-1;
+        kp1 = k+1;
 
         // Assign density values.
         nijk = array[k][j][i].n;
