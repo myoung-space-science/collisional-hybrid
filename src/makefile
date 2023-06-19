@@ -25,6 +25,7 @@ solver: solver.o \
 	-$(CLINKER) -o ${localbin}/$@ $^ $(LDLIBS) $(SLEPC_EPS_LIB)
 
 include ${PETSC_DIR}/lib/petsc/conf/variables
-include ${PETSC_DIR}/lib/petsc/conf/rules
+# The following line will implicitly include PETSc rules. If we decide to remove
+# it, we will need to explicitly include `${PETSC_DIR}/lib/petsc/conf/rules`.
 include ${SLEPC_DIR}/lib/slepc/conf/slepc_common
 
