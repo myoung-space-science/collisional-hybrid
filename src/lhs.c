@@ -146,6 +146,7 @@ PetscErrorCode ComputeIdentityLHS(KSP ksp, Mat J, Mat A, void *user)
   Context      *ctx=(Context *)user;
 
   PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
 
   PetscCall(MatZeroEntries(A));
   PetscCall(MatShift(A, 1.0));
@@ -157,6 +158,7 @@ PetscErrorCode ComputeIdentityLHS(KSP ksp, Mat J, Mat A, void *user)
     PetscCall(PetscViewerDestroy(&viewer));
   }
 
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -197,6 +199,7 @@ PetscErrorCode ComputeLaplacianLHS(KSP ksp, Mat J, Mat A, void *user)
   MatNullSpace nullspace;
 
   PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
 
   // Compute constant stencil values.
   sxx = ctx->grid.d.y * ctx->grid.d.z / ctx->grid.d.x;
@@ -339,6 +342,7 @@ PetscErrorCode ComputeLaplacianLHS(KSP ksp, Mat J, Mat A, void *user)
     PetscCall(PetscViewerDestroy(&viewer));
   }
 
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -398,6 +402,7 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *user)
   MatNullSpace nullspace;
 
   PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
 
   // Extract values of electron magnetization.
   Kx = ctx->electrons.kappa.x;
@@ -538,6 +543,7 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *user)
     PetscCall(PetscViewerDestroy(&viewer));
   }
 
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 

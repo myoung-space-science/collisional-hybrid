@@ -73,6 +73,7 @@ PetscErrorCode ComputeConstantRHS(KSP ksp, Vec b, void *user)
   PetscScalar  mean, val;
 
   PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
 
   // Extract values of electron magnetization.
   Kx = ctx->electrons.kappa.x;
@@ -98,6 +99,7 @@ PetscErrorCode ComputeConstantRHS(KSP ksp, Vec b, void *user)
   // Store the RHS vector in the problem context.
   ctx->rhs = b;
 
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -124,6 +126,7 @@ PetscErrorCode ComputeSinusoidalRHS(KSP ksp, Vec b, void *user)
   MatNullSpace nullspace;
 
   PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
 
   // Extract values of electron magnetization.
   Kx = ctx->electrons.kappa.x;
@@ -179,6 +182,7 @@ PetscErrorCode ComputeSinusoidalRHS(KSP ksp, Vec b, void *user)
   // Store the RHS vector in the problem context.
   ctx->rhs = b;
 
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
@@ -239,6 +243,7 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
   MatNullSpace nullspace;
 
   PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
 
   // Extract values of electron magnetization.
   Kx = ctx->electrons.kappa.x;
@@ -368,6 +373,7 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
   // Store the RHS vector in the problem context.
   ctx->rhs = b;
 
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
