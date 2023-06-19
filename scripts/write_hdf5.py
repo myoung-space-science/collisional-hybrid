@@ -134,12 +134,11 @@ def compute_vlasov_quantities(opts: dict):
         z0=opts['z0'],
     )
     density = opts['n0'] + opts['dn']*sinusoids*gaussian
-    den = numpy.transpose(density) if opts.get('transpose') else density
-    xflux = opts.get('Vx', 0.0) * den
-    yflux = opts.get('Vy', 0.0) * den
-    zflux = opts.get('Vz', 0.0) * den
+    xflux = opts.get('Vx', 0.0) * density
+    yflux = opts.get('Vy', 0.0) * density
+    zflux = opts.get('Vz', 0.0) * density
     return {
-        'density': den,
+        'density': density,
         'x flux': xflux,
         'y flux': yflux,
         'z flux': zflux,
@@ -156,20 +155,25 @@ def write_arrays(
     path = filepath.with_suffix('.h5')
     filestem = path.stem
     with h5py.File(path, 'w') as f:
-        arrays = f.create_group('arrays')
+        ijk = f.create_group('arrays-ijk')
+        kji = f.create_group('arrays-kji')
+        for k, v in opts.items():
+            f.attrs[k] = v
         for name, array in vlasov.items():
             if verbose:
-                print(f"Writing {name} to {path}")
-            dset = arrays.create_dataset(name, data=array)
-            for k, v in opts.items():
-                dset.attrs[k] = v
+                print(f"Writing {name} (i, j, k) to {path}")
+            dset = ijk.create_dataset(name, data=array)
+            print(dset)
+            if verbose:
+                print(f"Writing {name} (k, j, i) to {path}")
+            dset = kji.create_dataset(name, data=array.transpose())
             print(dset)
             plotname = f"{filestem}-{name}".replace(' ', '_')
             plotpath = path.with_name(plotname).with_suffix('.png')
             create_figure(array)
             plt.savefig(plotpath)
             if verbose:
-                print(f"Saved {plotpath}")
+                print(f"Saved {plotpath}\n")
             plt.close()
     if dset:
         raise IOError("Dataset was not properly closed.")
@@ -325,11 +329,6 @@ if __name__ == '__main__':
         '-Vz',
         help="bulk velocity [m/s] along the z axis (default: 0.0)",
         type=float,
-    )
-    parser.add_argument(
-        '--transpose',
-        help="convert (x, y, z) arrays to (z, y, x) arrays",
-        action='store_true',
     )
     parser.add_argument(
         '-v',
