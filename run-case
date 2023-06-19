@@ -271,13 +271,18 @@ run_solver_mumps() {
         -ksp_monitor_short \
         -ksp_converged_reason \
         --lhs-type full \
-        --input ${projdir}/test-data/cos_xyz_64x64x64.h5 \
-        -Nx 64 -Ny 64 -Nz 64 \
-        -n 1 \
+        --rhs-type full \
+        --input ${projdir}/test-data/cos_x_16x16x16.h5 \
+        -Nx 16 -Ny 16 -Nz 16 \
+        -n 2 \
         -nue 5e4 \
         -nui 3e3 \
+        -B0x 0.0 \
+        -B0y 0.0 \
         -B0z 2.5e-5 \
-        -E0y 1e-2 \
+        -E0x 0.0 \
+        -E0y -1e-2 \
+        -E0z 0.0 \
         -mi 5.0e-26 \
         -mn 4.6e-26 \
         -Te 600 \
