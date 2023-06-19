@@ -329,6 +329,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--transpose',
         help="convert (x, y, z) arrays to (z, y, x) arrays",
+        action='store_true',
     )
     parser.add_argument(
         '-v',
