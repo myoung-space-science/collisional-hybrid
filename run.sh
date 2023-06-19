@@ -162,7 +162,11 @@ mark_stage "Build"
 
 # Build the executable in the source directory.
 cd ${srcdir}
-make ${prog} &> ${dstdir}/build.log
+cflags=
+if [ ${debug} == 1 ]; then
+    cflags="${cflags} -g -O0"
+fi
+make ${prog} CFLAGS="${cflags}" &> ${dstdir}/build.log
 
 # Move to the output directory.
 cd ${dstdir}
@@ -172,10 +176,12 @@ mark_stage "Run"
 
 # Run the program.
 if [ ${debug} == 1 ]; then
-    mpiexec -n ${np} ${bindir}/${prog} \
-        -debug_terminal "gnome-terminal --" \
-        -start_in_debugger \
-        ${extra}
+    if [ ${np} -gt 1 ]; then
+        echo "Multi-processor debugging is currently disabled."
+        exit 1
+    else
+        gdb --args ${bindir}/${prog} ${extra}
+    fi
 else
     mpiexec -n ${np} ${bindir}/${prog} \
         --output ${outname} \
