@@ -16,12 +16,16 @@ hybrid: hybrid.o \
 	-$(CLINKER) -o ${localbin}/$@ $^ $(LDLIBS)
 
 solver: solver.o \
+		distributions.o \
 		fileio.o \
 		lhs.o \
 		parameters.o \
+		particles.o \
 		potential.o \
+		random.o \
 		rhs.o \
-		setup.o
+		setup.o \
+		vectors.o
 	-$(CLINKER) -o ${localbin}/$@ $^ $(LDLIBS) $(SLEPC_EPS_LIB)
 
 include ${PETSC_DIR}/lib/petsc/conf/variables
