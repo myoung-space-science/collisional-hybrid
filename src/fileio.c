@@ -34,7 +34,7 @@ PetscErrorCode LoadVlasovQuantities(Context *ctx)
   for (field=0; field<Nf; field++) {
     dm = dms[field];
     PetscCall(DMGetGlobalVector(dm, &current));
-    sprintf(key, "arrays/%s", keys[field]);
+    sprintf(key, "arrays-kji/%s", keys[field]);
     PetscCall(PetscObjectSetName((PetscObject)current, key));
     PetscCall(VecLoad(current, viewer));
     PetscCall(VecStrideScatter(current, field, vlasov, INSERT_VALUES));
