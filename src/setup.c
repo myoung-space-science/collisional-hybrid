@@ -9,9 +9,9 @@ PetscErrorCode SetUpVlasovDM(Context *ctx)
   PetscInt       Nx=(ctx->grid.N.x > 0 ? ctx->grid.N.x : 7);
   PetscInt       Ny=(ctx->grid.N.y > 0 ? ctx->grid.N.y : 7);
   PetscInt       Nz=(ctx->grid.N.z > 0 ? ctx->grid.N.z : 7);
-  DMBoundaryType xBC=DM_BOUNDARY_GHOSTED;
-  DMBoundaryType yBC=DM_BOUNDARY_GHOSTED;
-  DMBoundaryType zBC=DM_BOUNDARY_GHOSTED;
+  DMBoundaryType xBC=ctx->xDMBC;
+  DMBoundaryType yBC=ctx->yDMBC;
+  DMBoundaryType zBC=ctx->zDMBC;
   PetscInt       dof=4;
   PetscInt       width=1;
 
