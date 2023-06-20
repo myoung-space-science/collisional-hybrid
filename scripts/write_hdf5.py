@@ -103,19 +103,19 @@ class Grid:
 
 
 def main(filepath=None, verbose: bool=False, **user):
-    """Create 3-D density and flux arrays from an analytic form.
+    """Create a 3-D density array from an analytic form.
     
     All axis lengths are 1.0.
     """
     opts = DEFAULTS.copy()
     opts.update({k: v for k, v in user.items() if v})
-    vlasov = compute_vlasov_quantities(opts)
+    density = compute_vlasov_quantities(opts)
     path = pathlib.Path(filepath or 'vlasov').resolve().expanduser()
-    write_arrays(path, vlasov, opts, verbose=verbose)
+    write_arrays(path, density, opts, verbose=verbose)
 
 
-def compute_vlasov_quantities(opts: dict):
-    """Compute density and fluxes from options."""
+def compute_vlasov_quantities(opts: dict) -> numpy.ndarray:
+    """Compute density from options."""
     grid = Grid(nx=opts['nx'], ny=opts['ny'], nz=opts['nz'])
     sinusoids = grid.sinusoidal(
         mx=opts['Mx'],
@@ -133,48 +133,34 @@ def compute_vlasov_quantities(opts: dict):
         y0=opts['y0'],
         z0=opts['z0'],
     )
-    density = opts['n0'] + opts['dn']*sinusoids*gaussian
-    xflux = opts.get('Vx', 0.0) * density
-    yflux = opts.get('Vy', 0.0) * density
-    zflux = opts.get('Vz', 0.0) * density
-    return {
-        'density': density,
-        'x flux': xflux,
-        'y flux': yflux,
-        'z flux': zflux,
-    }
+    return opts['n0'] + opts['dn']*sinusoids*gaussian
 
 
 def write_arrays(
     filepath: pathlib.Path,
-    vlasov: typing.Dict[str, numpy.ndarray],
+    density: numpy.ndarray,
     opts: dict,
     verbose: bool=False,
 ) -> None:
     """Write the computed arrays to disk."""
     path = filepath.with_suffix('.h5')
-    filestem = path.stem
     with h5py.File(path, 'w') as f:
-        ijk = f.create_group('arrays-ijk')
-        kji = f.create_group('arrays-kji')
         for k, v in opts.items():
             f.attrs[k] = v
-        for name, array in vlasov.items():
-            if verbose:
-                print(f"Writing {name} (i, j, k) to {path}")
-            dset = ijk.create_dataset(name, data=array)
-            print(dset)
-            if verbose:
-                print(f"Writing {name} (k, j, i) to {path}")
-            dset = kji.create_dataset(name, data=array.transpose())
-            print(dset)
-            plotname = f"{filestem}-{name}".replace(' ', '_')
-            plotpath = path.with_name(plotname).with_suffix('.png')
-            create_figure(array)
-            plt.savefig(plotpath)
-            if verbose:
-                print(f"Saved {plotpath}\n")
-            plt.close()
+        if verbose:
+            print(f"Writing density (i, j, k) to {path}")
+        dset = f.create_dataset('density-ijk', data=density)
+        print(dset)
+        if verbose:
+            print(f"Writing density (k, j, i) to {path}")
+        dset = f.create_dataset('density-kji', data=density.transpose())
+        print(dset)
+        plotpath = path.with_suffix('.png')
+        create_figure(density)
+        plt.savefig(plotpath)
+        if verbose:
+            print(f"Saved {plotpath}\n")
+        plt.close()
     if dset:
         raise IOError("Dataset was not properly closed.")
 
