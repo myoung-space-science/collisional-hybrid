@@ -1,4 +1,5 @@
 #include <petsc.h>
+#include "calculus.h"
 #include "hybrid.h"
 #include "rhs.h"
 #include "particles.h"
@@ -147,6 +148,12 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
   PetscReal    dy=ctx->grid.d.y;
   // z-axis cell spacing
   PetscReal    dz=ctx->grid.d.z;
+  // x-axis number of cells
+  PetscInt     Nx=ctx->grid.N.x;
+  // y-axis number of cells
+  PetscInt     Ny=ctx->grid.N.y;
+  // z-axis number of cells
+  PetscInt     Nz=ctx->grid.N.z;
   // geometric scale factors
   PetscScalar  hx, hy, hz;
   PetscScalar  hxx, hyx, hzx, hxy, hyy, hzy, hxz, hyz, hzz;
@@ -154,10 +161,17 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
   PetscReal    scale;
   // the DM of the grid
   DM           vlasovDM=ctx->vlasovDM;
-  // local grid vector
-  Vec          gridvec;
-  // array representation of grid quantities
-  GridNode     ***gridarr;
+  DM           *dms;
+  PetscInt     field, nf;
+  char         **names;
+  // full vector of vlasov quantities
+  Vec          vlasov=ctx->vlasov;
+  // temporary vectors for a single vlasov component
+  Vec          gtmp;
+  // local vlasov vectors
+  Vec          density, xflux, yflux, zflux;
+  // array representations of vlasov quantities
+  PetscReal    ***n, ***Gx, ***Gy, ***Gz;
   // the DM of the KSP
   DM           dm;
   // array of RHS values
@@ -174,6 +188,13 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
   PetscScalar  nppk, npmk, nmpk, nmmk;
   PetscScalar  npjp, npjm, nmjp, nmjm;
   PetscScalar  nipp, nipm, nimp, nimm;
+  DifferenceType xDiffType, yDiffType, zDiffType;
+  // first partial density derivatives
+  PetscReal    dndx, dndy, dndz;
+  // first partial flux derivatives
+  PetscReal    dGxdx, dGydy, dGzdz;
+  // second partial density derivatives
+  PetscReal    d2ndxx, d2ndyy, d2ndzz;
   PetscScalar  E0x=ctx->plasma.E0.x;
   PetscScalar  E0y=ctx->plasma.E0.y;
   PetscScalar  E0z=ctx->plasma.E0.z;
@@ -223,11 +244,40 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
   // by storing `scale` in the context.
   scale = 2.0 * dx*dy*dz;
 
-  // Extract the density array.
-  PetscCall(DMGetLocalVector(vlasovDM, &gridvec));
-  PetscCall(DMGlobalToLocalBegin(vlasovDM, ctx->vlasov, INSERT_VALUES, gridvec));
-  PetscCall(DMGlobalToLocalEnd(vlasovDM, ctx->vlasov, INSERT_VALUES, gridvec));
-  PetscCall(DMDAVecGetArray(vlasovDM, gridvec, &gridarr));
+  // Extract density and flux arrays.
+  PetscCall(DMCreateFieldDecomposition(vlasovDM, &nf, &names, NULL, &dms));
+
+  PetscCall(DMGetGlobalVector(dms[0], &gtmp));
+  PetscCall(VecStrideGather(vlasov, 0, gtmp, INSERT_VALUES));
+  PetscCall(DMGetLocalVector(dms[0], &density));
+  PetscCall(DMGlobalToLocalBegin(dms[0], gtmp, INSERT_VALUES, density));
+  PetscCall(DMGlobalToLocalEnd(dms[0], gtmp, INSERT_VALUES, density));
+  PetscCall(DMDAVecGetArray(dms[0], density, &n));
+  PetscCall(DMRestoreGlobalVector(dms[0], &gtmp));
+
+  PetscCall(DMGetGlobalVector(dms[1], &gtmp));
+  PetscCall(VecStrideGather(vlasov, 1, gtmp, INSERT_VALUES));
+  PetscCall(DMGetLocalVector(dms[1], &xflux));
+  PetscCall(DMGlobalToLocalBegin(dms[1], gtmp, INSERT_VALUES, xflux));
+  PetscCall(DMGlobalToLocalEnd(dms[1], gtmp, INSERT_VALUES, xflux));
+  PetscCall(DMDAVecGetArray(dms[1], xflux, &Gx));
+  PetscCall(DMRestoreGlobalVector(dms[1], &gtmp));
+
+  PetscCall(DMGetGlobalVector(dms[2], &gtmp));
+  PetscCall(VecStrideGather(vlasov, 2, gtmp, INSERT_VALUES));
+  PetscCall(DMGetLocalVector(dms[2], &yflux));
+  PetscCall(DMGlobalToLocalBegin(dms[2], gtmp, INSERT_VALUES, yflux));
+  PetscCall(DMGlobalToLocalEnd(dms[2], gtmp, INSERT_VALUES, yflux));
+  PetscCall(DMDAVecGetArray(dms[2], yflux, &Gy));
+  PetscCall(DMRestoreGlobalVector(dms[2], &gtmp));
+
+  PetscCall(DMGetGlobalVector(dms[3], &gtmp));
+  PetscCall(VecStrideGather(vlasov, 3, gtmp, INSERT_VALUES));
+  PetscCall(DMGetLocalVector(dms[3], &zflux));
+  PetscCall(DMGlobalToLocalBegin(dms[3], gtmp, INSERT_VALUES, zflux));
+  PetscCall(DMGlobalToLocalEnd(dms[3], gtmp, INSERT_VALUES, zflux));
+  PetscCall(DMDAVecGetArray(dms[3], zflux, &Gz));
+  PetscCall(DMRestoreGlobalVector(dms[3], &gtmp));
 
   // Zero the incoming vector.
   PetscCall(VecZeroEntries(b));
@@ -255,56 +305,109 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
         kp1 = k+1;
 
         // Assign temporary density values.
-        nijk = gridarr[k][j][i].n;
-        nmjk = gridarr[k][j][im1].n;
-        npjk = gridarr[k][j][ip1].n;
-        nimk = gridarr[k][jm1][i].n;
-        nipk = gridarr[k][jp1][i].n;
-        nijm = gridarr[km1][j][i].n;
-        nijp = gridarr[kp1][j][i].n;
-        nppk = gridarr[k][jp1][ip1].n;
-        npmk = gridarr[k][jm1][ip1].n;
-        nmpk = gridarr[k][jp1][im1].n;
-        nmmk = gridarr[k][jm1][im1].n;
-        npjp = gridarr[kp1][j][ip1].n;
-        npjm = gridarr[km1][j][ip1].n;
-        nmjp = gridarr[kp1][j][im1].n;
-        nmjm = gridarr[km1][j][im1].n;
-        nipp = gridarr[kp1][jp1][i].n;
-        nipm = gridarr[km1][jp1][i].n;
-        nimp = gridarr[kp1][jm1][i].n;
-        nimm = gridarr[km1][jm1][i].n;
+        nijk = n[k][j][i];
+        nmjk = n[k][j][im1];
+        npjk = n[k][j][ip1];
+        nimk = n[k][jm1][i];
+        nipk = n[k][jp1][i];
+        nijm = n[km1][j][i];
+        nijp = n[kp1][j][i];
+        nppk = n[k][jp1][ip1];
+        npmk = n[k][jm1][ip1];
+        nmpk = n[k][jp1][im1];
+        nmmk = n[k][jm1][im1];
+        npjp = n[kp1][j][ip1];
+        npjm = n[km1][j][ip1];
+        nmjp = n[kp1][j][im1];
+        nmjm = n[km1][j][im1];
+        nipp = n[kp1][jp1][i];
+        nipm = n[km1][jp1][i];
+        nimp = n[kp1][jm1][i];
+        nimm = n[km1][jm1][i];
+
+        // Compute local derivatives.
+        dndx = 0.0;
+        dndy = 0.0;
+        dndz = 0.0;
+        dGxdx = 0.0;
+        dGydy = 0.0;
+        dGzdz = 0.0;
+        d2ndxx = 0.0;
+        d2ndyy = 0.0;
+        d2ndzz = 0.0;
+        if (i == 0) {
+          xDiffType = FORWARD;
+        } else if (i == Nx-1) {
+          xDiffType = BACKWARD;
+        } else {
+          xDiffType = CENTERED;
+        }
+        if (j == 0) {
+          yDiffType = FORWARD;
+        } else if (j == Ny-1) {
+          yDiffType = BACKWARD;
+        } else {
+          yDiffType = CENTERED;
+        }
+        if (k == 0) {
+          zDiffType = FORWARD;
+        } else if (k == Nz-1) {
+          zDiffType = BACKWARD;
+        } else {
+          zDiffType = CENTERED;
+        }
+        PetscCall(dFdx(  n, dx, i, j, k, &dndx,   xDiffType));
+        PetscCall(dFdy(  n, dy, i, j, k, &dndy,   yDiffType));
+        PetscCall(dFdz(  n, dz, i, j, k, &dndz,   zDiffType));
+        PetscCall(dFdx( Gx, dx, i, j, k, &dGxdx,  xDiffType));
+        PetscCall(dFdy( Gy, dy, i, j, k, &dGydy,  yDiffType));
+        PetscCall(dFdz( Gz, dz, i, j, k, &dGzdz,  zDiffType));
+        PetscCall(d2Fdxx(n, dx, i, j, k, &d2ndxx, xDiffType));
+        PetscCall(d2Fdyy(n, dy, i, j, k, &d2ndyy, yDiffType));
+        PetscCall(d2Fdzz(n, dz, i, j, k, &d2ndzz, zDiffType));
 
         /* Assign the RHS value at (i, j, k). */
         Eterm = // div(n R E0)
-          (rxx*E0x + rxy*E0y + rxz*E0z)*(npjk - nmjk)*hx +
-          (ryx*E0x + ryy*E0y + ryz*E0z)*(nipk - nimk)*hy +
-          (rzx*E0x + rzy*E0y + rzz*E0z)*(nijp - nijm)*hz;
+          (rxx*E0x + rxy*E0y + rxz*E0z)*dndx +
+          (ryx*E0x + ryy*E0y + ryz*E0z)*dndy +
+          (rzx*E0x + rzy*E0y + rzz*E0z)*dndz;
         Pterm = // div(R div(P)) / e
           cth * (
-            hxx * rxx * (npjk - 2.0*nijk + nmjk) +
+                  rxx * d2ndxx +
             hxy * rxy * (nppk - npmk - nmpk + nmmk) +
             hxz * rxz * (npjp - npjm - nmjp + nmjm) +
             hyx * ryx * (nppk - npmk - nmpk + nmmk) +
-            hyy * ryy * (nipk - 2.0*nijk + nimk) +
+                  ryy * d2ndyy +
             hyz * ryz * (nipp - nipm - nimp + nimm) +
             hzx * rzx * (npjp - npjm - nmjp + nmjm) +
             hzy * rzy * (nipp - nipm - nimp + nimm) +
-            hzz * rzz * (nijp - 2.0*nijk + nijm));
+                  rzz * d2ndzz);
         Gterm = // (1+kappa^2) (me nue / e) div(flux)
-          detA * cG * (
-            (gridarr[k][j][ip1].flux[0] - gridarr[k][j][im1].flux[0])*hx +
-            (gridarr[k][jp1][i].flux[1] - gridarr[k][jm1][i].flux[1])*hy +
-            (gridarr[kp1][j][i].flux[2] - gridarr[km1][j][i].flux[2])*hz);
+          detA * cG * (dGxdx + dGydy + dGzdz);
         rhs[k][j][i] = scale * (Eterm + Pterm + Gterm);
       }
     }
   }
 
   // Restore the borrowed objects.
-  PetscCall(DMDAVecRestoreArray(vlasovDM, gridvec, &gridarr));
-  PetscCall(DMRestoreLocalVector(vlasovDM, &gridvec));
   PetscCall(DMDAVecRestoreArray(dm, b, &rhs));
+  PetscCall(DMDAVecRestoreArray(dms[0], density, &n));
+  PetscCall(DMRestoreLocalVector(dms[0], &density));
+  PetscCall(DMDAVecRestoreArray(dms[1], xflux, &Gx));
+  PetscCall(DMRestoreLocalVector(dms[1], &xflux));
+  PetscCall(DMDAVecRestoreArray(dms[2], yflux, &Gy));
+  PetscCall(DMRestoreLocalVector(dms[2], &yflux));
+  PetscCall(DMDAVecRestoreArray(dms[3], zflux, &Gz));
+  PetscCall(DMRestoreLocalVector(dms[3], &zflux));
+
+  // Release memory.
+  for (field=0; field<nf; field++) {
+    PetscFree(names[field]);
+    PetscCall(DMDestroy(&dms[field]));
+  }
+  PetscFree(names);
+  PetscFree(dms);
+  PetscCall(DMDestroy(&vlasovDM));
 
   // Make the RHS vector consistent with the LHS operator.
   PetscCall(MatNullSpaceCreate(PETSC_COMM_WORLD, PETSC_TRUE, 0, NULL, &nullspace));
