@@ -11,10 +11,11 @@ PetscErrorCode LoadVlasovQuantities(Context *ctx)
   PetscInt    Nf;
   char        **keys;
   PetscInt    field;
-  Vec         current, vlasov=ctx->vlasov;
+  Vec         density, vlasov=ctx->vlasov, tmpflux;
   char        key[2048];
 
   PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
 
   // Raise an error if the user did not provide an input file.
   PetscCall(PetscStrcmp(ctx->inpath, "", &nullPath));
@@ -28,19 +29,28 @@ PetscErrorCode LoadVlasovQuantities(Context *ctx)
   // Zero the target vlasov vector.
   PetscCall(VecZeroEntries(vlasov));
 
-  // Load vlasov quantities from the HDF5 file.
-  PRINT_WORLD("Attempting to load arrays from %s\n", ctx->inpath);
+  // Load density from the HDF5 file.
   PetscCall(DMCreateFieldDecomposition(vlasovDM, &Nf, &keys, NULL, &dms));
-  for (field=0; field<Nf; field++) {
+  PRINT_WORLD("Attempting to load density from %s\n", ctx->inpath);
+  field = 0;
+  dm = dms[field];
+  PetscCall(DMGetGlobalVector(dm, &density));
+  PetscCall(PetscObjectSetName((PetscObject)density, "density-kji"));
+  PetscCall(VecLoad(density, viewer));
+  PetscCall(VecStrideScatter(density, field, vlasov, INSERT_VALUES));
+  PRINT_WORLD("Loaded density\n");
+
+  // Convert density into fluxes.
+  for (field=1; field<Nf; field++) {
     dm = dms[field];
-    PetscCall(DMGetGlobalVector(dm, &current));
-    sprintf(key, "arrays-kji/%s", keys[field]);
-    PetscCall(PetscObjectSetName((PetscObject)current, key));
-    PetscCall(VecLoad(current, viewer));
-    PetscCall(VecStrideScatter(current, field, vlasov, INSERT_VALUES));
-    PRINT_WORLD("Loaded \"%s\"\n", key);
-    PetscCall(DMRestoreGlobalVector(dm, &current));
+    PetscCall(DMGetGlobalVector(dm, &tmpflux));
+    PetscCall(VecZeroEntries(tmpflux));
+    PetscCall(VecAXPY(tmpflux, ctx->fluxScale[field], density));
+    PetscCall(VecStrideScatter(tmpflux, field, vlasov, INSERT_VALUES));
+    PRINT_WORLD("Created %s from density\n", keys[field]);
+    PetscCall(DMRestoreGlobalVector(dm, &tmpflux));
   }
+  PetscCall(DMRestoreGlobalVector(dms[0], &density));
 
   // Release memory.
   for (field=0; field<Nf; field++) {
@@ -53,6 +63,7 @@ PetscErrorCode LoadVlasovQuantities(Context *ctx)
   // Destroy the HDF5 viewer.
   PetscCall(PetscViewerDestroy(&viewer));
 
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
