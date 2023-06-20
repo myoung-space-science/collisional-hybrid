@@ -45,7 +45,7 @@ PetscErrorCode LoadVlasovQuantities(Context *ctx)
     dm = dms[field];
     PetscCall(DMGetGlobalVector(dm, &tmpflux));
     PetscCall(VecZeroEntries(tmpflux));
-    PetscCall(VecAXPY(tmpflux, ctx->fluxScale[field], density));
+    PetscCall(VecAXPY(tmpflux, ctx->fluxScale[field-1], density));
     PetscCall(VecStrideScatter(tmpflux, field, vlasov, INSERT_VALUES));
     PRINT_WORLD("Created %s from density\n", keys[field]);
     PetscCall(DMRestoreGlobalVector(dm, &tmpflux));
