@@ -718,3 +718,59 @@ PetscErrorCode UpdatePositions(Context *ctx)
 }
 
 
+/* Get the global vector corresponding to a named DM field.
+
+  Note: Something like this may exist in PETSc but I can't find it.
+*/
+PetscErrorCode GetFieldVec(DM dm, Vec full, const char *name, Vec *vec)
+{
+  PetscInt  nf;
+  char      **names;
+  DM        *dms;
+  PetscInt  field;
+  PetscBool found;
+
+  PetscFunctionBeginUser;
+
+  PetscCall(DMCreateFieldDecomposition(dm, &nf, &names, NULL, &dms));
+  for (field=0; field<nf; field++) {
+    PetscCall(PetscStrcmp(name, names[field], &found));
+    if (found) {
+      PetscCall(DMGetGlobalVector(dms[field], vec));
+      PetscCall(VecStrideGather(full, field, *vec, INSERT_VALUES));
+      PetscCall(PetscObjectSetName((PetscObject)*vec, names[field]));
+      break;
+    }
+  }
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+/* Restore a vector retrieved via GetFieldVec.
+
+  Note: Something like this may exist in PETSc but I can't find it.
+*/
+PetscErrorCode RestoreFieldVec(DM dm, Vec full, const char *name, Vec *vec)
+{
+  PetscInt  nf;
+  char      **names;
+  DM        *dms;
+  PetscInt  field;
+  PetscBool found;
+
+  PetscFunctionBeginUser;
+
+  PetscCall(DMCreateFieldDecomposition(dm, &nf, &names, NULL, &dms));
+  for (field=0; field<nf; field++) {
+    PetscCall(PetscStrcmp(name, names[field], &found));
+    if (found) {
+      PetscCall(DMRestoreGlobalVector(dms[field], vec));
+      break;
+    }
+  }
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
