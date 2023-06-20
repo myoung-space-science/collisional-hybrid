@@ -422,9 +422,9 @@ PetscErrorCode ProcessOptions(Context *ctx)
     ctx->fluxScale[1] = realArg;
     ctx->fluxScale[2] = realArg;
   } else {
-    ctx->fluxScale[0] = 0.0;
-    ctx->fluxScale[1] = 0.0;
-    ctx->fluxScale[2] = 0.0;
+    ctx->fluxScale[0] = 1.0;
+    ctx->fluxScale[1] = 1.0;
+    ctx->fluxScale[2] = 1.0;
   }
   PetscCall(PetscOptionsGetReal(NULL, NULL, "--x-flux-scale", &realArg, &found));
   if (found) {
