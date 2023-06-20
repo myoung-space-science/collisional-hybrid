@@ -1,63 +1,7 @@
 #include <petsc.h>
 #include "hybrid.h"
 #include "rhs.h"
-
-/* Get the global vector corresponding to a named DM field.
-
-  Note: Something like this may exist in PETSc but I can't find it.
-*/
-static PetscErrorCode
-GetFieldVec(DM dm, Vec full, const char *name, Vec *vec)
-{
-  PetscInt  nf;
-  char      **names;
-  DM        *dmArray;
-  PetscInt  field;
-  PetscBool found;
-
-  PetscFunctionBeginUser;
-
-  PetscCall(DMCreateFieldDecomposition(dm, &nf, &names, NULL, &dmArray));
-  for (field=0; field<nf; field++) {
-    PetscCall(PetscStrcmp(name, names[field], &found));
-    if (found) {
-      PetscCall(DMGetGlobalVector(dmArray[field], vec));
-      PetscCall(VecStrideGather(full, field, *vec, INSERT_VALUES));
-      PetscCall(PetscObjectSetName((PetscObject)*vec, names[field]));
-      break;
-    }
-  }
-
-  PetscFunctionReturn(PETSC_SUCCESS);
-}
-
-
-/* Restore a vector retrieved via GetFieldVec.
-
-  Note: Something like this may exist in PETSc but I can't find it.
-*/
-static PetscErrorCode
-RestoreFieldVec(DM dm, Vec full, const char *name, Vec *vec)
-{
-  PetscInt  nf;
-  char      **names;
-  DM        *dmArray;
-  PetscInt  field;
-  PetscBool found;
-
-  PetscFunctionBeginUser;
-
-  PetscCall(DMCreateFieldDecomposition(dm, &nf, &names, NULL, &dmArray));
-  for (field=0; field<nf; field++) {
-    PetscCall(PetscStrcmp(name, names[field], &found));
-    if (found) {
-      PetscCall(DMRestoreGlobalVector(dmArray[field], vec));
-      break;
-    }
-  }
-
-  PetscFunctionReturn(PETSC_SUCCESS);
-}
+#include "particles.h"
 
 
 PetscErrorCode ComputeConstantRHS(KSP ksp, Vec b, void *user)
