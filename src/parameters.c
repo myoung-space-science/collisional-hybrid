@@ -416,6 +416,28 @@ PetscErrorCode ProcessOptions(Context *ctx)
     PRINT_WORLD("Warning: Setting dt = 1 / nui\n");
     ctx->dt = 1.0 / ctx->ions.nu;
   }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "--flux-scale", &realArg, &found));
+  if (found) {
+    ctx->fluxScale[0] = realArg;
+    ctx->fluxScale[1] = realArg;
+    ctx->fluxScale[2] = realArg;
+  } else {
+    ctx->fluxScale[0] = 0.0;
+    ctx->fluxScale[1] = 0.0;
+    ctx->fluxScale[2] = 0.0;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "--x-flux-scale", &realArg, &found));
+  if (found) {
+    ctx->fluxScale[0] = realArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "--y-flux-scale", &realArg, &found));
+  if (found) {
+    ctx->fluxScale[1] = realArg;
+  }
+  PetscCall(PetscOptionsGetReal(NULL, NULL, "--z-flux-scale", &realArg, &found));
+  if (found) {
+    ctx->fluxScale[2] = realArg;
+  }
 
   // Set the LHS function based on LHS type.
   switch (ctx->lhsType) {
