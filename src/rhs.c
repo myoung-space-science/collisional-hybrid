@@ -28,7 +28,7 @@ PetscErrorCode ComputeConstantRHS(KSP ksp, Vec b, void *user)
   detA = 1 + Kx*Kx + Ky*Ky + Kz*Kz;
 
   // Extract the density vector.
-  PetscCall(GetFieldVec(vlasovDM, ctx->vlasov, "density", &density));
+  PetscCall(GetGlobalVlasovField("density", &density, NULL, ctx));
 
   // Set the RHS vector equal to the global mean density.
   PetscCall(VecMean(density, &mean));
@@ -38,7 +38,7 @@ PetscErrorCode ComputeConstantRHS(KSP ksp, Vec b, void *user)
   PetscCall(VecSet(b, val));
 
   // Restore the density vector.
-  PetscCall(RestoreFieldVec(vlasovDM, ctx->vlasov, "density", &density));
+  PetscCall(RestoreGlobalVlasovField("density", &density, NULL, ctx));
 
   // Store the RHS vector in the problem context.
   ctx->rhs = b;
@@ -90,7 +90,7 @@ PetscErrorCode ComputeSinusoidalRHS(KSP ksp, Vec b, void *user)
   PetscCall(DMDAVecGetArray(dm, b, &rhs));
 
   // Extract the density vector and compute its mean.
-  PetscCall(GetFieldVec(vlasovDM, ctx->vlasov, "density", &density));
+  PetscCall(GetGlobalVlasovField("density", &density, NULL, ctx));
   PetscCall(VecMean(density, &n0));
 
   // Get this processor's indices.
@@ -113,7 +113,7 @@ PetscErrorCode ComputeSinusoidalRHS(KSP ksp, Vec b, void *user)
   }
 
   // Restore the density vector.
-  PetscCall(RestoreFieldVec(vlasovDM, ctx->vlasov, "density", &density));
+  PetscCall(RestoreGlobalVlasovField("density", &density, NULL, ctx));
 
   // Restore the borrowed arrays.
   PetscCall(DMDAVecRestoreArray(dm, b, &rhs));

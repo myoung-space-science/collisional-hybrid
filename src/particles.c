@@ -718,59 +718,165 @@ PetscErrorCode UpdatePositions(Context *ctx)
 }
 
 
-/* Get the global vector corresponding to a named DM field.
-
-  Note: Something like this may exist in PETSc but I can't find it.
-*/
-PetscErrorCode GetFieldVec(DM dm, Vec full, const char *name, Vec *vec)
+/* Get the global vector (and array) corresponding to a named vlasov field. */
+PetscErrorCode GetGlobalVlasovField(const char *name, Vec *vec, void *array, Context *ctx)
 {
+  DM        vlasovDM=ctx->vlasovDM;
+  Vec       full=ctx->vlasov;
   PetscInt  nf;
   char      **names;
-  DM        *dms;
+  DM        *dms, dm;
   PetscInt  field;
   PetscBool found;
 
   PetscFunctionBeginUser;
 
-  PetscCall(DMCreateFieldDecomposition(dm, &nf, &names, NULL, &dms));
+  PetscCall(DMCreateFieldDecomposition(vlasovDM, &nf, &names, NULL, &dms));
   for (field=0; field<nf; field++) {
     PetscCall(PetscStrcmp(name, names[field], &found));
     if (found) {
-      PetscCall(DMGetGlobalVector(dms[field], vec));
+      dm = dms[field];
+      PetscCall(DMGetGlobalVector(dm, vec));
       PetscCall(VecStrideGather(full, field, *vec, INSERT_VALUES));
       PetscCall(PetscObjectSetName((PetscObject)*vec, names[field]));
+      if (array) {
+        PetscCall(DMDAVecGetArray(dm, vec, (PetscReal ****)array));
+      }
       break;
     }
   }
+
+  // Release memory.
+  for (field=0; field<nf; field++) {
+    PetscFree(names[field]);
+    PetscCall(DMDestroy(&dms[field]));
+  }
+  PetscFree(names);
+  PetscFree(dms);
 
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
 
-/* Restore a vector retrieved via GetFieldVec.
-
-  Note: Something like this may exist in PETSc but I can't find it.
-*/
-PetscErrorCode RestoreFieldVec(DM dm, Vec full, const char *name, Vec *vec)
+/* Get the local vector (and array) corresponding to a named vlasov field. */
+PetscErrorCode GetLocalVlasovField(const char *name, Vec *vec, void *array, Context *ctx)
 {
+  DM        vlasovDM=ctx->vlasovDM;
+  Vec       full=ctx->vlasov, global;
   PetscInt  nf;
   char      **names;
-  DM        *dms;
+  DM        *dms, dm;
   PetscInt  field;
   PetscBool found;
 
   PetscFunctionBeginUser;
 
-  PetscCall(DMCreateFieldDecomposition(dm, &nf, &names, NULL, &dms));
+  PetscCall(DMCreateFieldDecomposition(vlasovDM, &nf, &names, NULL, &dms));
   for (field=0; field<nf; field++) {
     PetscCall(PetscStrcmp(name, names[field], &found));
     if (found) {
-      PetscCall(DMRestoreGlobalVector(dms[field], vec));
+      dm = dms[field];
+      PetscCall(DMGetGlobalVector(dm, &global));
+      PetscCall(VecStrideGather(full, field, &global, INSERT_VALUES));
+      PetscCall(DMGetLocalVector(dm, &vec));
+      PetscCall(DMGlobalToLocalBegin(dm, global, INSERT_VALUES, vec));
+      PetscCall(DMGlobalToLocalEnd(dm, global, INSERT_VALUES, vec));
+      PetscCall(PetscObjectSetName((PetscObject)vec, names[field]));
+      if (array) {
+        PetscCall(DMDAVecGetArray(dm, vec, (PetscReal ****)array));
+      }
       break;
     }
   }
 
+  // Release memory.
+  PetscCall(DMDestroy(&vlasovDM));
+  PetscCall(VecDestroy(&global));
+  for (field=0; field<nf; field++) {
+    PetscFree(names[field]);
+    PetscCall(DMDestroy(&dms[field]));
+  }
+  PetscFree(names);
+  PetscFree(dms);
+
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
+
+/* Restore a vector (and array) retrieved via GetGlobalVlasovField. */
+PetscErrorCode RestoreGlobalVlasovField(const char *name, Vec *vec, void *array, Context *ctx)
+{
+  DM        vlasovDM=ctx->vlasovDM;
+  Vec       full=ctx->vlasov;
+  PetscInt  nf;
+  char      **names;
+  DM        *dms, dm;
+  PetscInt  field;
+  PetscBool found;
+
+  PetscFunctionBeginUser;
+
+  PetscCall(DMCreateFieldDecomposition(vlasovDM, &nf, &names, NULL, &dms));
+  for (field=0; field<nf; field++) {
+    PetscCall(PetscStrcmp(name, names[field], &found));
+    if (found) {
+      dm = dms[field];
+      PetscCall(DMRestoreGlobalVector(dm, vec));
+      if (array) {
+        PetscCall(DMDAVecRestoreArray(dm, vec, (PetscReal ****)array));
+      }
+      break;
+    }
+  }
+
+  // Release memory.
+  PetscCall(DMDestroy(&vlasovDM));
+  for (field=0; field<nf; field++) {
+    PetscFree(names[field]);
+    PetscCall(DMDestroy(&dms[field]));
+  }
+  PetscFree(names);
+  PetscFree(dms);
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
+
+
+/* Restore a vector (and array) retrieved via GetLocalVlasovField. */
+PetscErrorCode RestoreLocalVlasovField(const char *name, Vec *vec, void *array, Context *ctx)
+{
+  DM        vlasovDM=ctx->vlasovDM;
+  Vec       full=ctx->vlasov;
+  PetscInt  nf;
+  char      **names;
+  DM        *dms, dm;
+  PetscInt  field;
+  PetscBool found;
+
+  PetscFunctionBeginUser;
+
+  PetscCall(DMCreateFieldDecomposition(vlasovDM, &nf, &names, NULL, &dms));
+  for (field=0; field<nf; field++) {
+    PetscCall(PetscStrcmp(name, names[field], &found));
+    if (found) {
+      dm = dms[field];
+      if (array) {
+        PetscCall(DMDAVecRestoreArray(dm, vec, (PetscReal ****)array));
+      }
+      PetscCall(DMRestoreLocalVector(dm, vec));
+      break;
+    }
+  }
+
+  // Release memory.
+  PetscCall(DMDestroy(&vlasovDM));
+  for (field=0; field<nf; field++) {
+    PetscFree(names[field]);
+    PetscCall(DMDestroy(&dms[field]));
+  }
+  PetscFree(names);
+  PetscFree(dms);
+
+  PetscFunctionReturn(PETSC_SUCCESS);
+}
 

@@ -20,4 +20,12 @@ extern PetscErrorCode UpdateVelocities(KSP ksp, Context *ctx);
 
 extern PetscErrorCode UpdatePositions(Context *ctx);
 
+extern PetscErrorCode GetGlobalVlasovField(const char *name, Vec *vec, void *array, Context *ctx);
+
+extern PetscErrorCode RestoreGlobalVlasovField(const char *name, Vec *vec, void *array, Context *ctx);
+
+extern PetscErrorCode GetLocalVlasovField(const char *name, Vec *vec, void *array, Context *ctx);
+
+extern PetscErrorCode RestoreLocalVlasovField(const char *name, Vec *vec, void *array, Context *ctx);
+
 #endif // PARTICLES_H
