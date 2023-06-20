@@ -3,6 +3,7 @@ localbin = ../bin
 default: hybrid
 
 hybrid: hybrid.o \
+		calculus.o \
 		distributions.o \
 		fileio.o \
 		lhs.o \
@@ -16,6 +17,7 @@ hybrid: hybrid.o \
 	-$(CLINKER) -o ${localbin}/$@ $^ $(LDLIBS)
 
 solver: solver.o \
+		calculus.o \
 		distributions.o \
 		fileio.o \
 		lhs.o \

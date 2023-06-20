@@ -142,4 +142,10 @@ typedef struct {
   PetscScalar flux[NDIM]; // vector flux
 } GridNode;
 
+typedef enum {
+  FORWARD,
+  BACKWARD,
+  CENTERED,
+} DifferenceType;
+
 #endif // HYBRID_H
