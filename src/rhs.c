@@ -222,40 +222,11 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
   // by storing `scale` in the context.
   scale = 2.0 * dx*dy*dz;
 
-  // Extract density and flux arrays.
-  PetscCall(DMCreateFieldDecomposition(vlasovDM, &nf, &names, NULL, &dms));
-
-  PetscCall(DMGetGlobalVector(dms[0], &gtmp));
-  PetscCall(VecStrideGather(vlasov, 0, gtmp, INSERT_VALUES));
-  PetscCall(DMGetLocalVector(dms[0], &density));
-  PetscCall(DMGlobalToLocalBegin(dms[0], gtmp, INSERT_VALUES, density));
-  PetscCall(DMGlobalToLocalEnd(dms[0], gtmp, INSERT_VALUES, density));
-  PetscCall(DMDAVecGetArray(dms[0], density, &n));
-  PetscCall(DMRestoreGlobalVector(dms[0], &gtmp));
-
-  PetscCall(DMGetGlobalVector(dms[1], &gtmp));
-  PetscCall(VecStrideGather(vlasov, 1, gtmp, INSERT_VALUES));
-  PetscCall(DMGetLocalVector(dms[1], &xflux));
-  PetscCall(DMGlobalToLocalBegin(dms[1], gtmp, INSERT_VALUES, xflux));
-  PetscCall(DMGlobalToLocalEnd(dms[1], gtmp, INSERT_VALUES, xflux));
-  PetscCall(DMDAVecGetArray(dms[1], xflux, &Gx));
-  PetscCall(DMRestoreGlobalVector(dms[1], &gtmp));
-
-  PetscCall(DMGetGlobalVector(dms[2], &gtmp));
-  PetscCall(VecStrideGather(vlasov, 2, gtmp, INSERT_VALUES));
-  PetscCall(DMGetLocalVector(dms[2], &yflux));
-  PetscCall(DMGlobalToLocalBegin(dms[2], gtmp, INSERT_VALUES, yflux));
-  PetscCall(DMGlobalToLocalEnd(dms[2], gtmp, INSERT_VALUES, yflux));
-  PetscCall(DMDAVecGetArray(dms[2], yflux, &Gy));
-  PetscCall(DMRestoreGlobalVector(dms[2], &gtmp));
-
-  PetscCall(DMGetGlobalVector(dms[3], &gtmp));
-  PetscCall(VecStrideGather(vlasov, 3, gtmp, INSERT_VALUES));
-  PetscCall(DMGetLocalVector(dms[3], &zflux));
-  PetscCall(DMGlobalToLocalBegin(dms[3], gtmp, INSERT_VALUES, zflux));
-  PetscCall(DMGlobalToLocalEnd(dms[3], gtmp, INSERT_VALUES, zflux));
-  PetscCall(DMDAVecGetArray(dms[3], zflux, &Gz));
-  PetscCall(DMRestoreGlobalVector(dms[3], &gtmp));
+  // get density and flux arrays.
+  PetscCall(GetLocalVlasovField("density", &density, &n, ctx));
+  PetscCall(GetLocalVlasovField("x flux", &xflux, &Gx, ctx));
+  PetscCall(GetLocalVlasovField("y flux", &yflux, &Gy, ctx));
+  PetscCall(GetLocalVlasovField("z flux", &zflux, &Gz, ctx));
 
   // Zero the incoming vector.
   PetscCall(VecZeroEntries(b));
@@ -344,25 +315,11 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
     }
   }
 
-  // Restore the borrowed objects.
-  PetscCall(DMDAVecRestoreArray(dm, b, &rhs));
-  PetscCall(DMDAVecRestoreArray(dms[0], density, &n));
-  PetscCall(DMRestoreLocalVector(dms[0], &density));
-  PetscCall(DMDAVecRestoreArray(dms[1], xflux, &Gx));
-  PetscCall(DMRestoreLocalVector(dms[1], &xflux));
-  PetscCall(DMDAVecRestoreArray(dms[2], yflux, &Gy));
-  PetscCall(DMRestoreLocalVector(dms[2], &yflux));
-  PetscCall(DMDAVecRestoreArray(dms[3], zflux, &Gz));
-  PetscCall(DMRestoreLocalVector(dms[3], &zflux));
-
-  // Release memory.
-  for (field=0; field<nf; field++) {
-    PetscFree(names[field]);
-    PetscCall(DMDestroy(&dms[field]));
-  }
-  PetscFree(names);
-  PetscFree(dms);
-  PetscCall(DMDestroy(&vlasovDM));
+  // Restore density and flux arrays.
+  PetscCall(RestoreLocalVlasovField("density", &density, &n, ctx));
+  PetscCall(RestoreLocalVlasovField("x flux", &xflux, &Gx, ctx));
+  PetscCall(RestoreLocalVlasovField("y flux", &yflux, &Gy, ctx));
+  PetscCall(RestoreLocalVlasovField("z flux", &zflux, &Gz, ctx));
 
   // Make the RHS vector consistent with the LHS operator.
   PetscCall(MatNullSpaceCreate(PETSC_COMM_WORLD, PETSC_TRUE, 0, NULL, &nullspace));
