@@ -10,7 +10,6 @@ PetscErrorCode ComputeConstantRHS(KSP ksp, Vec b, void *user)
   Context      *ctx=(Context *)user;
   PetscScalar  Kx, Ky, Kz;
   PetscReal    detA;
-  DM           vlasovDM=ctx->vlasovDM;
   PetscReal    dx=ctx->grid.d.x;
   PetscReal    dy=ctx->grid.d.y;
   PetscReal    dz=ctx->grid.d.z;
@@ -57,7 +56,6 @@ PetscErrorCode ComputeSinusoidalRHS(KSP ksp, Vec b, void *user)
   PetscReal    dx=ctx->grid.d.x;
   PetscReal    dy=ctx->grid.d.y;
   PetscReal    dz=ctx->grid.d.z;
-  DM           vlasovDM=ctx->vlasovDM;
   Vec          density;
   PetscScalar  n0;
   DM           dm;
@@ -154,9 +152,6 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
   PetscInt     Ny=ctx->grid.N.y;
   // z-axis number of cells
   PetscInt     Nz=ctx->grid.N.z;
-  // geometric scale factors
-  PetscScalar  hx, hy, hz;
-  PetscScalar  hxx, hyx, hzx, hxy, hyy, hzy, hxz, hyz, hzz;
   // global scale factor
   PetscReal    scale;
   // the DM of the grid
@@ -182,12 +177,6 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
   PetscInt     ni, nj, nk;
   // grid indices
   PetscInt     i, j, k;
-  PetscInt     im1, ip1, jm1, jp1, km1, kp1;
-  // the density value at the current and neighboring grid points
-  PetscScalar  nijk, npjk, nmjk, nipk, nimk, nijp, nijm;
-  PetscScalar  nppk, npmk, nmpk, nmmk;
-  PetscScalar  npjp, npjm, nmjp, nmjm;
-  PetscScalar  nipp, nipm, nimp, nimm;
   DifferenceType xDiffType, yDiffType, zDiffType;
   // first partial density derivatives
   PetscReal    dndx, dndy, dndz;
@@ -225,17 +214,6 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
   rzx = Kx*Kz - Ky;
   rzy = Ky*Kz + Kx;
   rzz = 1 + Kz*Kz;
-
-  // Compute geometric scale factors.
-  hx  = 1.0 / (2.0 * dx);
-  hy  = 1.0 / (2.0 * dy);
-  hz  = 1.0 / (2.0 * dz);
-  hxx = 4.0 * hx*hx;
-  hyy = 4.0 * hy*hy;
-  hzz = 4.0 * hz*hz;
-  hxy = hyx = hx*hy;
-  hxz = hzx = hx*hz;
-  hzy = hyz = hz*hy;
 
   // Assign the global scale factor. Separating this out makes it easier to
   // rescale the operator, for example while debugging.
@@ -295,35 +273,6 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
   for (k=k0; k<k0+nk; k++) {
     for (j=j0; j<j0+nj; j++) {
       for (i=i0; i<i0+ni; i++) {
-
-        // Define backward and forward indices.
-        im1 = i-1;
-        ip1 = i+1;
-        jm1 = j-1;
-        jp1 = j+1;
-        km1 = k-1;
-        kp1 = k+1;
-
-        // Assign temporary density values.
-        nijk = n[k][j][i];
-        nmjk = n[k][j][im1];
-        npjk = n[k][j][ip1];
-        nimk = n[k][jm1][i];
-        nipk = n[k][jp1][i];
-        nijm = n[km1][j][i];
-        nijp = n[kp1][j][i];
-        nppk = n[k][jp1][ip1];
-        npmk = n[k][jm1][ip1];
-        nmpk = n[k][jp1][im1];
-        nmmk = n[k][jm1][im1];
-        npjp = n[kp1][j][ip1];
-        npjm = n[km1][j][ip1];
-        nmjp = n[kp1][j][im1];
-        nmjm = n[km1][j][im1];
-        nipp = n[kp1][jp1][i];
-        nipm = n[km1][jp1][i];
-        nimp = n[kp1][jm1][i];
-        nimm = n[km1][jm1][i];
 
         // Compute local derivatives.
         dndx = 0.0;
