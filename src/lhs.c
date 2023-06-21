@@ -68,7 +68,7 @@ PetscErrorCode ComputeInteriorStencil(PetscInt i, PetscInt j, PetscInt k, PetscR
   cols[11].j = j;
   cols[11].k = k-1;
   // Assign the value at node (i-1, j, k+1).
-  vals[12] = f[k+1][k][i-1];
+  vals[12] = f[k+1][j][i-1];
   cols[12].i = i-1;
   cols[12].j = j;
   cols[12].k = k+1;
