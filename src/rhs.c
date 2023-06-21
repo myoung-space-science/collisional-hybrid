@@ -194,7 +194,7 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
   // first partial flux derivatives
   PetscReal    dGxdx, dGydy, dGzdz;
   // second partial density derivatives
-  PetscReal    d2ndxx, d2ndyy, d2ndzz;
+  PetscReal    d2ndxx, d2ndyy, d2ndzz, d2ndxy, d2ndyx, d2ndxz, d2ndzx, d2ndyz, d2ndzy;
   PetscScalar  E0x=ctx->plasma.E0.x;
   PetscScalar  E0y=ctx->plasma.E0.y;
   PetscScalar  E0z=ctx->plasma.E0.z;
@@ -335,6 +335,12 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
         d2ndxx = 0.0;
         d2ndyy = 0.0;
         d2ndzz = 0.0;
+        d2ndxy = 0.0;
+        d2ndxz = 0.0;
+        d2ndyx = 0.0;
+        d2ndyz = 0.0;
+        d2ndzx = 0.0;
+        d2ndzy = 0.0;
         if (i == 0) {
           xDiffType = FORWARD;
         } else if (i == Nx-1) {
@@ -365,6 +371,12 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
         PetscCall(d2Fdxx(n, dx, i, j, k, &d2ndxx, xDiffType));
         PetscCall(d2Fdyy(n, dy, i, j, k, &d2ndyy, yDiffType));
         PetscCall(d2Fdzz(n, dz, i, j, k, &d2ndzz, zDiffType));
+        PetscCall(d2Fdxy(n, dx, dy, i, j, k, &d2ndxy, CENTERED, CENTERED));
+        PetscCall(d2Fdxz(n, dx, dz, i, j, k, &d2ndxz, CENTERED, CENTERED));
+        PetscCall(d2Fdyx(n, dy, dx, i, j, k, &d2ndyx, CENTERED, CENTERED));
+        PetscCall(d2Fdyz(n, dy, dz, i, j, k, &d2ndyz, CENTERED, CENTERED));
+        PetscCall(d2Fdzx(n, dz, dx, i, j, k, &d2ndzx, CENTERED, CENTERED));
+        PetscCall(d2Fdzy(n, dz, dy, i, j, k, &d2ndzy, CENTERED, CENTERED));
 
         /* Assign the RHS value at (i, j, k). */
         Eterm = // div(n R E0)
@@ -373,15 +385,9 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
           (rzx*E0x + rzy*E0y + rzz*E0z)*dndz;
         Pterm = // div(R div(P)) / e
           cth * (
-                  rxx * d2ndxx +
-            hxy * rxy * (nppk - npmk - nmpk + nmmk) +
-            hxz * rxz * (npjp - npjm - nmjp + nmjm) +
-            hyx * ryx * (nppk - npmk - nmpk + nmmk) +
-                  ryy * d2ndyy +
-            hyz * ryz * (nipp - nipm - nimp + nimm) +
-            hzx * rzx * (npjp - npjm - nmjp + nmjm) +
-            hzy * rzy * (nipp - nipm - nimp + nimm) +
-                  rzz * d2ndzz);
+            rxx*d2ndxx + rxy*d2ndxy + rxz*d2ndxz +
+            ryx*d2ndyx + ryy*d2ndyy + ryz*d2ndyz +
+            rzx*d2ndzx + rzy*d2ndzy + rzz*d2ndzz);
         Gterm = // (1+kappa^2) (me nue / e) div(flux)
           detA * cG * (dGxdx + dGydy + dGzdz);
         rhs[k][j][i] = scale * (Eterm + Pterm + Gterm);
