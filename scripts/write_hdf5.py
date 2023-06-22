@@ -55,6 +55,9 @@ class Grid:
         self._x = xc
         self._y = yc
         self._z = zc
+        self._nx = nx
+        self._ny = ny
+        self._nz = nz
 
     def sinusoidal(
         self,
