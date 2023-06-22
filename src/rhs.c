@@ -246,21 +246,11 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
       for (i=i0; i<i0+ni; i++) {
 
         // Compute local derivatives.
-        dndx = 0.0;
-        dndy = 0.0;
-        dndz = 0.0;
-        dGxdx = 0.0;
-        dGydy = 0.0;
-        dGzdz = 0.0;
-        d2ndxx = 0.0;
-        d2ndyy = 0.0;
-        d2ndzz = 0.0;
-        d2ndxy = 0.0;
-        d2ndxz = 0.0;
-        d2ndyx = 0.0;
-        d2ndyz = 0.0;
-        d2ndzx = 0.0;
-        d2ndzy = 0.0;
+        dndx   = 0.0; dndy   = 0.0; dndz   = 0.0;
+        dGxdx  = 0.0; dGydy  = 0.0; dGzdz  = 0.0;
+        d2ndxx = 0.0; d2ndxy = 0.0; d2ndxz = 0.0;
+        d2ndyx = 0.0; d2ndyy = 0.0; d2ndyz = 0.0;
+        d2ndzx = 0.0; d2ndzy = 0.0; d2ndzz = 0.0;
         PetscCall(dFdx(  n, dx,     i, j, k, &dndx,   CENTERED));
         PetscCall(dFdy(  n, dy,     i, j, k, &dndy,   CENTERED));
         PetscCall(dFdz(  n, dz,     i, j, k, &dndz,   CENTERED));
@@ -268,14 +258,14 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
         PetscCall(dFdy( Gy, dy,     i, j, k, &dGydy,  CENTERED));
         PetscCall(dFdz( Gz, dz,     i, j, k, &dGzdz,  CENTERED));
         PetscCall(d2Fdxx(n, dx,     i, j, k, &d2ndxx, CENTERED));
-        PetscCall(d2Fdyy(n, dy,     i, j, k, &d2ndyy, CENTERED));
-        PetscCall(d2Fdzz(n, dz,     i, j, k, &d2ndzz, CENTERED));
         PetscCall(d2Fdxy(n, dx, dy, i, j, k, &d2ndxy, CENTERED, CENTERED));
         PetscCall(d2Fdxz(n, dx, dz, i, j, k, &d2ndxz, CENTERED, CENTERED));
         PetscCall(d2Fdyx(n, dy, dx, i, j, k, &d2ndyx, CENTERED, CENTERED));
+        PetscCall(d2Fdyy(n, dy,     i, j, k, &d2ndyy, CENTERED));
         PetscCall(d2Fdyz(n, dy, dz, i, j, k, &d2ndyz, CENTERED, CENTERED));
         PetscCall(d2Fdzx(n, dz, dx, i, j, k, &d2ndzx, CENTERED, CENTERED));
         PetscCall(d2Fdzy(n, dz, dy, i, j, k, &d2ndzy, CENTERED, CENTERED));
+        PetscCall(d2Fdzz(n, dz,     i, j, k, &d2ndzz, CENTERED));
 
         /* Assign the RHS value at (i, j, k). */
         Eterm = // div(n R E0)
