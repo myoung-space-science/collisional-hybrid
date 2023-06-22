@@ -272,7 +272,7 @@ run_solver_mumps() {
         -ksp_converged_reason \
         --lhs-type full \
         --rhs-type full \
-        --input ${projdir}/test-data/cos_xyz_32x32x32.h5 \
+        --input ${projdir}/test-data/cos_xyz_33x33x33.h5 \
         -Nx 32 -Ny 32 -Nz 32 \
         -n 2 \
         --flux-scale 0.0 \
@@ -362,7 +362,7 @@ run_solver_debug() {
         -ksp_converged_reason \
         --lhs-type full \
         --rhs-type full \
-        --input ${projdir}/test-data/cos_xyz_16x16x16.h5 \
+        --input ${projdir}/test-data/cos_xyz_17x17x17.h5 \
         -Nx 16 -Ny 16 -Nz 16 \
         -n 1 \
         -nue 5e4 \
