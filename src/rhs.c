@@ -303,7 +303,7 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
           (rxx*E0x + rxy*E0y + rxz*E0z)*dndx +
           (ryx*E0x + ryy*E0y + ryz*E0z)*dndy +
           (rzx*E0x + rzy*E0y + rzz*E0z)*dndz;
-        Pterm = // div(R div(P)) / e
+        Pterm = // (me vTe / e) div(R div(P))
           cth * (
             rxx*d2ndxx + rxy*d2ndxy + rxz*d2ndxz +
             ryx*d2ndyx + ryy*d2ndyy + ryz*d2ndyz +
