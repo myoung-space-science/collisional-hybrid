@@ -275,20 +275,20 @@ run_solver_mumps() {
         --input ${projdir}/test-data/cos_xyz_33x33x33.h5 \
         -Nx 32 -Ny 32 -Nz 32 \
         -n 2 \
-        --flux-scale 0.0 \
         -nue 5e4 \
         -nui 3e3 \
         -B0x 0.0 \
         -B0y 0.0 \
-        -B0z 0.0 \
+        -B0z 5e-5 \
         -E0x 0.0 \
-        -E0y 0.0 \
+        -E0y 1e-2 \
         -E0z 0.0 \
         -mi 5.0e-26 \
         -mn 4.6e-26 \
         -Te 300.0 \
         -Ti 0.0 \
         -Tn 0.0 \
+        --flux-scale 100.0 \
         ${1}
 }
 case_map['solver-mumps']=run_solver_mumps
@@ -376,8 +376,8 @@ run_solver_debug() {
         -mi 5.0e-26 \
         -mn 4.6e-26 \
         -Te 300.0 \
-        -Ti 300.0 \
-        -Tn 300.0 \
+        -Ti 0.0 \
+        -Tn 0.0 \
         --flux-scale 0.0 \
         ${1}
 }
