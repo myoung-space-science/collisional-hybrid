@@ -362,7 +362,7 @@ run_solver_debug() {
         -ksp_converged_reason \
         --lhs-type full \
         --rhs-type full \
-        --input ${projdir}/test-data/cos_xyz_17x17x17.h5 \
+        --input ${projdir}/test-data/cos_xyz_16x16x16.h5 \
         -Nx 16 -Ny 16 -Nz 16 \
         -n 1 \
         -nue 5e4 \
