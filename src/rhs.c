@@ -261,36 +261,15 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
         d2ndyz = 0.0;
         d2ndzx = 0.0;
         d2ndzy = 0.0;
-        if (i == 0) {
-          xDiffType = FORWARD;
-        } else if (i == Nx-1) {
-          xDiffType = BACKWARD;
-        } else {
-          xDiffType = CENTERED;
-        }
-        if (j == 0) {
-          yDiffType = FORWARD;
-        } else if (j == Ny-1) {
-          yDiffType = BACKWARD;
-        } else {
-          yDiffType = CENTERED;
-        }
-        if (k == 0) {
-          zDiffType = FORWARD;
-        } else if (k == Nz-1) {
-          zDiffType = BACKWARD;
-        } else {
-          zDiffType = CENTERED;
-        }
-        PetscCall(dFdx(  n, dx, i, j, k, &dndx,   xDiffType));
-        PetscCall(dFdy(  n, dy, i, j, k, &dndy,   yDiffType));
-        PetscCall(dFdz(  n, dz, i, j, k, &dndz,   zDiffType));
-        PetscCall(dFdx( Gx, dx, i, j, k, &dGxdx,  xDiffType));
-        PetscCall(dFdy( Gy, dy, i, j, k, &dGydy,  yDiffType));
-        PetscCall(dFdz( Gz, dz, i, j, k, &dGzdz,  zDiffType));
-        PetscCall(d2Fdxx(n, dx, i, j, k, &d2ndxx, xDiffType));
-        PetscCall(d2Fdyy(n, dy, i, j, k, &d2ndyy, yDiffType));
-        PetscCall(d2Fdzz(n, dz, i, j, k, &d2ndzz, zDiffType));
+        PetscCall(dFdx(  n, dx,     i, j, k, &dndx,   CENTERED));
+        PetscCall(dFdy(  n, dy,     i, j, k, &dndy,   CENTERED));
+        PetscCall(dFdz(  n, dz,     i, j, k, &dndz,   CENTERED));
+        PetscCall(dFdx( Gx, dx,     i, j, k, &dGxdx,  CENTERED));
+        PetscCall(dFdy( Gy, dy,     i, j, k, &dGydy,  CENTERED));
+        PetscCall(dFdz( Gz, dz,     i, j, k, &dGzdz,  CENTERED));
+        PetscCall(d2Fdxx(n, dx,     i, j, k, &d2ndxx, CENTERED));
+        PetscCall(d2Fdyy(n, dy,     i, j, k, &d2ndyy, CENTERED));
+        PetscCall(d2Fdzz(n, dz,     i, j, k, &d2ndzz, CENTERED));
         PetscCall(d2Fdxy(n, dx, dy, i, j, k, &d2ndxy, CENTERED, CENTERED));
         PetscCall(d2Fdxz(n, dx, dz, i, j, k, &d2ndxz, CENTERED, CENTERED));
         PetscCall(d2Fdyx(n, dy, dx, i, j, k, &d2ndyx, CENTERED, CENTERED));
