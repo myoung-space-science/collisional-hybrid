@@ -47,10 +47,11 @@ class Grid:
         lx: float=None,
         ly: float=None,
         lz: float=None,
+        endpoint: bool=True,
     ) -> None:
-        x = numpy.linspace(0.0, (lx or 1.0), nx)
-        y = numpy.linspace(0.0, (ly or 1.0), ny)
-        z = numpy.linspace(0.0, (lz or 1.0), nz)
+        x = numpy.linspace(0.0, (lx or 1.0), nx, endpoint=endpoint)
+        y = numpy.linspace(0.0, (ly or 1.0), ny, endpoint=endpoint)
+        z = numpy.linspace(0.0, (lz or 1.0), nz, endpoint=endpoint)
         xc, yc, zc = numpy.meshgrid(x, y, z, indexing='ij')
         self._x = xc
         self._y = yc
@@ -119,7 +120,12 @@ def main(filepath=None, verbose: bool=False, **user):
 
 def compute_vlasov_quantities(opts: dict) -> numpy.ndarray:
     """Compute density from options."""
-    grid = Grid(nx=opts['nx'], ny=opts['ny'], nz=opts['nz'])
+    grid = Grid(
+        nx=opts['nx'],
+        ny=opts['ny'],
+        nz=opts['nz'],
+        endpoint=opts.get('endpoints', False)
+    )
     sinusoids = grid.sinusoidal(
         mx=opts['Mx'],
         my=opts['My'],
@@ -233,6 +239,11 @@ if __name__ == '__main__':
         '-nz',
         help="number of grid points along the z axis (default: 7)",
         type=int,
+    )
+    parser.add_argument(
+        '--endpoints',
+        help="include points at Lx, Ly, and Lz",
+        action='store_true',
     )
     parser.add_argument(
         '-Sx',
