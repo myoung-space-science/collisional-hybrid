@@ -178,32 +178,30 @@ case_map['basic-physics']=run_basic_physics
 # - \kappa_z = 1.0
 #
 # This can be useful for testing the effect of \vec{\kappa} on the stencil.
-
+# 
+# Note that constant density may produce a zero pivot on this small system.
 run_solver_view_lhs() {
     ./run.sh solver \
-        -Nx 8 -Ny 8 -Nz 8 \
-        -n 1 \
         -ksp_type preonly \
         -pc_type lu \
         -ksp_monitor_short \
         -ksp_converged_reason \
-        --lhs-type full \
-        --rhs-type full \
         --view-lhs \
+        --lhs-type full \
         --input ${projdir}/test-data/cos_xyz_8x8x8.h5 \
+        -Nx 8 -Ny 8 -Nz 8 \
+        -n 1 \
         -nue 5e4 \
         -nui 3e3 \
         -B0x 0.0 \
         -B0y 0.0 \
-        -B0z 2.5e-5 \
+        -B0z 0.0 \
         -E0x 0.0 \
-        -E0y -10e-3 \
+        -E0y 0.0 \
         -E0z 0.0 \
         -mi 5.0e-26 \
         -mn 4.6e-26 \
-        -Te 300.0 \
-        -Ti 300.0 \
-        -Tn 300.0 \
+        --flux-scale 0.0 \
         ${1}
 }
 case_map['solver-view-lhs']=run_solver_view_lhs
