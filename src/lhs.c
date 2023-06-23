@@ -433,7 +433,7 @@ PetscErrorCode ComputeFullLHS(KSP ksp, Mat J, Mat A, void *user)
   //
   // TODO: Ensure that we scale LHS and RHS values by the same factor, possibly
   // by storing `scale` in the context.
-  scale = 2.0 * dx*dy*dz;
+  scale = 1.0 / detA;
 
   // Compute coefficient scale factors;
   sxx = scale * rxx*hxx;

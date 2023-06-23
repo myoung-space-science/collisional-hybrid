@@ -220,7 +220,7 @@ PetscErrorCode ComputeFullRHS(KSP ksp, Vec b, void *user)
   //
   // TODO: Ensure that we scale LHS and RHS values by the same factor, possibly
   // by storing `scale` in the context.
-  scale = 2.0 * dx*dy*dz;
+  scale = 1.0 / detA;
 
   // get density and flux arrays.
   PetscCall(GetLocalVlasovField("density", &density, &n, ctx));
