@@ -276,17 +276,15 @@ run_solver_mumps() {
         -nue 5e4 \
         -nui 3e3 \
         -B0x 0.0 \
-        -B0y 3.54e-5 \
-        -B0z 3.54e-5 \
+        -B0y 0.0 \
+        -B0z 0.0 \
         -E0x 0.0 \
-        -E0y 1e-2 \
+        -E0y 0.0 \
         -E0z 0.0 \
         -mi 5.0e-26 \
         -mn 4.6e-26 \
-        -Te 300.0 \
-        -Ti 0.0 \
-        -Tn 0.0 \
-        --flux-scale 100.0 \
+        -Te 0.0 \
+        --flux-scale 0.0 \
         ${1}
 }
 case_map['solver-mumps']=run_solver_mumps
