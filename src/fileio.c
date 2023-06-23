@@ -17,10 +17,12 @@ PetscErrorCode LoadVlasovQuantities(Context *ctx)
   PetscFunctionBeginUser;
   ECHO_FUNCTION_ENTER;
 
-  // Raise an error if the user did not provide an input file.
+  // Check for user-provided density file.
   PetscCall(PetscStrcmp(ctx->inpath, "", &nullPath));
   if (nullPath) {
-    SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_ARG_WRONG, "Missing input file.");
+    PRINT_WORLD("Warning: Got empty path to density file; using built-in sinusoidal form of RHS.\n");
+    ctx->rhsFunc = ComputeSinusoidalRHS;
+    PetscFunctionReturn(PETSC_SUCCESS);
   }
 
   // Create the HDF5 viewer.
