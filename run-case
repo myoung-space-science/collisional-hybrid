@@ -333,7 +333,7 @@ case_map['solver-gmres-gamg']=run_solver_gmres_gamg
 
 # This is intended mostly for checking if the stand-alone solver compiles and
 # solves a toy problem, and for printing options via PETSc `-*_view` flags.
-run_solver_view() {
+run_solver_view_options() {
     ./run.sh solver \
         -Nx 16 -Ny 16 -Nz 16 \
         -n 1 \
@@ -349,7 +349,7 @@ run_solver_view() {
         --rhs-type sinusoidal \
         ${1}
 }
-case_map['solver-view']=run_solver_view
+case_map['solver-view-options']=run_solver_view_options
 
 run_solver_debug() {
     ./run.sh solver \
