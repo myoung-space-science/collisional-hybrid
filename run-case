@@ -335,19 +335,18 @@ case_map['solver-gmres-gamg']=run_solver_gmres_gamg
 # solves a toy problem, and for printing options via PETSc `-*_view` flags.
 run_solver_view() {
     ./run.sh solver \
-        -Nx 64 -Ny 64 -Nz 64 \
+        -Nx 16 -Ny 16 -Nz 16 \
         -n 1 \
-        -ksp_max_it 10 \
-        -ksp_type gmres \
-        -ksp_gmres_modifiedgramschmidt \
-        -pc_type gamg \
+        -ksp_type preonly \
+        -pc_type lu \
+        -pc_factor_mat_solver_type mumps \
         -ksp_monitor_short \
         -ksp_converged_reason \
         -ksp_view \
         -vlasov_dm_view \
         -potential_dm_view \
-        --lhs-type laplacian --rhs-type sinusoidal \
-        --input ${projdir}/test-data/cos_x_64x64x64.h5 \
+        --lhs-type laplacian \
+        --rhs-type sinusoidal \
         ${1}
 }
 case_map['solver-view']=run_solver_view
