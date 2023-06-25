@@ -136,13 +136,12 @@ mark_stage "Setup"
 
 # Set the local name of the output directory.
 if [ -z "${outdir}" ]; then
-    outdir=$(date +'%Y-%m-%d-%H%M%S')
+    dstdir=${rundir}/$(date +'%Y-%m-%d-%H%M%S')
 else
-    outdir=$(readlink -f "${outdir}")
+    dstdir=${rundir}/"${outdir}"
 fi
 
 # Create the full output directory.
-dstdir=${rundir}/${outdir}
 mkdir -p ${dstdir}
 
 # Mark this stage.
