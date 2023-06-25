@@ -197,6 +197,17 @@ physical_contexts['Te-Bz-By-Bx-Ey-Gx']=\
 --y-flux-scale 0.0 \
 --z-flux-scale 0.0 \
 "
+physical_contexts['Te-Bz-By']=\
+"
+-Te 300.0 \
+-B0x 0.0 \
+-B0y 3.54e-5 \
+-B0z 3.54e-5 \
+-E0x 0.0 \
+-E0y 0.0 \
+-E0z 0.0 \
+--flux-scale 0.0 \
+"
 
 # Declare desired solver contexts.
 solver_cases=(
