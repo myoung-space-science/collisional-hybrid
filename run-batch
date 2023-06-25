@@ -208,6 +208,17 @@ physical_contexts['Te-Bz-By']=\
 -E0z 0.0 \
 --flux-scale 0.0 \
 "
+physical_contexts['Te-Bz-By-Bx-Ey']=\
+"
+-Te 300.0 \
+-B0x 2.89e-5 \
+-B0y 2.89e-5 \
+-B0z 2.89e-5 \
+-E0x 0.0 \
+-E0y 1e-2 \
+-E0z 0.0 \
+--flux-scale 0.0 \
+"
 physical_contexts['Te-Bz-By-Ey']=\
 "
 -Te 300.0 \
