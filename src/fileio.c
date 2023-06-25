@@ -81,6 +81,7 @@ PetscErrorCode OutputHDF5(const char *insert, Context *ctx)
   Vec         target, vlasov=ctx->vlasov, rhs=ctx->rhs, phi=ctx->phi;
 
   PetscFunctionBeginUser;
+  ECHO_FUNCTION_ENTER;
 
   // Build the full file name.
   PetscCall(PetscStrcat(name, ctx->outstem));
@@ -120,6 +121,7 @@ PetscErrorCode OutputHDF5(const char *insert, Context *ctx)
   // Destroy the HDF5 viewer.
   PetscCall(PetscViewerDestroy(&viewer));
 
+  ECHO_FUNCTION_EXIT;
   PetscFunctionReturn(PETSC_SUCCESS);
 }
 
