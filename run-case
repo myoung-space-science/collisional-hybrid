@@ -334,6 +334,11 @@ run_solver_gmres_hypre() {
     ./run.sh solver \
         -ksp_type gmres \
         -pc_type hypre \
+        -pc_hypre_boomeramg_coarsen_type Falgout \
+        -pc_hypre_boomeramg_restriction_type 0 \
+        -pc_hypre_boomeramg_interp_type classical \
+        -pc_hypre_boomeramg_strong_threshold 0.25 \
+        -pc_hypre_boomeramg_P_max 0 \
         -ksp_max_it 50 \
         -ksp_monitor_short \
         -ksp_converged_reason \
