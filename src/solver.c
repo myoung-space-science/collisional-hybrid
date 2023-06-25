@@ -1,6 +1,7 @@
 /* 3-D Electrostatic Potential Solver */
 static char help[] = "A tool for solving the 3D quasineutral electrostatic-potential equation.";
 
+#include <time.h>
 #include <petsc.h>
 #include <petscdm.h>
 #include <petscdmda.h>
@@ -17,10 +18,10 @@ static char help[] = "A tool for solving the 3D quasineutral electrostatic-poten
 int main(int argc, char **args)
 {
   MPIContext  mpi;
+  time_t      startTime, endTime;
   Context     ctx;
   DM          pdm;
   KSP         ksp;
-
 
   PetscFunctionBeginUser;
 
@@ -28,6 +29,10 @@ int main(int argc, char **args)
   PetscCall(PetscInitialize(&argc, &args, (char *)0, help));
   PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &mpi.rank));
   PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &mpi.size));
+
+  /* Log start time. */
+  time(&startTime);
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n**************** START *****************\n\n"));
 
   /* Initialize SLEPc. */
   PetscCall(SlepcInitialize(&argc, &args, (char *)0, help));
@@ -78,10 +83,19 @@ int main(int argc, char **args)
   PetscCall(VecDestroy(&ctx.vlasov));
   PetscCall(DMDestroy(&pdm));
 
+  /* Log end time. */
+  time(&endTime);
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n----------------------------------------\n"));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Start time: %s", asctime(localtime(&startTime))));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "End time:   %s", asctime(localtime(&endTime))));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Elapsed time: %f s\n", (float)(endTime-startTime)));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "----------------------------------------\n"));
+
   /* Finalize SLEPc. */
   PetscCall(SlepcFinalize());
 
   /* Finalize PETSc and MPI. */
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n***************** END ******************\n"));
   PetscCall(PetscFinalize());
 
   return 0;
