@@ -150,7 +150,7 @@ mark_stage "Symlink"
 # Create a symlink to this run in the directory of runs.
 cd ${rundir}
 rm -f latest
-ln -s ${outdir} latest
+ln -s ${dstdir} latest
 
 if [ ${verbose} == 1 ]; then
     vflag="-v"
