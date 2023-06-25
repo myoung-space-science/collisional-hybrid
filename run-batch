@@ -1,0 +1,234 @@
+#!/bin/bash
+
+# Declare common parameters.
+projdir=~/sandbox/dmswarm-hybrid
+test_data=${projdir}/test-data/cos_xyz_32x32x32.h5
+nx=32
+ny=32
+nz=32
+np=2
+nue=5e4
+nui=3e3
+mi=5.0e-26
+mn=4.6e-26
+lhs_type=full
+rhs_type=full
+
+# Set up solvers.
+declare -A solver_types
+solver_types['mumps']=\
+"
+-ksp_type preonly \
+-pc_type lu \
+-pc_factor_mat_solver_type mumps \
+"
+solver_types['gmres-hypre']=\
+"
+-ksp_type gmres \
+-pc_type hypre \
+-pc_hypre_boomeramg_coarsen_type Falgout \
+-pc_hypre_boomeramg_restriction_type 0 \
+-pc_hypre_boomeramg_interp_type classical \
+-pc_hypre_boomeramg_strong_threshold 0.25 \
+-pc_hypre_boomeramg_P_max 0 \
+-ksp_max_it 50 \
+"
+
+# Set up case-specific physical parameters.
+declare -A run_cases
+run_cases['baseline']=\
+"
+-Te 0.0 \
+-B0x 0.0 \
+-B0y 0.0 \
+-B0z 0.0 \
+-E0x 0.0 \
+-E0y 0.0 \
+-E0z 0.0 \
+--flux-scale 0.0 \
+"
+run_cases['Te']=\
+"
+-Te 300.0 \
+-B0x 0.0 \
+-B0y 0.0 \
+-B0z 0.0 \
+-E0x 0.0 \
+-E0y 0.0 \
+-E0z 0.0 \
+--flux-scale 0.0 \
+"
+run_cases['Te-Gx']=\
+"
+-Te 300.0 \
+-B0x 0.0 \
+-B0y 0.0 \
+-B0z 0.0 \
+-E0x 0.0 \
+-E0y 0.0 \
+-E0z 0.0 \
+--x-flux-scale 100.0 \
+--y-flux-scale 0.0 \
+--z-flux-scale 0.0 \
+"
+run_cases['Te-Bz']=\
+"
+-Te 300.0 \
+-B0x 0.0 \
+-B0y 0.0 \
+-B0z 5e-5 \
+-E0x 0.0 \
+-E0y 0.0 \
+-E0z 0.0 \
+--flux-scale 0.0 \
+"
+run_cases['Te-Bz-Gx']=\
+"
+-Te 300.0 \
+-B0x 0.0 \
+-B0y 0.0 \
+-B0z 5e-5 \
+-E0x 0.0 \
+-E0y 0.0 \
+-E0z 0.0 \
+--x-flux-scale 100.0 \
+--y-flux-scale 0.0 \
+--z-flux-scale 0.0 \
+"
+run_cases['Te-Bz-Ey']=\
+"
+-Te 300.0 \
+-B0x 0.0 \
+-B0y 0.0 \
+-B0z 5e-5 \
+-E0x 0.0 \
+-E0y 1e-2 \
+-E0z 0.0 \
+--flux-scale 0.0 \
+"
+run_cases['Te-Bz-Ey-Gx']=\
+"
+-Te 300.0 \
+-B0x 0.0 \
+-B0y 0.0 \
+-B0z 5e-5 \
+-E0x 0.0 \
+-E0y 1e-2 \
+-E0z 0.0 \
+--x-flux-scale 100.0 \
+--y-flux-scale 0.0 \
+--z-flux-scale 0.0 \
+"
+run_cases['Te-Bz-By-Gx']=\
+"
+-Te 300.0 \
+-B0x 0.0 \
+-B0y 3.54e-5 \
+-B0z 3.54e-5 \
+-E0x 0.0 \
+-E0y 0.0 \
+-E0z 0.0 \
+--x-flux-scale 100.0 \
+--y-flux-scale 0.0 \
+--z-flux-scale 0.0 \
+"
+run_cases['Te-Bz-Bx-Gx']=\
+"
+-Te 300.0 \
+-B0x 3.54e-5 \
+-B0y 0.0 \
+-B0z 3.54e-5 \
+-E0x 0.0 \
+-E0y 0.0 \
+-E0z 0.0 \
+--x-flux-scale 100.0 \
+--y-flux-scale 0.0 \
+--z-flux-scale 0.0 \
+"
+run_cases['Te-Bz-By-Bx-Gx']=\
+"
+-Te 300.0 \
+-B0x 2.89e-5 \
+-B0y 2.89e-5 \
+-B0z 2.89e-5 \
+-E0x 0.0 \
+-E0y 0.0 \
+-E0z 0.0 \
+--x-flux-scale 100.0 \
+--y-flux-scale 0.0 \
+--z-flux-scale 0.0 \
+"
+run_cases['Te-Bz-By-Ey-Gx']=\
+"
+-Te 300.0 \
+-B0x 0.0 \
+-B0y 3.54e-5 \
+-B0z 3.54e-5 \
+-E0x 0.0 \
+-E0y 1e-2 \
+-E0z 0.0 \
+--x-flux-scale 100.0 \
+--y-flux-scale 0.0 \
+--z-flux-scale 0.0 \
+"
+run_cases['Te-Bz-Bx-Ey-Gx']=\
+"
+-Te 300.0 \
+-B0x 3.54e-5 \
+-B0y 0.0 \
+-B0z 3.54e-5 \
+-E0x 0.0 \
+-E0y 1e-2 \
+-E0z 0.0 \
+--x-flux-scale 100.0 \
+--y-flux-scale 0.0 \
+--z-flux-scale 0.0 \
+"
+run_cases['Te-Bz-By-Bx-Ey-Gx']=\
+"
+-Te 300.0 \
+-B0x 2.89e-5 \
+-B0y 2.89e-5 \
+-B0z 2.89e-5 \
+-E0x 0.0 \
+-E0y 1e-2 \
+-E0z 0.0 \
+--x-flux-scale 100.0 \
+--y-flux-scale 0.0 \
+--z-flux-scale 0.0 \
+"
+
+pushd "${projdir}" &> /dev/null
+for solver_type in "${!solver_types[@]}"; do
+    for run_case in "${!run_cases[@]}"; do
+        outdir=${solver_type}/${run_case}
+        echo "Batch case: ${outdir}"
+        ./run.sh solver \
+            -ksp_monitor_short \
+            -ksp_converged_reason \
+            --lhs-type ${lhs_type} \
+            --rhs-type ${rhs_type} \
+            --input ${test_data} \
+            -Nx $nx -Ny $ny -Nz $nz \
+            -n $np \
+            -nue $nue \
+            -nui $nui \
+            -mi $mi \
+            -mn $mn \
+            ${run_cases[${run_case}]} \
+            ${solver_types[${solver_type}]} \
+            --outdir batch/${outdir} \
+            --verbose
+        if [ $? -eq 0 ]; then
+            pushd "runs/batch/${outdir}" &> /dev/null
+            if [ -f results.hdf ]; then
+                python \
+                    ${projdir}/scripts/plot_planes.py \
+                    results.hdf -v --min-max
+            fi
+            popd &> /dev/null
+        fi
+        echo 
+    done
+done
+popd &> /dev/null
