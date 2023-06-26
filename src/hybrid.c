@@ -34,10 +34,9 @@ int main(int argc, char **args)
   PetscCall(PetscInitialize(&argc, &args, (char *)0, help));
   PetscCallMPI(MPI_Comm_rank(PETSC_COMM_WORLD, &mpi.rank));
   PetscCallMPI(MPI_Comm_size(PETSC_COMM_WORLD, &mpi.size));
-  if (mpi.rank == 0) {
-    time(&startTime);
-  }
-  PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
+
+  /* Log start time. */
+  time(&startTime);
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n**************** START *****************\n\n"));
 
   /* Assign parameter values from user arguments or defaults. */
@@ -130,15 +129,12 @@ int main(int argc, char **args)
   PetscCall(DMDestroy(&ctx.ionsDM));
   PetscCall(DMDestroy(&pdm));
 
-  /* Write time information. */
-  if (mpi.rank == 0) {
-    time(&endTime);
-  }
-  PetscCallMPI(MPI_Barrier(PETSC_COMM_WORLD));
-
+  /* Log end time. */
+  time(&endTime);
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "\n----------------------------------------\n"));
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Start time: %s", asctime(localtime(&startTime))));
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "End time:   %s", asctime(localtime(&endTime))));
+  PetscCall(PetscPrintf(PETSC_COMM_WORLD, "Elapsed time: %f s\n", (float)(endTime-startTime)));
   PetscCall(PetscPrintf(PETSC_COMM_WORLD, "----------------------------------------\n"));
 
   /* Finalize PETSc and MPI. */
