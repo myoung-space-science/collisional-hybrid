@@ -145,23 +145,29 @@ case_map['gamg-basic']=run_gamg_basic
 run_basic_physics() {
     ./run.sh hybrid \
         -ksp_type gmres \
-        -ksp_max_it 100 \
-        -pc_type jacobi \
-        -Nx 64 -Ny 64 -Nz 64 \
+        -pc_type hypre \
+        -pc_hypre_boomeramg_coarsen_type Falgout \
+        -pc_hypre_boomeramg_restriction_type 0 \
+        -pc_hypre_boomeramg_interp_type classical \
+        -pc_hypre_boomeramg_strong_threshold 0.25 \
+        -pc_hypre_boomeramg_P_max 0 \
+        -ksp_max_it 50 \
+        -ksp_monitor_short \
+        -ksp_converged_reason \
+        -ksp_error_if_not_converged \
+        -Nx 32 -Ny 32 -Nz 32 \
         -n 1 \
         -Nt 10 \
         -dt 1e-5 \
         -nue 5e4 \
         -nui 3e3 \
         -B0z 5e-5 \
-        -E0y 5e-2 \
+        -E0y 2e-2 \
         -mi 5.0e-26 \
         -mn 4.6e-26 \
-        -Te 600 \
+        -Te 300 \
         -Ti 300 \
         -Tn 300 \
-        -ksp_monitor_short \
-        -ksp_converged_reason \
         ${1}
 }
 case_map['basic-physics']=run_basic_physics
