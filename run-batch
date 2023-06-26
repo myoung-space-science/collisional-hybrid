@@ -268,13 +268,31 @@ physical_contexts['Te-Bz-Bx-Ey']=\
 
 # Declare desired solver contexts.
 solver_cases=(
+    'default'
     'gmres-hypre'
     'mumps'
 )
 
 # Declare desired physical contexts.
 physical_cases=(
+    'baseline'
+    'Te'
+    'Te-Gx'
+    'Te-Bz'
+    'Te-Bz-Ey'
+    'Te-Bz-Ey-Gx'
+    'Te-Bz-By-Gx'
+    'Te-Bz-Bx-Gx'
+    'Te-Bz-By-Bx-Gx'
+    'Te-Bz-By-Ey-Gx'
+    'Te-Bz-Bx-Ey-Gx'
+    'Te-Bz-By-Bx-Ey-Gx'
     'Te-Bz-By'
+    'Te-Bz-By-Bx-Ey'
+    'Te-Bz-By-Bx'
+    'Te-Bz-By-Bx-Ez-Ey-Ex'
+    'Te-Bz-By-Ey'
+    'Te-Bz-Bx-Ey'
 )
 
 # Run all requested cases.
