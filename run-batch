@@ -16,6 +16,7 @@ rhs_type=full
 
 # Declare sets of linear-solver contexts.
 declare -A solver_contexts
+solver_contexts['default']=""
 solver_contexts['mumps']=\
 "
 -ksp_type preonly \
