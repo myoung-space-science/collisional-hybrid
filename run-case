@@ -344,8 +344,8 @@ run_solver_gmres_hypre() {
         -ksp_converged_reason \
         --lhs-type full \
         --rhs-type full \
-        --input ${projdir}/test-data/cos_xyz_32x32x32.h5 \
-        -Nx 32 -Ny 32 -Nz 32 \
+        --input ${projdir}/test-data/cos_xyz_64x64x64.h5 \
+        -Nx 64 -Ny 64 -Nz 64 \
         -n 2 \
         -nue 5e4 \
         -nui 3e3 \
